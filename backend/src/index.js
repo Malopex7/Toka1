@@ -16,6 +16,7 @@ import { errorHandler, AppError } from './middlewares/error.js';
 import { protect, requireBrand } from './middlewares/auth.js';
 import videoRoutes from './routes/videoRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -50,6 +51,7 @@ app.get('/api/test/brand', protect, requireBrand, (req, res) => {
 
 app.use('/api', videoRoutes);
 app.use('/api', transactionRoutes);
+app.use('/api', userRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {

@@ -64,10 +64,10 @@
 ## Phase 4: Frontend State, Auth & Feed Architecture
 **Goal:** Set up the secure authentication flow and high-performance scrolling feed using Next.js, Zustand, and Firebase.
 
-- [ ] **4.1 Firebase Authentication Integration (Frontend)**
-  - [ ] Build login/signup forms in Next.js using `shadcn/ui`.
-  - [ ] Connect forms to Firebase Auth Client SDK (Email/Password, Google Sign-in).
-  - [ ] Sync authenticated Firebase users with the Mongoose User profiles in the database.
+- [x] **4.1 Firebase Authentication Integration (Frontend)**
+  - [x] Build login/signup forms in Next.js using `shadcn/ui`.
+  - [x] Connect forms to Firebase Auth Client SDK (Email/Password, Google Sign-in).
+  - [x] Sync authenticated Firebase users with the Mongoose User profiles in the database.
 - [ ] **4.2 Zustand Store Setup**
   - [ ] Create `useFeedStore.ts` to manage the active video feed and user session.
   - [ ] State variables: `videos` (Array), `currentIndex` (Number), `isLoading` (Boolean), `activeVideoId` (String).

@@ -3,11 +3,23 @@ import React, { useRef, useState } from 'react';
 import { useFeedStore } from '@/store/useFeedStore';
 import VideoPlayer from './VideoPlayer';
 import TipModal from './TipModal';
+import AuthModal from './AuthModal';
+import { useAuth } from '@/context/AuthContext';
 
 export default function VideoFeed() {
   const { videos, currentIndex, setCurrentIndex } = useFeedStore();
+  const { mongooseUser, isAuthenticated, logout } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const requireAuth = (callback: () => void) => {
+    if (isAuthenticated) {
+      callback();
+    } else {
+      setIsAuthModalOpen(true);
+    }
+  };
 
   const handleScroll = () => {
     const container = containerRef.current;
@@ -38,21 +50,55 @@ export default function VideoFeed() {
             Inbox
             <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>
           </button>
-          <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left">
-            <span className="material-symbols-outlined">person</span>
-            Profile
-          </button>
+          {isAuthenticated ? (
+            <div className="flex flex-col gap-1.5 px-4 py-3 bg-black/25 border border-white/10 rounded-xl mt-2 select-none">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-toka-flare text-[20px]">person</span>
+                <span className="font-bold text-sm text-cloud-white truncate">@{mongooseUser?.username}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs mt-1 text-cloud-white/60 font-mono">
+                <span>Wallet:</span>
+                <span className="font-bold text-fintech-mint">ZAR {mongooseUser?.walletBalance.toFixed(2)}</span>
+              </div>
+              <button 
+                onClick={logout}
+                className="text-left text-xs font-bold text-red-500 hover:text-red-400 mt-2.5 flex items-center gap-1.5 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">logout</span>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left w-full"
+            >
+              <span className="material-symbols-outlined">login</span>
+              Sign In
+            </button>
+          )}
         </div>
         
         <div className="mt-auto">
-          <a 
-            href="/moderation" 
+          <button 
+            onClick={() => {
+              requireAuth(() => {
+                if (mongooseUser?.role === 'moderator') {
+                  window.location.href = '/moderation';
+                } else {
+                  alert('Access denied. Only moderators can access the Moderation queue.');
+                }
+              });
+            }}
             className="w-full py-3 bg-shaded-canopy border border-white/10 text-cloud-white/70 rounded-xl font-bold hover:bg-white/5 transition-all flex justify-center items-center gap-2 mb-4 text-sm"
           >
             <span className="material-symbols-outlined text-toka-flare text-[20px]">shield</span>
             Moderator Panel
-          </a>
-          <button className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm">
+          </button>
+          <button 
+            onClick={() => requireAuth(() => alert('Upload video flow coming in Phase 5!'))}
+            className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm"
+          >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Create
           </button>
@@ -74,14 +120,20 @@ export default function VideoFeed() {
               <button className="text-cloud-white/60 font-semibold hover:text-cloud-white transition-colors text-sm">Following</button>
               <button className="text-cloud-white font-bold border-b-2 border-toka-flare pb-1 text-sm">For You</button>
             </div>
-            <div className="pointer-events-auto flex items-center gap-3">
-              <button className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 active:scale-95 transition-all">
-                <span className="material-symbols-outlined text-cloud-white text-[20px]">person</span>
-              </button>
-              <button className="px-3 py-1.5 rounded-full border border-white/20 bg-white/5 flex items-center gap-1.5 hover:bg-white/10 active:scale-95 transition-all text-xs font-semibold text-cloud-white">
-                <span className="material-symbols-outlined text-cloud-white text-[16px]">notifications</span>
-                <span>Follow</span>
-              </button>
+            <div className="pointer-events-auto flex items-center gap-3 select-none">
+              {isAuthenticated ? (
+                <div className="flex flex-col items-end gap-0.5 max-w-[80px]">
+                  <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
+                  <span className="text-[9px] font-mono text-fintech-mint font-bold">Z{mongooseUser?.walletBalance}</span>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-3 py-1 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-full text-xs font-bold active:scale-95 transition-all shadow-md"
+                >
+                  Login
+                </button>
+              )}
             </div>
           </header>
 
@@ -128,7 +180,7 @@ export default function VideoFeed() {
 
                     {/* Tip Action (Prominent Toka Flare) */}
                     <button 
-                      onClick={() => setActiveTipVideoId(video.id)}
+                      onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
@@ -216,18 +268,33 @@ export default function VideoFeed() {
               <span className="material-symbols-outlined">explore</span>
               <span className="text-[10px] font-mono">Discover</span>
             </button>
-            <button className="flex flex-col items-center justify-center -mt-6 relative z-10 w-12 h-12 bg-cloud-white rounded-xl shadow-lg border-2 border-midnight-boma flex items-center justify-center active:scale-95 transition-all select-none">
+            <button 
+              onClick={() => requireAuth(() => alert('Upload video flow coming in Phase 5!'))}
+              className="flex flex-col items-center justify-center -mt-6 relative z-10 w-12 h-12 bg-cloud-white rounded-xl shadow-lg border-2 border-midnight-boma active:scale-95 transition-all select-none"
+            >
               <span className="material-symbols-outlined text-midnight-boma font-bold text-[24px]">add</span>
             </button>
-            <button className="flex flex-col items-center justify-center text-cloud-white/60 hover:text-cloud-white transition-all w-14 relative select-none">
+            <button 
+              onClick={() => requireAuth(() => alert('Inbox notifications coming soon!'))}
+              className="flex flex-col items-center justify-center text-cloud-white/60 hover:text-cloud-white transition-all w-14 relative select-none"
+            >
               <span className="material-symbols-outlined">mail</span>
               <span className="text-[10px] font-mono">Inbox</span>
               <span className="absolute top-0 right-3.5 w-2 h-2 bg-toka-flare rounded-full"></span>
             </button>
-            <a href="/moderation" className="flex flex-col items-center justify-center text-cloud-white/60 hover:text-cloud-white transition-all w-14 select-none">
+            <button 
+              onClick={() => {
+                if (isAuthenticated) {
+                  alert(`Profile details:\nUsername: @${mongooseUser?.username}\nRole: ${mongooseUser?.role}\nWallet Balance: ZAR ${mongooseUser?.walletBalance.toFixed(2)}`);
+                } else {
+                  setIsAuthModalOpen(true);
+                }
+              }}
+              className="flex flex-col items-center justify-center text-cloud-white/60 hover:text-cloud-white transition-all w-14 select-none"
+            >
               <span className="material-symbols-outlined">person</span>
-              <span className="text-[10px] font-mono">Profile</span>
-            </a>
+              <span className="text-[10px] font-mono">{isAuthenticated ? 'Me' : 'Profile'}</span>
+            </button>
           </nav>
 
         </div>
@@ -241,6 +308,12 @@ export default function VideoFeed() {
           onClose={() => setActiveTipVideoId(null)}
         />
       )}
+
+      {/* Auth Modal Overlay */}
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
     </div>
   );
