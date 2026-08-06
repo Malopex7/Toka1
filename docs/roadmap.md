@@ -73,12 +73,12 @@
   - [x] State variables: `videos` (Array), `currentIndex` (Number), `isLoading` (Boolean), `activeVideoId` (String).
   - [x] Actions: `fetchNextPage()`, `setCurrentIndex(index)`, `optimisticTip(videoId, amount)`.
   - [x] Implement background pre-fetching logic (fetch next 3 videos to ensure seamless scrolling).
-- [ ] **4.3 The Video Player & Firebase Storage**
-  - [ ] Build a performant HTML5 video player component that auto-plays/pauses based on viewport intersection.
-  - [ ] Configure the player to stream directly using CDN-cached media URLs hosted on **Cloud Storage for Firebase**.
-- [ ] **4.4 The Mobile Feed Layout**
-  - [ ] Build the 100dvh full-screen vertical swipe interface.
-  - [ ] The Feed Overlay: Use absolute positioning to layer Creator Info, "Tip" button (shadcn `<Button>` with a coin icon), and Like button over the video player.
+- [x] **4.3 The Video Player & Firebase Storage**
+  - [x] Build a performant HTML5 video player component that auto-plays/pauses based on viewport intersection.
+  - [x] Configure the player to stream directly using CDN-cached media URLs hosted on **Cloud Storage for Firebase**.
+- [x] **4.4 The Mobile Feed Layout**
+  - [x] Build the 100dvh full-screen vertical swipe interface.
+  - [x] The Feed Overlay: Use absolute positioning to layer Creator Info, "Tip" button (shadcn `<Button>` with a coin icon), and Like button over the video player.
 
 ---
 
