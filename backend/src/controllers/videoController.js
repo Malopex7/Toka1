@@ -22,7 +22,10 @@ export const getFeed = async (req, res, next) => {
       ];
     } else if (req.user.role === 'moderator') {
       // Moderators can see all videos (no vetting status restriction)
-      // query is left empty
+      // Allow filtering by vettingStatus query parameter (e.g. human_review)
+      if (req.query.vettingStatus) {
+        query.vettingStatus = req.query.vettingStatus;
+      }
     } else {
       // Other roles (fans/users) can only see approved videos
       query.vettingStatus = 'approved';
@@ -101,6 +104,36 @@ export const processAiVetting = async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: `Video vetting processed. Status set to: ${vettingStatus}`,
+    data: {
+      video
+    }
+  });
+};
+
+export const updateVettingStatus = async (req, res, next) => {
+  const { id } = req.params;
+  const { vettingStatus } = req.body;
+
+  // 1) Validate input
+  const validStatuses = ['processing', 'ai_review', 'human_review', 'approved', 'rejected'];
+  if (!vettingStatus || !validStatuses.includes(vettingStatus)) {
+    throw new AppError(`Please provide a valid vettingStatus. Must be one of: ${validStatuses.join(', ')}`, 400);
+  }
+
+  // 2) Find video
+  const video = await Video.findById(id);
+  if (!video) {
+    throw new AppError('Video not found', 404);
+  }
+
+  // 3) Update status
+  video.vettingStatus = vettingStatus;
+  await video.save();
+
+  // 4) Return success response
+  res.status(200).json({
+    status: 'success',
+    message: `Video vetting status updated to: ${vettingStatus}`,
     data: {
       video
     }

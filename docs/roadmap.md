@@ -85,14 +85,14 @@
 ## Phase 5: Brand Safety & Moderation Dashboards
 **Goal:** Build the administrative interfaces for the Human-in-the-Loop (HITL) review process.
 
-- [ ] **5.1 Moderator Dashboard (Frontend)**
-  - [ ] Create the `/moderation` route (protected using custom Firebase Admin auth checks).
-  - [ ] Implement a `shadcn/ui` `<DataTable>` to list videos with `vettingStatus === 'human_review'`.
-- [ ] **5.2 Review Interface**
-  - [ ] Build a split-screen view: Video player on the left, AI Risk Flags and transcribed text on the right.
-  - [ ] Add quick-action buttons to "Approve" and "Reject" displaying specific `riskFlags` returned by the AI.
-- [ ] **5.3 Moderation API Links**
-  - [ ] Connect the dashboard buttons to `PATCH /api/videos/:id/vetting-status`.
+- [x] **5.1 Moderator Dashboard (Frontend)**
+  - [x] Create the `/moderation` route (protected using custom Firebase Admin auth checks).
+  - [x] Implement a `shadcn/ui` `<DataTable>` to list videos with `vettingStatus === 'human_review'`.
+- [x] **5.2 Review Interface**
+  - [x] Build a split-screen view: Video player on the left, AI Risk Flags and transcribed text on the right.
+  - [x] Add quick-action buttons to "Approve" and "Reject" displaying specific `riskFlags` returned by the AI.
+- [x] **5.3 Moderation API Links**
+  - [x] Connect the dashboard buttons to `PATCH /api/videos/:id/vetting-status`.
 
 ---
 

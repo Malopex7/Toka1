@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 
 interface VideoPlayerProps {
   src: string;
@@ -11,6 +13,38 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(src);
+
+  // Resolve Firebase Storage paths/URLs dynamically to CDN-cached HTTP download URLs
+  useEffect(() => {
+    const resolveSrc = async () => {
+      if (!src) {
+        setVideoSrc('');
+        return;
+      }
+
+      // Check if this matches a Firebase Storage path
+      if (src.startsWith('gs://') || (!src.startsWith('http://') && !src.startsWith('https://') && src.trim() !== '')) {
+        try {
+          let path = src;
+          if (src.startsWith('gs://')) {
+            const match = src.match(/gs:\/\/[^\/]+\/(.+)/);
+            path = match ? match[1] : src;
+          }
+          const storageRef = ref(storage, path);
+          const downloadUrl = await getDownloadURL(storageRef);
+          setVideoSrc(downloadUrl);
+        } catch (err) {
+          console.error("Error resolving Firebase Storage video URL:", err);
+          setVideoSrc(src); // Fallback to raw src path
+        }
+      } else {
+        setVideoSrc(src);
+      }
+    };
+
+    resolveSrc();
+  }, [src]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -47,7 +81,7 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
         setIsPlaying(false);
       }, 0);
     }
-  }, [isActive, src]);
+  }, [isActive, videoSrc]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -67,7 +101,7 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
     <div className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer select-none" onClick={togglePlay}>
       <video
         ref={videoRef}
-        src={src}
+        src={videoSrc}
         poster={poster}
         className="w-full h-full object-cover"
         loop
