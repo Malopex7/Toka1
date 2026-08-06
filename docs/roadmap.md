@@ -49,9 +49,9 @@
 - [x] **3.2 The Video Feed API**
   - [x] `GET /api/feed` - Return paginated videos.
   - [x] Implement query logic: return ONLY `vettingStatus: 'approved'` if the requester is a brand.
-- [ ] **3.3 The Wallet & Tipping API**
-  - [ ] `POST /api/transactions/tip` - Mock a mobile money transaction (e.g., Paystack/M-Pesa) updating the sender and receiver wallet balances atomically.
-  - [ ] Wrap the transaction logic in a Mongoose session/transaction to ensure atomic wallet balance updates.
+- [x] **3.3 The Wallet & Tipping API**
+  - [x] `POST /api/transactions/tip` - Mobile money transaction Paystack updating the sender and receiver wallet balances atomically.
+  - [x] Wrap the transaction logic in a Mongoose session/transaction to ensure atomic wallet balance updates.
 - [ ] **3.4 Vetting Webhook API**
   - [ ] `POST /api/webhooks/ai-vetting` - Endpoint to receive updates from the AI transcription/NLP service.
   - [ ] Implement automatic vetting status transition based on `aiConfidenceScore` thresholds:
