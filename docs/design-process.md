@@ -60,26 +60,28 @@ Map the computed values into semantic Tailwind v4 tokens:
 :root {
   --radius: 0.625rem;
 
-  /* Brand Palette Swatches */
-  --trapped-darkness: oklch(0.212 0.035 248.2); /* Deep Slate #0B1A28 */
-  --nocturne: oklch(0.400 0.040 238.3);         /* Muted Surface #334B5B */
-  --super-rare-jade: oklch(0.708 0.122 183.8);  /* Primary Brand #18B9A9 */
-  --master-nacho: oklch(0.813 0.165 75.1);      /* Warning/Accent #FFB01F */
-  --white: oklch(0.997 0.001 286.4);             /* Text #FEFEFF */
+  /* Toka Brand Palette Swatches */
+  --midnight-boma: oklch(0.130 0.005 277.0);   /* Deep immersive background #09090B */
+  --shaded-canopy: oklch(0.200 0.006 277.0);   /* Elevated surfaces & menus #18181B */
+  --toka-flare: oklch(0.630 0.230 35.0);       /* Primary Brand Energy #FF4F00 */
+  --fintech-mint: oklch(0.700 0.160 160.0);    /* Tipping & Brand Safety #10B981 */
+  --cloud-white: oklch(0.985 0.000 0.0);       /* Crisp Text #FAFAFA */
 
   /* Light Theme Mapping */
-  --background: var(--white);
-  --foreground: var(--trapped-darkness);
-  --primary: var(--super-rare-jade);
-  --secondary: var(--master-nacho);
+  --background: var(--cloud-white);
+  --foreground: var(--midnight-boma);
+  --primary: var(--toka-flare);
+  --secondary: var(--fintech-mint);
+  --muted: var(--shaded-canopy);
 }
 
 .dark {
-  /* Dark Theme Mapping */
-  --background: var(--trapped-darkness);
-  --foreground: var(--white);
-  --primary: var(--super-rare-jade);
-  --secondary: var(--master-nacho);
+  /* Dark Theme Mapping (Toka defaults to Dark Mode for the video feed) */
+  --background: var(--midnight-boma);
+  --foreground: var(--cloud-white);
+  --primary: var(--toka-flare);
+  --secondary: var(--fintech-mint);
+  --muted: var(--shaded-canopy);
 }
 ```
 
@@ -92,13 +94,10 @@ Use Stitch MCP to prototype, generate, and validate high-fidelity screens before
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 1. Initialize Stitch Project:  StitchMCP/create_project                      │
-├─────────────────────────────────────────────────────────────────────────────┤
 │ 2. Upload Design System:       StitchMCP/upload_design_md                   │
 │                                StitchMCP/create_design_system_from_design_md│
-├─────────────────────────────────────────────────────────────────────────────┤
 │ 3. Generate Views from Text:   StitchMCP/generate_screen_from_text          │
 │    (Provide rich high-density layout prompts)                               │
-├─────────────────────────────────────────────────────────────────────────────┤
 │ 4. Variant & Contrast Check:   StitchMCP/generate_variants                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -109,20 +108,20 @@ Use Stitch MCP to prototype, generate, and validate high-fidelity screens before
 
 When replicating a design mockup image or Stitch output, perform a 5-point visual audit:
 
-1. **Layout Grid & Pane Ratios**: Measure relative widths (e.g. Far-Left Narrow Icon Sidebar `w-16`, Pane 1 `w-80`, Pane 2 `flex-1`, Pane 3 `w-88`).
-2. **Typography Contrast**: Contrast serif header fonts (`font-serif` for titles/names) against monospace text (`font-mono` for IDs, timestamps, and status tags).
+1. **Layout Grid & Pane Ratios**: Measure relative widths (e.g. Vertical Video Feed player `w-full max-w-md`, Overlay Info Panels, Admin Moderation Split View: Player pane `w-1/2`, Review actions/risk-flags pane `w-1/2`).
+2. **Typography Contrast**: Contrast sans-serif creator/title fonts (`font-sans` for main content) against monospace text (`font-mono` for transaction amounts, timestamps, and confidence scores).
 3. **Pill & Badge Micro-States**:
-   - `ACTIVE` -> Jade border & text (`#18B9A9`).
-   - `HUMAN TAKEOVER` -> Nacho Orange filled badge (`#FFB01F`) with dark text.
-   - `WAITING PAYMENT` -> Muted slate background.
-4. **Primary CTAs**: Ensure primary action buttons (e.g., *Send Paystack Payment Link*) use full-contrast brand accent colors with prominent icon badges.
+   - `APPROVED / BRAND SAFE` -> Mint green filled badge (`#10B981`) with dark/white text.
+   - `HUMAN REVIEW` -> Warning orange filled badge (`#FFB01F`) with dark text.
+   - `REJECTED` -> Muted red background.
+4. **Primary CTAs**: Ensure primary action buttons (e.g., *Tip 10 ZAR*) use full-contrast brand accent colors (`Toka Flare`) with prominent coin/cash icons.
 5. **Interactive Controls**: Build live state switches (e.g., Human Takeover toggle button) with smooth position transitions.
 
 ---
 
 ## 🚀 Phase 5: Code Implementation & Build Verification
 
-1. **Zustand 5 State Store**: Initialize store (`src/store/use-chat-store.ts`) with mock data matching the mockup to allow instant visual rendering.
+1. **Zustand 5 State Store**: Initialize store (`src/store/useFeedStore.ts`) with mock data matching the mockup to allow instant visual rendering.
 2. **React 19 Component Assembly**: Build clean, un-nested functional components passing `ref` directly as a prop.
 3. **Build Check Verification**: Always run production compilation (`npm run build` or `npx tsc --noEmit`) to ensure 0 TypeScript or Next.js build errors before concluding.
 
@@ -130,12 +129,12 @@ When replicating a design mockup image or Stitch output, perform a 5-point visua
 
 ## 📋 Copy-Paste Checklist for Future Projects
 
-- [ ] Write `docs/prompt.md` defining Next.js 16, React 19, Tailwind v4, and Zustand 5 stack rules.
-- [ ] Convert hex brand colors to OKLCH using Node.js script.
-- [ ] Write `@theme` OKLCH color definitions into `src/app/globals.css`.
-- [ ] Document design tokens in `docs/DESIGN.md`.
-- [ ] Register design system in Stitch MCP (`create_project` -> `upload_design_md` -> `create_design_system_from_design_md`).
-- [ ] Generate high-fidelity screen prototypes with `generate_screen_from_text`.
+- [x] Write `docs/prompt.md` defining Next.js 16, React 19, Tailwind v4, and Zustand 5 stack rules.
+- [x] Convert hex brand colors to OKLCH using Node.js script.
+- [x] Write `@theme` OKLCH color definitions into `src/app/globals.css`.
+- [x] Document design tokens in `docs/DESIGN.md`.
+- [x] Register design system in Stitch MCP (`create_project` -> `upload_design_md` -> `create_design_system_from_design_md`).
+- [x] Generate high-fidelity screen prototypes with `generate_screen_from_text`.
 - [ ] Scaffold Zustand 5 stores with initial mock data matching mockup.
-- [ ] Replicate UI components to the tee (Narrow Icon Sidebar, Pane Layouts, Micro Badges, CTAs).
+- [ ] Replicate UI components to the tee
 - [ ] Verify zero errors with `npm run build`.

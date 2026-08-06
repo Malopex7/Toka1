@@ -20,7 +20,7 @@
   - [x] Install and configure Tailwind CSS v4.
   - [x] Initialize `shadcn/ui` (alert-dialog, button installed) and configure the default theme (dark mode preferred).
   - [x] Install `zustand` for state management.
-  - [ ] **[NEW - Firebase Integration]** Install `firebase` client SDK and initialize the Firebase app configuration.
+  - [x] **[NEW - Firebase Integration]** Install `firebase` client SDK and initialize the Firebase app configuration.
 
 ---
 

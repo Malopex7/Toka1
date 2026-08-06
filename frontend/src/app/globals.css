@@ -41,28 +41,47 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --spacing-gutter-mobile: 16px;
+  --spacing-gutter-desktop: 24px;
+  --spacing-interactive-gap: 20px;
+  --spacing-safe-area-bottom: 32px;
+  --spacing-unit: 4px;
+  --color-midnight-boma: var(--midnight-boma);
+  --color-shaded-canopy: var(--shaded-canopy);
+  --color-toka-flare: var(--toka-flare);
+  --color-fintech-mint: var(--fintech-mint);
+  --color-cloud-white: var(--cloud-white);
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+
+  /* Toka Brand Palette Swatches */
+  --midnight-boma: oklch(0.130 0.005 277.0);   /* Deep immersive background #09090B */
+  --shaded-canopy: oklch(0.200 0.006 277.0);   /* Elevated surfaces & menus #18181B */
+  --toka-flare: oklch(0.630 0.230 35.0);       /* Primary Brand Energy #FF4F00 */
+  --fintech-mint: oklch(0.700 0.160 160.0);    /* Tipping & Brand Safety #10B981 */
+  --cloud-white: oklch(0.985 0.000 0.0);       /* Crisp Text #FAFAFA */
+
+  /* Light Theme Mapping */
+  --background: var(--cloud-white);
+  --foreground: var(--midnight-boma);
+  --card: var(--cloud-white);
+  --card-foreground: var(--midnight-boma);
+  --popover: var(--cloud-white);
+  --popover-foreground: var(--midnight-boma);
+  --primary: var(--toka-flare);
+  --primary-foreground: var(--cloud-white);
+  --secondary: var(--fintech-mint);
+  --secondary-foreground: var(--cloud-white);
+  --muted: oklch(0.962 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: oklch(0.962 0 0);
+  --accent-foreground: var(--midnight-boma);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--toka-flare);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -79,35 +98,36 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  /* Dark Theme Mapping (Toka defaults to Dark Mode for the video feed) */
+  --background: var(--midnight-boma);
+  --foreground: var(--cloud-white);
+  --card: var(--shaded-canopy);
+  --card-foreground: var(--cloud-white);
+  --popover: var(--shaded-canopy);
+  --popover-foreground: var(--cloud-white);
+  --primary: var(--toka-flare);
+  --primary-foreground: var(--cloud-white);
+  --secondary: var(--fintech-mint);
+  --secondary-foreground: var(--cloud-white);
+  --muted: var(--shaded-canopy);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: var(--shaded-canopy);
+  --accent-foreground: var(--cloud-white);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: var(--toka-flare);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar: var(--shaded-canopy);
+  --sidebar-foreground: var(--cloud-white);
   --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-primary-foreground: var(--cloud-white);
+  --sidebar-accent: var(--shaded-canopy);
+  --sidebar-accent-foreground: var(--cloud-white);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
@@ -119,4 +139,20 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+  will-change: transform;
 }
