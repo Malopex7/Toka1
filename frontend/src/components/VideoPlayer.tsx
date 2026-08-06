@@ -43,7 +43,9 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
       if (video.currentTime > 0) {
         video.currentTime = 0;
       }
-      setIsPlaying(false);
+      setTimeout(() => {
+        setIsPlaying(false);
+      }, 0);
     }
   }, [isActive, src]);
 

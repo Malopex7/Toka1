@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useFeedStore } from '@/store/useFeedStore';
 import VideoPlayer from '@/components/VideoPlayer';
 
@@ -25,10 +26,10 @@ export default function ModerationQueue() {
       {/* Top Navbar */}
       <header className="sticky top-0 w-full border-b border-white/10 bg-shaded-canopy flex justify-between items-center px-6 h-16 z-50 select-none">
         <div className="flex items-center gap-4">
-          <a href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
+          <Link href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             Back to Feed
-          </a>
+          </Link>
           <h1 className="text-base font-bold text-toka-flare tracking-tight border-l border-white/15 pl-4">
             Toka Moderator Queue
           </h1>
@@ -188,10 +189,10 @@ export default function ModerationQueue() {
                       <span className="text-[10px] font-mono text-cloud-white/40">Auto-transcribed</span>
                     </h4>
                     <div className="flex-1 bg-black/40 border border-white/10 p-4 rounded-xl font-mono text-[11px] leading-relaxed text-cloud-white/70 overflow-y-auto">
-                      <p className="mb-2">00:00 - "Hey guys, welcome back to another late night stream."</p>
-                      <p className="mb-2">00:08 - "Just chilling here, mixing up some drinks for the weekend."</p>
-                      <p className="mb-2">00:15 - "This new track is absolute <span className="bg-yellow-500/20 text-yellow-500 px-1 rounded font-bold border-b border-yellow-500/50">bullshit</span>, I can't even lie."</p>
-                      <p className="mb-2">00:22 - "Anyway, grab a <span className="bg-red-500/20 text-red-500 px-1 rounded font-bold border-b border-red-500/50">beer</span> and let's get into it."</p>
+                      <p className="mb-2">{"00:00 - \"Hey guys, welcome back to another late night stream.\""}</p>
+                      <p className="mb-2">{"00:08 - \"Just chilling here, mixing up some drinks for the weekend.\""}</p>
+                      <p className="mb-2">{"00:15 - \"This new track is absolute "}<span className="bg-yellow-500/20 text-yellow-500 px-1 rounded font-bold border-b border-yellow-500/50">bullshit</span>{", I can't even lie.\""}</p>
+                      <p className="mb-2">{"00:22 - \"Anyway, grab a "}<span className="bg-red-500/20 text-red-500 px-1 rounded font-bold border-b border-red-500/50">beer</span>{" and let's get into it.\""}</p>
                       <p className="mb-2 text-cloud-white/30">00:30 - [Music playing, unintelligible chatter]</p>
                     </div>
                   </div>
