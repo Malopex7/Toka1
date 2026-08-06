@@ -46,9 +46,9 @@
   - [x] Set up Firebase Admin SDK in the `/backend`.
   - [x] Implement Express middleware to verify incoming Firebase ID Tokens (`jwt`) via `firebase-admin`.
   - [x] Create role-based authorization middleware using the Mongoose user profile (`isBrand`, `isModerator`, etc.).
-- [ ] **3.2 The Video Feed API**
-  - [ ] `GET /api/feed` - Return paginated videos.
-  - [ ] Implement query logic: return ONLY `vettingStatus: 'approved'` if the requester is a brand.
+- [x] **3.2 The Video Feed API**
+  - [x] `GET /api/feed` - Return paginated videos.
+  - [x] Implement query logic: return ONLY `vettingStatus: 'approved'` if the requester is a brand.
 - [ ] **3.3 The Wallet & Tipping API**
   - [ ] `POST /api/transactions/tip` - Mock a mobile money transaction (e.g., Paystack/M-Pesa) updating the sender and receiver wallet balances atomically.
   - [ ] Wrap the transaction logic in a Mongoose session/transaction to ensure atomic wallet balance updates.
