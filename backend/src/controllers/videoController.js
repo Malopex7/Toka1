@@ -61,3 +61,48 @@ export const getFeed = async (req, res, next) => {
     }
   });
 };
+
+export const processAiVetting = async (req, res, next) => {
+  const { videoId, aiConfidenceScore, riskFlags } = req.body;
+
+  // 1) Validation checks
+  if (!videoId || aiConfidenceScore === undefined) {
+    throw new AppError('Please provide videoId and aiConfidenceScore.', 400);
+  }
+
+  const score = parseFloat(aiConfidenceScore);
+  if (isNaN(score) || score < 0 || score > 100) {
+    throw new AppError('aiConfidenceScore must be a number between 0 and 100.', 400);
+  }
+
+  const flags = Array.isArray(riskFlags) ? riskFlags : [];
+
+  // 2) Find the video
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new AppError('Video not found.', 404);
+  }
+
+  // 3) Apply threshold rules for vettingStatus
+  let vettingStatus = 'human_review';
+  if (score < 70) {
+    vettingStatus = 'rejected';
+  } else if (score >= 95) {
+    vettingStatus = 'approved';
+  }
+
+  // 4) Update video fields and save
+  video.aiConfidenceScore = score;
+  video.riskFlags = flags;
+  video.vettingStatus = vettingStatus;
+  await video.save();
+
+  // 5) Return response
+  res.status(200).json({
+    status: 'success',
+    message: `Video vetting processed. Status set to: ${vettingStatus}`,
+    data: {
+      video
+    }
+  });
+};

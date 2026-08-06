@@ -52,9 +52,9 @@
 - [x] **3.3 The Wallet & Tipping API**
   - [x] `POST /api/transactions/tip` - Mobile money transaction Paystack updating the sender and receiver wallet balances atomically.
   - [x] Wrap the transaction logic in a Mongoose session/transaction to ensure atomic wallet balance updates.
-- [ ] **3.4 Vetting Webhook API**
-  - [ ] `POST /api/webhooks/ai-vetting` - Endpoint to receive updates from the AI transcription/NLP service.
-  - [ ] Implement automatic vetting status transition based on `aiConfidenceScore` thresholds:
+- [x] **3.4 Vetting Webhook API**
+  - [x] `POST /api/webhooks/ai-vetting` - Endpoint to receive updates from the AI transcription/NLP service.
+  - [x] Implement automatic vetting status transition based on `aiConfidenceScore` thresholds:
     - Score < 70: Set status to `'rejected'`.
     - Score 70 - 94: Set status to `'human_review'`.
     - Score >= 95: Set status to `'approved'`.
