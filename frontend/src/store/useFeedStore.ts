@@ -1,4 +1,6 @@
+"use client";
 import { create } from 'zustand';
+import { auth } from '@/lib/firebase';
 
 export interface Video {
   id: string;
@@ -25,11 +27,15 @@ interface FeedStore {
   currentIndex: number;
   activeVideoId: string;
   isLoading: boolean;
+  currentPage: number;
+  hasNextPage: boolean;
   userWalletBalance: number;
+  setWalletBalance: (balance: number) => void;
   setCurrentIndex: (index: number) => void;
   optimisticTip: (videoId: string, amount: number) => void;
   updateVideoVetting: (videoId: string, status: Video['vettingStatus']) => void;
-  fetchNextPage: () => void;
+  fetchNextPage: () => Promise<void>;
+  resetFeed: () => void;
 }
 
 const initialVideos: Video[] = [
@@ -73,16 +79,32 @@ const initialVideos: Video[] = [
   }
 ];
 
-export const useFeedStore = create<FeedStore>((set) => ({
+export const useFeedStore = create<FeedStore>((set, get) => ({
   videos: initialVideos,
   currentIndex: 0,
   activeVideoId: initialVideos[0]?.id || '',
   isLoading: false,
-  userWalletBalance: 500, // Starting mockup balance in ZAR
-  setCurrentIndex: (index) => set((state) => ({
-    currentIndex: index,
-    activeVideoId: state.videos[index]?.id || ''
-  })),
+  currentPage: 1,
+  hasNextPage: true,
+  userWalletBalance: 100, // Starting balance fallback
+
+  setWalletBalance: (balance) => set({ userWalletBalance: balance }),
+
+  setCurrentIndex: (index) => {
+    const { videos, hasNextPage, isLoading, fetchNextPage } = get();
+    if (index < 0 || index >= videos.length) return;
+    
+    set({
+      currentIndex: index,
+      activeVideoId: videos[index]?.id || ''
+    });
+
+    // Background prefetching: if user is within 3 videos of the end of the feed, pre-fetch next page
+    if (index >= videos.length - 3 && hasNextPage && !isLoading) {
+      fetchNextPage();
+    }
+  },
+
   optimisticTip: (videoId, amount) => set((state) => {
     if (state.userWalletBalance < amount) return {};
     return {
@@ -92,12 +114,101 @@ export const useFeedStore = create<FeedStore>((set) => ({
       )
     };
   }),
+
   updateVideoVetting: (videoId, status) => set((state) => ({
     videos: state.videos.map((vid) =>
       vid.id === videoId ? { ...vid, vettingStatus: status } : vid
     )
   })),
-  fetchNextPage: () => {
-    // Add additional mock videos or prefetch logic
-  }
+
+  fetchNextPage: async () => {
+    const { currentPage, videos, isLoading, hasNextPage } = get();
+    if (isLoading || !hasNextPage) return;
+
+    set({ isLoading: true });
+
+    try {
+      let headers: HeadersInit = {};
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        const token = await firebaseUser.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/feed?page=${currentPage}&limit=5`,
+        { headers }
+      );
+      
+      if (!res.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        const newMongooseVideos = data.data.videos;
+        
+        // Map backend response models to frontend expected schema
+        const mappedVideos: Video[] = newMongooseVideos.map((video: any) => ({
+          id: video._id,
+          creatorId: video.creatorId?._id || video.creatorId,
+          creatorName: video.creatorId?.username ? `@${video.creatorId.username}` : '@unknown',
+          creatorAvatar: video.creatorId?.role === 'moderator' ? '/images/moderator-avatar.png' : '/images/creator-avatar.png',
+          videoUrl: video.videoUrl,
+          title: video.title,
+          description: video.title + ' #toka #creator',
+          likes: Math.floor(Math.random() * 1000) + 120,
+          tips: 0,
+          shares: Math.floor(Math.random() * 200) + 15,
+          vettingStatus: video.vettingStatus,
+          aiConfidenceScore: video.aiConfidenceScore || 0,
+          riskFlags: video.riskFlags || [],
+          isVerified: video.creatorId?.isBrandSafeVerified || false,
+          audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
+          audioArt: '/images/audio-album.jpg',
+          poster: '/images/dance-video.png'
+        }));
+
+        if (mappedVideos.length === 0 && currentPage === 1) {
+          // If no videos are present in the MongoDB database, fall back to initial mock videos for UI testing
+          set({
+            videos: initialVideos,
+            currentPage: 2,
+            hasNextPage: false,
+            activeVideoId: initialVideos[0]?.id || ''
+          });
+        } else {
+          set({
+            videos: currentPage === 1 ? mappedVideos : [...videos, ...mappedVideos],
+            currentPage: currentPage + 1,
+            hasNextPage: data.pagination.hasNextPage,
+            activeVideoId: currentPage === 1 ? (mappedVideos[0]?.id || '') : get().activeVideoId
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching video feed page:', err);
+      // Fallback on total failure for first page load
+      if (currentPage === 1 && videos.length === 0) {
+        set({
+          videos: initialVideos,
+          currentPage: 2,
+          hasNextPage: false,
+          activeVideoId: initialVideos[0]?.id || ''
+        });
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  resetFeed: () => set({
+    videos: [],
+    currentIndex: 0,
+    activeVideoId: '',
+    currentPage: 1,
+    hasNextPage: true,
+    isLoading: false
+  })
 }));

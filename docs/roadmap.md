@@ -68,11 +68,11 @@
   - [x] Build login/signup forms in Next.js using `shadcn/ui`.
   - [x] Connect forms to Firebase Auth Client SDK (Email/Password, Google Sign-in).
   - [x] Sync authenticated Firebase users with the Mongoose User profiles in the database.
-- [ ] **4.2 Zustand Store Setup**
-  - [ ] Create `useFeedStore.ts` to manage the active video feed and user session.
-  - [ ] State variables: `videos` (Array), `currentIndex` (Number), `isLoading` (Boolean), `activeVideoId` (String).
-  - [ ] Actions: `fetchNextPage()`, `setCurrentIndex(index)`, `optimisticTip(videoId, amount)`.
-  - [ ] Implement background pre-fetching logic (fetch next 3 videos to ensure seamless scrolling).
+- [x] **4.2 Zustand Store Setup**
+  - [x] Create `useFeedStore.ts` to manage the active video feed and user session.
+  - [x] State variables: `videos` (Array), `currentIndex` (Number), `isLoading` (Boolean), `activeVideoId` (String).
+  - [x] Actions: `fetchNextPage()`, `setCurrentIndex(index)`, `optimisticTip(videoId, amount)`.
+  - [x] Implement background pre-fetching logic (fetch next 3 videos to ensure seamless scrolling).
 - [ ] **4.3 The Video Player & Firebase Storage**
   - [ ] Build a performant HTML5 video player component that auto-plays/pauses based on viewport intersection.
   - [ ] Configure the player to stream directly using CDN-cached media URLs hosted on **Cloud Storage for Firebase**.

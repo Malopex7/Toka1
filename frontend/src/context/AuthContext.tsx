@@ -10,6 +10,7 @@ import {
   GoogleAuthProvider
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useFeedStore } from '@/store/useFeedStore';
 
 export interface MongooseUser {
   id: string;
@@ -34,6 +35,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   completeProfileSetup: (username: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,6 +89,18 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     return () => unsubscribe();
   }, []);
+
+  // Sync user wallet balance and reload role-filtered feed on authentication status change
+  useEffect(() => {
+    if (mongooseUser) {
+      useFeedStore.getState().setWalletBalance(mongooseUser.walletBalance);
+    } else {
+      useFeedStore.getState().setWalletBalance(100);
+    }
+    // Reset feed and load first page with correct session filters
+    useFeedStore.getState().resetFeed();
+    useFeedStore.getState().fetchNextPage();
+  }, [mongooseUser]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -170,6 +184,24 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const refreshProfile = async () => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setMongooseUser(data.data.user);
+      }
+    } catch (err) {
+      console.error('Failed to refresh user profile:', err);
+    }
+  };
+
   const isAuthenticated = !!firebaseUser && !!mongooseUser;
 
   return (
@@ -183,7 +215,8 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       signup,
       loginWithGoogle,
       completeProfileSetup,
-      logout
+      logout,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>

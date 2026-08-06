@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { useFeedStore } from '@/store/useFeedStore';
+import { useAuth } from '@/context/AuthContext';
 
 interface TipModalProps {
   videoId: string;
@@ -10,14 +11,21 @@ interface TipModalProps {
 }
 
 export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
-  const { optimisticTip, userWalletBalance } = useFeedStore();
+  const { videos, optimisticTip, userWalletBalance } = useFeedStore();
+  const { firebaseUser, refreshProfile } = useAuth();
+  
   const [selectedAmount, setSelectedAmount] = useState<number | null>(10);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleTip = () => {
+  // Retrieve creator ID from the video object to act as the receiverId
+  const video = videos.find((v) => v.id === videoId);
+  const receiverId = video?.creatorId;
+
+  const handleTip = async () => {
     const amount = selectedAmount !== null ? selectedAmount : parseFloat(customAmount);
     if (isNaN(amount) || amount <= 0) return;
 
@@ -26,12 +34,53 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
       return;
     }
 
-    optimisticTip(videoId, amount);
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
-      onClose();
-    }, 1500);
+    if (!firebaseUser) {
+      alert("Please sign in to send a tip.");
+      return;
+    }
+
+    if (!receiverId) {
+      alert("Could not identify creator for this video.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions/tip`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          receiverId,
+          videoId,
+          amount
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'success') {
+        // optimistically update local UI states
+        optimisticTip(videoId, amount);
+        setSuccess(true);
+        // refresh real profile balance
+        await refreshProfile();
+        
+        setTimeout(() => {
+          setSuccess(false);
+          onClose();
+        }, 1500);
+      } else {
+        alert(data.message || 'Tipping failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'An error occurred while sending the tip.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const presetAmounts = [5, 10, 20, 50];
@@ -109,9 +158,14 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
             {/* Send CTA */}
             <button
               onClick={handleTip}
-              className="w-full py-4 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] mt-2 flex justify-center items-center gap-2"
+              disabled={loading}
+              className="w-full py-4 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] mt-2 flex justify-center items-center gap-2 disabled:opacity-50"
             >
-              Send Tip via Mobile Money
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-cloud-white border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                'Send Tip via Mobile Money'
+              )}
             </button>
           </div>
         )}
