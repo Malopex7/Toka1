@@ -1,20 +1,20 @@
 ---
-name: Modern Frontend Architecture (Next.js 15 & React 19)
-description: Engineering standards, versioning, and best practices for Next.js 15, React 19, and Zustand 5.
+name: Modern Frontend Architecture (Next.js 16+ & React 19)
+description: Engineering standards, versioning, and best practices for Next.js 16+, React 19, and Zustand 5.
 ---
 
-# Skill: Modern Frontend Architecture (Next.js 15 & React 19)
+# Skill: Modern Frontend Architecture (Next.js 16+ & React 19)
 
 ## Context & Versioning
-- Framework: Next.js 15+ (App Router enforced)
+- Framework: Next.js 16+ (App Router enforced)
 - Library: React 19+ (Stable)
 - State Management: Zustand 5+
 - Compiler: TypeScript Strict Mode Enforced
 
 ## Engineering Standards
 
-### 1. Next.js 15 Asynchronous Request APIs
-In Next.js 15, dynamic APIs like `params`, `searchParams`, `cookies()`, and `headers()` are asynchronous promises. Always await them before accessing properties.
+### 1. Next.js 16+ Asynchronous Request APIs
+In Next.js 16+, dynamic APIs like `params`, `searchParams`, `cookies()`, and `headers()` are asynchronous promises. Always await them before accessing properties.
 ```tsx
 // Correct Implementation
 interface PageProps {
@@ -29,7 +29,7 @@ export default async function Page({ params }: PageProps) {
 
 ### 2. React 19 Forms & Server Actions
 - Use native React 19 hooks: `useActionState` (replacing the deprecated `useFormState`) and `useFormStatus`.
-- Prefer the built-in Next.js 15 `<Form>` component from `next/form` for prefetching search mutations.
+- Prefer the built-in Next.js 16+ `<Form>` component from `next/form` for prefetching search mutations.
 - Keep Server Actions typed and secure; validate payloads using Zod inside actions.
 
 ### 3. Client vs. Server Components

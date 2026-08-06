@@ -4,6 +4,11 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { GridFSBucket } from 'mongodb';
 
+// Import Mongoose Models
+import User from './models/User.js';
+import Video from './models/Video.js';
+import Transaction from './models/Transaction.js';
+
 import { errorHandler, AppError } from './middlewares/error.js';
 
 dotenv.config();
