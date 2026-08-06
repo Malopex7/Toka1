@@ -2,6 +2,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import helmet from 'helmet';
 import { GridFSBucket } from 'mongodb';
 
 // Import Mongoose Models
@@ -9,10 +11,14 @@ import User from './models/User.js';
 import Video from './models/Video.js';
 import Transaction from './models/Transaction.js';
 
+import './config/firebase.js';
 import { errorHandler, AppError } from './middlewares/error.js';
 
 dotenv.config();
 const app = express();
+
+app.use(helmet());
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
 app.use(express.json());
 
 // Connect to MongoDB (use MONGO_URI from .env)
