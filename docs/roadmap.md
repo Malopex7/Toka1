@@ -42,10 +42,10 @@
 ## Phase 3: Core Backend API Development & Authentication
 **Goal:** Build the essential RESTful endpoints to serve the frontend and handle logic.
 
-- [ ] **3.1 Authentication & Authorization (Firebase offloaded)**
-  - [ ] Set up Firebase Admin SDK in the `/backend`.
-  - [ ] Implement Express middleware to verify incoming Firebase ID Tokens (`jwt`) via `firebase-admin`.
-  - [ ] Create role-based authorization middleware using the Mongoose user profile (`isBrand`, `isModerator`, etc.).
+- [x] **3.1 Authentication & Authorization (Firebase offloaded)**
+  - [x] Set up Firebase Admin SDK in the `/backend`.
+  - [x] Implement Express middleware to verify incoming Firebase ID Tokens (`jwt`) via `firebase-admin`.
+  - [x] Create role-based authorization middleware using the Mongoose user profile (`isBrand`, `isModerator`, etc.).
 - [ ] **3.2 The Video Feed API**
   - [ ] `GET /api/feed` - Return paginated videos.
   - [ ] Implement query logic: return ONLY `vettingStatus: 'approved'` if the requester is a brand.

@@ -13,6 +13,8 @@ import Transaction from './models/Transaction.js';
 
 import './config/firebase.js';
 import { errorHandler, AppError } from './middlewares/error.js';
+import { protect, requireBrand } from './middlewares/auth.js';
+import videoRoutes from './routes/videoRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -35,6 +37,17 @@ mongoose.connect(process.env.MONGO_URI)
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working' });
 });
+
+// Auth Test routes
+app.get('/api/test/auth', protect, (req, res) => {
+  res.json({ message: 'Authenticated successfully', user: req.user });
+});
+
+app.get('/api/test/brand', protect, requireBrand, (req, res) => {
+  res.json({ message: 'Authorized as brand successfully', user: req.user });
+});
+
+app.use('/api', videoRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {

@@ -1,0 +1,63 @@
+import Video from '../models/Video.js';
+import { AppError } from '../middlewares/error.js';
+
+export const getFeed = async (req, res, next) => {
+  // 1) Parse and sanitize query parameters for pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
+
+  // 2) Build dynamic query filter based on the user's role
+  const query = {};
+
+  if (req.user) {
+    if (req.user.role === 'brand') {
+      // Brands can ONLY see approved videos
+      query.vettingStatus = 'approved';
+    } else if (req.user.role === 'creator') {
+      // Creators can see approved videos OR their own videos (regardless of vetting status)
+      query.$or = [
+        { vettingStatus: 'approved' },
+        { creatorId: req.user._id }
+      ];
+    } else if (req.user.role === 'moderator') {
+      // Moderators can see all videos (no vetting status restriction)
+      // query is left empty
+    } else {
+      // Other roles (fans/users) can only see approved videos
+      query.vettingStatus = 'approved';
+    }
+  } else {
+    // Guest (unauthenticated) users can only see approved videos
+    query.vettingStatus = 'approved';
+  }
+
+  // 3) Execute queries (getting documents and total counts for metadata)
+  const [videos, totalVideos] = await Promise.all([
+    Video.find(query)
+      .populate('creatorId', 'username role isBrandSafeVerified')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Video.countDocuments(query)
+  ]);
+
+  const totalPages = Math.ceil(totalVideos / limit);
+
+  // 4) Return paginated response
+  res.status(200).json({
+    status: 'success',
+    results: videos.length,
+    pagination: {
+      page,
+      limit,
+      totalVideos,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    },
+    data: {
+      videos
+    }
+  });
+};
