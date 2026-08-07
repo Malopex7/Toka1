@@ -91,9 +91,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         return;
       }
 
-      const token = await getToken(messaging, {
-        vapidKey: 'BPTwssewY_iylmvXqxiweeFiexPFJID0u8EixJiaggUD8EW4Quu7wADFI-dk9NzeF4Q4v_f6MwqmAaQVs5P-PrM'
-      });
+      const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+      if (!vapidKey) {
+        console.log('[FCM] NEXT_PUBLIC_FIREBASE_VAPID_KEY is not configured in .env.local. Skipping push registration.');
+        return;
+      }
+
+      const token = await getToken(messaging, { vapidKey });
 
       if (token) {
         console.log('[FCM] Token retrieved:', token.substring(0, 15) + '...');
