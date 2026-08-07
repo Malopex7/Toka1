@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useRef } from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
 
@@ -93,86 +91,74 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setErrorMessage(null);
 
     try {
-      // 1) Initialize upload directly to Cloud Storage for Firebase (bypasses server)
       const fileToUpload = compressedFile;
       const fileExtension = selectedFile.name.split('.').pop() || 'mp4';
-      const storageRef = ref(storage, `videos/${Date.now()}_upload.${fileExtension}`);
-      
-      const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+      const filename = `${Date.now()}_upload.${fileExtension}`;
 
-      // Set a fallback timeout (e.g., 10 seconds of no progress triggers an error)
-      let lastBytesTransferred = 0;
-      const timeoutCheck = setInterval(() => {
-        if (uploadTask.snapshot.bytesTransferred === lastBytesTransferred && uploadTask.snapshot.state === 'running') {
-          console.warn('[FCM Upload] Upload connection appears hung at 0% progress.');
+      // Create FormData payload
+      const formData = new FormData();
+      formData.append('video', fileToUpload, filename);
+      formData.append('title', title);
+      formData.append('tier', tier);
+
+      const token = await firebaseUser.getIdToken();
+
+      // We use XMLHttpRequest so we can track upload progress in React
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${process.env.NEXT_PUBLIC_API_URL}/api/videos/upload`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      // Track progress
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          console.log(`[GridFS Upload] Progress: ${percentComplete}%`);
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      // Handle completion
+      xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.status === 'success') {
+              setSuccessMessage('Video successfully uploaded! AI brand safety review started in background.');
+              useFeedStore.getState().resetFeed();
+              useFeedStore.getState().fetchNextPage();
+
+              setTimeout(() => {
+                handleClose();
+              }, 3000);
+            } else {
+              setErrorMessage(data.message || 'Failed to register video in database.');
+            }
+          } catch (e) {
+            setErrorMessage('Server returned an invalid response.');
+          }
         } else {
-          lastBytesTransferred = uploadTask.snapshot.bytesTransferred;
-        }
-      }, 10000);
-
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`[FCM Upload] Uploading: ${progress}% (${snapshot.bytesTransferred}/${snapshot.totalBytes} bytes)`);
-          setUploadProgress(Math.round(progress));
-        }, 
-        (error) => {
-          clearInterval(timeoutCheck);
-          console.error('[FCM Upload] Firebase Storage upload failed with error:', error);
-          console.error('[FCM Upload] Error Details - Code:', error.code, 'Message:', error.message);
-          
-          let friendlyMessage = 'Upload to Cloud Storage failed. Please check your network and try again.';
-          if (error.code === 'storage/unauthorized') {
-            friendlyMessage = 'Firebase Storage rules denied access. Make sure your Storage Rules are set to public/test mode.';
-          } else if (error.code === 'storage/project-not-found') {
-            friendlyMessage = 'Firebase Project not found. Verify your credentials in .env.local.';
-          } else if (error.code === 'storage/retry-limit-exceeded') {
-            friendlyMessage = 'Upload timed out. Firebase Storage bucket may not be initialized on the console.';
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            setErrorMessage(errorData.message || 'Failed to upload video to local server.');
+          } catch {
+            setErrorMessage(`Server error: status ${xhr.status}`);
           }
-          
-          setErrorMessage(friendlyMessage);
-          setIsUploading(false);
-        }, 
-        async () => {
-          clearInterval(timeoutCheck);
-          console.log('[FCM Upload] Direct Firebase Storage upload complete. Requesting URL...');
-          const downloadUrl = await getDownloadURL(storageRef);
-          console.log('[FCM Upload] Download URL resolved:', downloadUrl);
-
-          // 3) Register the video URL with the backend database API
-          const token = await firebaseUser.getIdToken();
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              videoUrl: downloadUrl,
-              title,
-              tier
-            })
-          });
-
-          const data = await response.json();
-          if (data.status === 'success') {
-            setSuccessMessage('Video successfully uploaded! AI brand safety review started in background.');
-            useFeedStore.getState().resetFeed();
-            useFeedStore.getState().fetchNextPage();
-
-            setTimeout(() => {
-              handleClose();
-            }, 3000);
-          } else {
-            setErrorMessage(data.message || 'Failed to register video in database.');
-          }
-          setIsUploading(false);
         }
-      );
+        setIsUploading(false);
+      };
 
-    } catch (err) {
+      // Handle connection error
+      xhr.onerror = () => {
+        setIsUploading(false);
+        setErrorMessage('Network connection failed during upload. Check if the server is running.');
+      };
+
+      // Send form data
+      xhr.send(formData);
+
+    } catch (err: any) {
       console.error(err);
-      setErrorMessage('Upload pipeline error.');
+      setErrorMessage(err.message || 'Upload pipeline error.');
       setIsUploading(false);
     }
   };

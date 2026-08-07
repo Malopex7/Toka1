@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { GridFSBucket } from 'mongodb';
 import Video from '../models/Video.js';
 import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
@@ -200,4 +202,127 @@ export const updateVettingStatus = async (req, res, next) => {
       video
     }
   });
+};
+
+/**
+ * POST /api/videos/upload
+ * creator/brand upload a new video directly to MongoDB GridFS.
+ */
+export const uploadGridFSVideo = async (req, res, next) => {
+  const { title, tier } = req.body;
+
+  if (!req.file) {
+    throw new AppError('Please upload a video file.', 400);
+  }
+  if (!title) {
+    throw new AppError('Please provide a title.', 400);
+  }
+
+  const validTiers = ['fan_funded', 'brand_safe'];
+  const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
+
+  const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
+
+  const fileExtension = req.file.originalname.split('.').pop() || 'mp4';
+  const filename = `${Date.now()}_upload.${fileExtension}`;
+
+  const uploadStream = bucket.openUploadStream(filename, {
+    contentType: req.file.mimetype
+  });
+
+  uploadStream.end(req.file.buffer);
+
+  await new Promise((resolve, reject) => {
+    uploadStream.on('finish', resolve);
+    uploadStream.on('error', reject);
+  });
+
+  const videoUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
+
+  const video = await Video.create({
+    creatorId: req.user._id,
+    videoUrl,
+    title,
+    tier: resolvedTier,
+    vettingStatus: 'processing',
+    aiPipelineStatus: 'pending'
+  });
+
+  runAiPipeline(video._id.toString(), videoUrl);
+
+  res.status(201).json({
+    status: 'success',
+    message: 'Video uploaded and registered in GridFS. AI vetting pipeline started.',
+    data: { video }
+  });
+};
+
+/**
+ * GET /api/videos/stream/:filename
+ * Streams video chunk from MongoDB GridFS with seeking (Range header) support.
+ */
+export const streamGridFSVideo = async (req, res, next) => {
+  const { filename } = req.params;
+
+  const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
+
+  const files = await bucket.find({ filename }).toArray();
+  if (!files || files.length === 0) {
+    throw new AppError('Video file not found', 404);
+  }
+
+  const file = files[0];
+  const fileSize = file.length;
+  const contentType = file.contentType || 'video/mp4';
+  const range = req.headers.range;
+
+  if (range) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize || end >= fileSize) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      throw new AppError('Requested range not satisfiable', 416);
+    }
+
+    const chunksize = (end - start) + 1;
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': contentType,
+    });
+
+    const downloadStream = bucket.openDownloadStreamByName(filename, {
+      start,
+      end: end + 1
+    });
+
+    downloadStream.on('error', (err) => {
+      console.error(`[GridFS Stream Error] Stream failed for ${filename}:`, err.message);
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
+    });
+
+    downloadStream.pipe(res);
+  } else {
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes'
+    });
+
+    const downloadStream = bucket.openDownloadStreamByName(filename);
+    
+    downloadStream.on('error', (err) => {
+      console.error(`[GridFS Stream Error] Stream failed for ${filename}:`, err.message);
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
+    });
+
+    downloadStream.pipe(res);
+  }
 };
