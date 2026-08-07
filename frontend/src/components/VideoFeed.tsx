@@ -4,6 +4,7 @@ import { useFeedStore } from '@/store/useFeedStore';
 import VideoPlayer from './VideoPlayer';
 import TipModal from './TipModal';
 import AuthModal from './AuthModal';
+import UploadModal from './UploadModal';
 import { useAuth } from '@/context/AuthContext';
 
 export default function VideoFeed() {
@@ -11,6 +12,7 @@ export default function VideoFeed() {
   const { mongooseUser, isAuthenticated, logout } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const requireAuth = (callback: () => void) => {
@@ -96,7 +98,7 @@ export default function VideoFeed() {
             Moderator Panel
           </button>
           <button 
-            onClick={() => requireAuth(() => alert('Upload video flow coming in Phase 5!'))}
+            onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
             className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
@@ -269,7 +271,7 @@ export default function VideoFeed() {
               <span className="text-[10px] font-mono">Discover</span>
             </button>
             <button 
-              onClick={() => requireAuth(() => alert('Upload video flow coming in Phase 5!'))}
+              onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
               className="flex flex-col items-center justify-center -mt-6 relative z-10 w-12 h-12 bg-cloud-white rounded-xl shadow-lg border-2 border-midnight-boma active:scale-95 transition-all select-none"
             >
               <span className="material-symbols-outlined text-midnight-boma font-bold text-[24px]">add</span>
@@ -313,6 +315,12 @@ export default function VideoFeed() {
       <AuthModal 
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* Upload Video Modal Overlay */}
+      <UploadModal 
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
       />
 
     </div>

@@ -115,9 +115,9 @@
 ## Phase 7: Polish & Optimization
 **Goal:** Prepare the app for a smooth user experience on mobile networks.
 
-- [ ] **7.1 Video Optimization & Direct Uploads**
-  - [ ] Configure client-side compression before uploading videos directly to **Cloud Storage for Firebase** to minimize server load.
-  - [ ] Alternatively, set up server-side HLS video transcoding pipeline if required.
+- [x] **7.1 Video Optimization & Direct Uploads**
+  - [x] Configure client-side compression before uploading videos directly to **Cloud Storage for Firebase** to minimize server load.
+  - [x] Alternatively, set up server-side HLS video transcoding pipeline if required.
 - [ ] **7.2 UI/UX Refinements**
   - [ ] Add micro-interactions (e.g., coin animation on tip, heart burst on like).
   - [ ] Ensure strict responsive design for various mobile screen sizes.

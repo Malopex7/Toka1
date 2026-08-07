@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-export default function DepositPage() {
+function DepositContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, refreshProfile } = useAuth();
   const searchParams = useSearchParams();
   
@@ -209,5 +209,17 @@ export default function DepositPage() {
       </main>
 
     </div>
+  );
+}
+
+export default function DepositPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-screen items-center justify-center bg-midnight-boma text-cloud-white font-sans">
+        <span className="w-10 h-10 border-4 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+      </div>
+    }>
+      <DepositContent />
+    </Suspense>
   );
 }
