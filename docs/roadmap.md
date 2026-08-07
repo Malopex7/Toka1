@@ -99,13 +99,13 @@
 ## Phase 6: Ecosystem Integrations (AI, Fintech & Notifications)
 **Goal:** Connect Toka to the external services that power its unique value proposition.
 
-- [ ] **6.1 AI Pipeline Integration**
-  - [ ] Connect the backend video upload process to the transcription service (e.g., Meta MMS or Whisper API).
-  - [ ] Send transcripts to the NLP classifier (e.g., InkubaLM or AfriBERTa API) for the confidence score.
-  - [ ] Update the Mongoose Video document with the results.
-- [ ] **6.2 Mobile Money Integration**
-  - [ ] Integrate a local payment gateway (Paystack, Flutterwave, or Chipper Cash API) for depositing funds into the Toka wallet.
-  - [ ] Implement the webhook listener to verify successful deposits before updating the Mongoose `User.walletBalance`.
+- [x] **6.1 AI Pipeline Integration**
+  - [x] Connect the backend video upload process to the transcription service (e.g., Meta MMS or Whisper API).
+  - [x] Send transcripts to the NLP classifier (e.g., InkubaLM or AfriBERTa API) for the confidence score.
+  - [x] Update the Mongoose Video document with the results.
+- [x] **6.2 Mobile Money Integration**
+  - [x] Integrate a local payment gateway (Paystack) for depositing funds into the Toka wallet.
+  - [x] Implement the webhook listener to verify successful deposits before updating the Mongoose `User.walletBalance`.
 - [ ] **6.3 Firebase Cloud Messaging (FCM)**
   - [ ] **[NEW - Push Notifications]** Set up FCM service worker in Next.js to request permissions and receive messages.
   - [ ] Implement backend triggers in the API routes (or database middleware) to send real-time notification payloads via FCM (e.g. "Received a 10 ZAR tip!" or "Your video is approved!").

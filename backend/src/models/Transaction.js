@@ -9,12 +9,14 @@ const transactionSchema = new mongoose.Schema({
   receiverId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Transaction must have a receiver']
+    required: function() {
+      return this.type !== 'deposit';
+    }
   },
   videoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Video',
-    // Required only for tips, optional for brand_sponsorship
+    // Required only for tips, optional for brand_sponsorship/deposit
     required: function() {
       return this.type === 'tip';
     }
@@ -35,8 +37,13 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['tip', 'brand_sponsorship'],
+    enum: ['tip', 'brand_sponsorship', 'deposit'],
     required: [true, 'Transaction must have a type']
+  },
+  reference: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 }, {
   timestamps: true
