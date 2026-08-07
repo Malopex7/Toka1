@@ -34,6 +34,15 @@ const videoSchema = new mongoose.Schema({
   riskFlags: {
     type: [String],
     default: []
+  },
+  transcript: {
+    type: String,
+    default: ''
+  },
+  aiPipelineStatus: {
+    type: String,
+    enum: ['pending', 'running', 'complete', 'failed'],
+    default: 'pending'
   }
 }, {
   timestamps: true

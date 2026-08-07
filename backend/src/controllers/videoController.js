@@ -1,5 +1,40 @@
 import Video from '../models/Video.js';
 import { AppError } from '../middlewares/error.js';
+import { runAiPipeline } from '../services/aiPipeline.js';
+
+/**
+ * POST /api/videos — Creator/Brand upload a new video.
+ * Creates the Video document and immediately fires the AI pipeline in background.
+ */
+export const uploadVideo = async (req, res, next) => {
+  const { videoUrl, title, tier } = req.body;
+
+  if (!videoUrl || !title) {
+    throw new AppError('Please provide videoUrl and title.', 400);
+  }
+
+  const validTiers = ['fan_funded', 'brand_safe'];
+  const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
+
+  // Create the video document (starts as 'processing')
+  const video = await Video.create({
+    creatorId: req.user._id,
+    videoUrl,
+    title,
+    tier: resolvedTier,
+    vettingStatus: 'processing',
+    aiPipelineStatus: 'pending'
+  });
+
+  // Fire AI pipeline asynchronously — do NOT await (non-blocking)
+  runAiPipeline(video._id.toString(), videoUrl);
+
+  res.status(201).json({
+    status: 'success',
+    message: 'Video registered. AI vetting pipeline has been started.',
+    data: { video }
+  });
+};
 
 export const getFeed = async (req, res, next) => {
   // 1) Parse and sanitize query parameters for pagination
