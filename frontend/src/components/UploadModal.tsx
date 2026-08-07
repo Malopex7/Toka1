@@ -100,19 +100,44 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       
       const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
 
+      // Set a fallback timeout (e.g., 10 seconds of no progress triggers an error)
+      let lastBytesTransferred = 0;
+      const timeoutCheck = setInterval(() => {
+        if (uploadTask.snapshot.bytesTransferred === lastBytesTransferred && uploadTask.snapshot.state === 'running') {
+          console.warn('[FCM Upload] Upload connection appears hung at 0% progress.');
+        } else {
+          lastBytesTransferred = uploadTask.snapshot.bytesTransferred;
+        }
+      }, 10000);
+
       uploadTask.on('state_changed', 
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`[FCM Upload] Uploading: ${progress}% (${snapshot.bytesTransferred}/${snapshot.totalBytes} bytes)`);
           setUploadProgress(Math.round(progress));
         }, 
         (error) => {
-          console.error('Firebase Storage upload error:', error);
-          setErrorMessage('Upload to Cloud Storage failed. Please try again.');
+          clearInterval(timeoutCheck);
+          console.error('[FCM Upload] Firebase Storage upload failed with error:', error);
+          console.error('[FCM Upload] Error Details - Code:', error.code, 'Message:', error.message);
+          
+          let friendlyMessage = 'Upload to Cloud Storage failed. Please check your network and try again.';
+          if (error.code === 'storage/unauthorized') {
+            friendlyMessage = 'Firebase Storage rules denied access. Make sure your Storage Rules are set to public/test mode.';
+          } else if (error.code === 'storage/project-not-found') {
+            friendlyMessage = 'Firebase Project not found. Verify your credentials in .env.local.';
+          } else if (error.code === 'storage/retry-limit-exceeded') {
+            friendlyMessage = 'Upload timed out. Firebase Storage bucket may not be initialized on the console.';
+          }
+          
+          setErrorMessage(friendlyMessage);
           setIsUploading(false);
         }, 
         async () => {
-          // 2) Fetch the direct public download URL on complete
+          clearInterval(timeoutCheck);
+          console.log('[FCM Upload] Direct Firebase Storage upload complete. Requesting URL...');
           const downloadUrl = await getDownloadURL(storageRef);
+          console.log('[FCM Upload] Download URL resolved:', downloadUrl);
 
           // 3) Register the video URL with the backend database API
           const token = await firebaseUser.getIdToken();
@@ -132,7 +157,6 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           const data = await response.json();
           if (data.status === 'success') {
             setSuccessMessage('Video successfully uploaded! AI brand safety review started in background.');
-            // Reload the Zustand store feed
             useFeedStore.getState().resetFeed();
             useFeedStore.getState().fetchNextPage();
 

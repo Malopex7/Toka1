@@ -92,7 +92,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       }
 
       const token = await getToken(messaging, {
-        vapidKey: 'BDN0yW0Uixq1yJsn-26aNfG9m829m5A84F8c5d-sN77dM92j5F0l14n2v9a4c5'
+        vapidKey: 'BPTwssewY_iylmvXqxiweeFiexPFJID0u8EixJiaggUD8EW4Quu7wADFI-dk9NzeF4Q4v_f6MwqmAaQVs5P-PrM'
       });
 
       if (token) {
