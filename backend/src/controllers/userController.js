@@ -94,3 +94,28 @@ export const getMe = async (req, res, next) => {
     }
   });
 };
+
+/**
+ * Register FCM device token
+ */
+export const saveFcmToken = async (req, res, next) => {
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    throw new AppError('FCM token is required.', 400);
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $addToSet: { fcmTokens: fcmToken } },
+    { new: true }
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'FCM token registered successfully.',
+    data: {
+      user
+    }
+  });
+};

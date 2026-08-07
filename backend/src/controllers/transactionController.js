@@ -3,6 +3,7 @@ import Video from '../models/Video.js';
 import Transaction from '../models/Transaction.js';
 import mongoose from 'mongoose';
 import { AppError } from '../middlewares/error.js';
+import { sendFcmNotification } from '../services/notificationService.js';
 
 /**
  * Verifies transaction reference with the Paystack REST API.
@@ -133,6 +134,19 @@ export const tipCreator = async (req, res, next) => {
 
     // Commit Mongoose transaction
     await session.commitTransaction();
+
+    // Trigger FCM Notification asynchronously (non-blocking)
+    sendFcmNotification(
+      receiverId,
+      `R ${tipAmount.toFixed(2)} Tip Received!`,
+      `@${req.user.username} tipped you R ${tipAmount.toFixed(2)} on your video "${video.title}"!`,
+      {
+        type: 'tip_received',
+        amount: String(tipAmount),
+        senderName: req.user.username,
+        videoTitle: video.title
+      }
+    ).catch(err => console.error('[FCM Tip Trigger Failed]', err));
 
     res.status(201).json({
       status: 'success',

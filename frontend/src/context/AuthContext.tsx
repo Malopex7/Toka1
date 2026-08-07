@@ -9,7 +9,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, getFCM } from '@/lib/firebase';
+import { getToken, onMessage } from 'firebase/messaging';
 import { useFeedStore } from '@/store/useFeedStore';
 
 export interface MongooseUser {
@@ -75,11 +76,58 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const initFcmNotifications = async (fUser: FirebaseUser) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.log('[FCM] Notification permissions denied.');
+        return;
+      }
+
+      const messaging = await getFCM();
+      if (!messaging) {
+        console.log('[FCM] Firebase messaging not supported.');
+        return;
+      }
+
+      const token = await getToken(messaging, {
+        vapidKey: 'BDN0yW0Uixq1yJsn-26aNfG9m829m5A84F8c5d-sN77dM92j5F0l14n2v9a4c5'
+      });
+
+      if (token) {
+        console.log('[FCM] Token retrieved:', token.substring(0, 15) + '...');
+        const idToken = await fUser.getIdToken();
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/fcm-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ fcmToken: token })
+        });
+
+        onMessage(messaging, (payload) => {
+          console.log('[FCM] Message received in foreground:', payload);
+          if (payload.notification) {
+            new Notification(payload.notification.title || 'Toka Alert', {
+              body: payload.notification.body,
+              icon: '/favicon.ico'
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('[FCM] Init skipped or failed:', err);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
         await syncWithBackend(user);
+        initFcmNotifications(user);
       } else {
         setMongooseUser(null);
         setProfileSetupRequired(false);

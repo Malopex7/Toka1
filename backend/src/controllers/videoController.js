@@ -1,6 +1,7 @@
 import Video from '../models/Video.js';
 import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
+import { sendFcmNotification } from '../services/notificationService.js';
 
 /**
  * POST /api/videos — Creator/Brand upload a new video.
@@ -135,6 +136,19 @@ export const processAiVetting = async (req, res, next) => {
   video.vettingStatus = vettingStatus;
   await video.save();
 
+  // Trigger FCM Notification asynchronously (non-blocking)
+  sendFcmNotification(
+    video.creatorId.toString(),
+    'Video Vetting Update',
+    `Your video "${video.title}" status is now: ${vettingStatus}.`,
+    {
+      type: 'vetting_update',
+      videoId: video._id.toString(),
+      status: vettingStatus,
+      title: video.title
+    }
+  ).catch(err => console.error('[FCM Vetting Trigger Failed]', err));
+
   // 5) Return response
   res.status(200).json({
     status: 'success',
@@ -164,6 +178,19 @@ export const updateVettingStatus = async (req, res, next) => {
   // 3) Update status
   video.vettingStatus = vettingStatus;
   await video.save();
+
+  // Trigger FCM Notification asynchronously (non-blocking)
+  sendFcmNotification(
+    video.creatorId.toString(),
+    'Video Vetting Update',
+    `Your video "${video.title}" status is now: ${vettingStatus}.`,
+    {
+      type: 'vetting_update',
+      videoId: video._id.toString(),
+      status: vettingStatus,
+      title: video.title
+    }
+  ).catch(err => console.error('[FCM Vetting Trigger Failed]', err));
 
   // 4) Return success response
   res.status(200).json({

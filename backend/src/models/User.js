@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema({
   strikeCount: {
     type: Number,
     default: 0
+  },
+  fcmTokens: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true,

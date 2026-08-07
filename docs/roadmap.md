@@ -106,9 +106,9 @@
 - [x] **6.2 Mobile Money Integration**
   - [x] Integrate a local payment gateway (Paystack) for depositing funds into the Toka wallet.
   - [x] Implement the webhook listener to verify successful deposits before updating the Mongoose `User.walletBalance`.
-- [ ] **6.3 Firebase Cloud Messaging (FCM)**
-  - [ ] **[NEW - Push Notifications]** Set up FCM service worker in Next.js to request permissions and receive messages.
-  - [ ] Implement backend triggers in the API routes (or database middleware) to send real-time notification payloads via FCM (e.g. "Received a 10 ZAR tip!" or "Your video is approved!").
+- [x] **6.3 Firebase Cloud Messaging (FCM)**
+  - [x] **[NEW - Push Notifications]** Set up FCM service worker in Next.js to request permissions and receive messages.
+  - [x] Implement backend triggers in the API routes (or database middleware) to send real-time notification payloads via FCM (e.g. "Received a 10 ZAR tip!" or "Your video is approved!").
 
 ---
 
