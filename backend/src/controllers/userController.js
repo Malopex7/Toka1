@@ -27,6 +27,7 @@ export const syncUser = async (req, res, next) => {
   try {
     decodedToken = await auth.verifyIdToken(token);
   } catch (error) {
+    console.error('Firebase token verification failed:', error);
     throw new AppError('Invalid or expired Firebase token.', 401);
   }
 

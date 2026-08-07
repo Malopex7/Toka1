@@ -24,6 +24,7 @@ export const protect = async (req, res, next) => {
   try {
     decodedToken = await auth.verifyIdToken(token);
   } catch (error) {
+    console.error('Firebase protect token verification failed:', error);
     throw new AppError('Invalid or expired token. Please log in again!', 401);
   }
 

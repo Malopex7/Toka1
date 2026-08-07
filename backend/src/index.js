@@ -1,7 +1,7 @@
 // src/index.js
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import { GridFSBucket } from 'mongodb';
@@ -17,8 +17,6 @@ import { protect, requireBrand } from './middlewares/auth.js';
 import videoRoutes from './routes/videoRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-
-dotenv.config();
 const app = express();
 
 app.use(helmet());
