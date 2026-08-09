@@ -43,6 +43,15 @@ const videoSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'running', 'complete', 'failed'],
     default: 'pending'
+  },
+  likesCount: {
+    type: Number,
+    default: 0
+  },
+  likedBy: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: []
   }
 }, {
   timestamps: true

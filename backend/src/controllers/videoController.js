@@ -77,10 +77,21 @@ export const getFeed = async (req, res, next) => {
 
   const totalPages = Math.ceil(totalVideos / limit);
 
-  // 4) Return paginated response
+  // 4) Map videos to include isLiked flag and strip likedBy for safety
+  const formattedVideos = videos.map(video => {
+    const videoObj = video.toObject();
+    const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
+    delete videoObj.likedBy;
+    return {
+      ...videoObj,
+      isLiked
+    };
+  });
+
+  // 5) Return paginated response
   res.status(200).json({
     status: 'success',
-    results: videos.length,
+    results: formattedVideos.length,
     pagination: {
       page,
       limit,
@@ -90,7 +101,7 @@ export const getFeed = async (req, res, next) => {
       hasPrevPage: page > 1
     },
     data: {
-      videos
+      videos: formattedVideos
     }
   });
 };
@@ -317,4 +328,37 @@ export const streamGridFSVideo = async (req, res, next) => {
 
     downloadStream.pipe(res);
   }
+};
+
+export const toggleLikeVideo = async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const video = await Video.findById(id);
+  if (!video) {
+    throw new AppError('Video not found', 404);
+  }
+
+  if (!video.likedBy) {
+    video.likedBy = [];
+  }
+
+  const isLiked = video.likedBy.includes(userId);
+  if (isLiked) {
+    video.likedBy = video.likedBy.filter(uid => uid.toString() !== userId.toString());
+    video.likesCount = Math.max(0, (video.likesCount || 0) - 1);
+  } else {
+    video.likedBy.push(userId);
+    video.likesCount = (video.likesCount || 0) + 1;
+  }
+
+  await video.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      likesCount: video.likesCount,
+      isLiked: !isLiked
+    }
+  });
 };

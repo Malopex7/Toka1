@@ -17,6 +17,7 @@ export interface Video {
   aiConfidenceScore: number;
   riskFlags: string[];
   isVerified: boolean;
+  isLiked?: boolean;
   audioName?: string;
   audioArt?: string;
   poster?: string;
@@ -36,6 +37,7 @@ interface FeedStore {
   setCurrentIndex: (index: number) => void;
   optimisticTip: (videoId: string, amount: number) => void;
   updateVideoVetting: (videoId: string, status: Video['vettingStatus']) => void;
+  toggleLikeVideo: (videoId: string) => Promise<void>;
   fetchNextPage: () => Promise<void>;
   resetFeed: () => void;
 }
@@ -130,6 +132,60 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     )
   })),
 
+  toggleLikeVideo: async (videoId) => {
+    const { videos } = get();
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+
+    // 1) Optimistic updates
+    set({
+      videos: videos.map((vid) => {
+        if (vid.id === videoId) {
+          const isCurrentlyLiked = vid.isLiked || false;
+          return {
+            ...vid,
+            isLiked: !isCurrentlyLiked,
+            likes: isCurrentlyLiked ? Math.max(0, vid.likes - 1) : vid.likes + 1
+          };
+        }
+        return vid;
+      })
+    });
+
+    try {
+      // 2) Backend API call
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to toggle like on server');
+      }
+    } catch (err) {
+      console.error('[Store] toggleLikeVideo failed, rolling back:', err);
+      // Rollback optimistic updates
+      set({
+        videos: videos.map((vid) => {
+          if (vid.id === videoId) {
+            const originalLiked = vid.isLiked || false;
+            return {
+              ...vid,
+              isLiked: originalLiked,
+              likes: vid.likes
+            };
+          }
+          return vid;
+        })
+      });
+      throw err;
+    }
+  },
+
   fetchNextPage: async () => {
     const { currentPage, videos, isLoading, hasNextPage, feedType } = get();
     if (isLoading || !hasNextPage) return;
@@ -167,13 +223,14 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           videoUrl: video.videoUrl,
           title: video.title,
           description: video.title + ' #toka #creator',
-          likes: Math.floor(Math.random() * 1000) + 120,
+          likes: video.likesCount || 0,
           tips: 0,
           shares: Math.floor(Math.random() * 200) + 15,
           vettingStatus: video.vettingStatus,
           aiConfidenceScore: video.aiConfidenceScore || 0,
           riskFlags: video.riskFlags || [],
           isVerified: video.creatorId?.isBrandSafeVerified || false,
+          isLiked: video.isLiked || false,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
           audioArt: '/images/audio-album.jpg',
           poster: '/images/dance-video.png'

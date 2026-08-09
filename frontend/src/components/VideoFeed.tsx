@@ -20,7 +20,6 @@ export default function VideoFeed() {
 
   // States for micro-interactions
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
-  const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
   const [activeOptionsVideoId, setActiveOptionsVideoId] = useState<string | null>(null);
 
@@ -89,11 +88,18 @@ export default function VideoFeed() {
     }
   };
 
-  const handleDoubleTap = (videoId: string, e: React.MouseEvent<HTMLDivElement>) => {
-    if (!likedVideos.has(videoId)) {
-      const newLiked = new Set(likedVideos);
-      newLiked.add(videoId);
-      setLikedVideos(newLiked);
+  const handleDoubleTap = async (videoId: string, e: React.MouseEvent<HTMLDivElement>) => {
+    const video = videos.find(v => v.id === videoId);
+    if (video && !video.isLiked) {
+      if (!isAuthenticated) {
+        setIsAuthModalOpen(true);
+        return;
+      }
+      try {
+        await useFeedStore.getState().toggleLikeVideo(videoId);
+      } catch (err) {
+        console.error('[Feed] Double tap like failed:', err);
+      }
     }
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -109,14 +115,18 @@ export default function VideoFeed() {
     }, 800);
   };
 
-  const handleLikeToggle = (videoId: string, e: React.MouseEvent) => {
+  const handleLikeToggle = async (videoId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newLiked = new Set(likedVideos);
-    if (newLiked.has(videoId)) {
-      newLiked.delete(videoId);
-    } else {
-      newLiked.add(videoId);
-      
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const video = videos.find(v => v.id === videoId);
+    if (!video) return;
+
+    const isAdding = !video.isLiked;
+    if (isAdding) {
       // Spawn a heart particle centered near the heart icon
       const rect = e.currentTarget.getBoundingClientRect();
       const cardContainer = e.currentTarget.parentElement?.parentElement;
@@ -131,7 +141,12 @@ export default function VideoFeed() {
         }, 800);
       }
     }
-    setLikedVideos(newLiked);
+
+    try {
+      await useFeedStore.getState().toggleLikeVideo(videoId);
+    } catch (err) {
+      console.error('[Feed] Like toggle failed:', err);
+    }
   };
 
   // Tracing follow statuses on feed load
@@ -464,15 +479,15 @@ export default function VideoFeed() {
                       <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
                         <span 
                           className={`material-symbols-outlined text-[24px] transition-all duration-200 ${
-                            likedVideos.has(video.id) ? 'text-red-500 scale-110' : 'text-cloud-white'
+                            video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
                           }`}
-                          style={likedVideos.has(video.id) ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                          style={video.isLiked ? { fontVariationSettings: "'FILL' 1" } : undefined}
                         >
                           favorite
                         </span>
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
-                        {video.likes + (likedVideos.has(video.id) ? 1 : 0)}
+                        {video.likes}
                       </span>
                     </button>
 

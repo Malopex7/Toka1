@@ -6,7 +6,8 @@ import {
   updateVettingStatus, 
   uploadVideo, 
   uploadGridFSVideo, 
-  streamGridFSVideo 
+  streamGridFSVideo,
+  toggleLikeVideo
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -33,5 +34,6 @@ router.post('/videos/upload', protect, restrictTo('creator', 'brand'), upload.si
 router.get('/videos/stream/:filename', streamGridFSVideo);
 router.post('/webhooks/ai-vetting', processAiVetting);
 router.patch('/videos/:id/vetting-status', protect, requireModerator, updateVettingStatus);
+router.post('/videos/:id/like', protect, toggleLikeVideo);
 
 export default router;
