@@ -56,7 +56,7 @@ export default function VideoFeed() {
       if (feedTraceRef.current) {
         try {
           feedTraceRef.current.stop();
-        } catch (e) {}
+        } catch (e) { }
       }
     };
   }, []);
@@ -67,7 +67,7 @@ export default function VideoFeed() {
         feedTraceRef.current.stop();
         console.log('[Perf] Stopped feed-render-latency trace');
         feedTraceRef.current = null;
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [videos]);
 
@@ -157,7 +157,7 @@ export default function VideoFeed() {
         const token = await firebaseUser.getIdToken();
         const newFollowed = new Set<string>();
         const uniqueCreatorIds = Array.from(new Set(videos.map(v => v.creatorId).filter(Boolean)));
-        
+
         for (const creatorId of uniqueCreatorIds) {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/follow/${creatorId}/status`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -281,7 +281,7 @@ export default function VideoFeed() {
 
   return (
     <div className="relative w-full h-screen bg-midnight-boma text-cloud-white overflow-hidden flex font-sans">
-      
+
       {/* Desktop Navigation Left Sidebar (Hidden on Mobile) */}
       <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
         <div className="text-3xl font-black text-toka-flare tracking-tighter mb-12 px-4">Toka</div>
@@ -307,14 +307,14 @@ export default function VideoFeed() {
                 <span className="material-symbols-outlined text-toka-flare text-[20px]">person</span>
                 <span className="font-bold text-sm text-cloud-white truncate">@{mongooseUser?.username}</span>
               </div>
-              <Link 
+              <Link
                 href="/deposit"
                 className="flex justify-between items-center text-xs mt-1 text-cloud-white/60 hover:text-cloud-white font-mono cursor-pointer transition-colors group"
               >
                 <span>Wallet:</span>
                 <span className="font-bold text-fintech-mint group-hover:underline">ZAR {mongooseUser?.walletBalance.toFixed(2)}</span>
               </Link>
-              <button 
+              <button
                 onClick={logout}
                 className="text-left text-xs font-bold text-red-500 hover:text-red-400 mt-2.5 flex items-center gap-1.5 transition-colors"
               >
@@ -323,7 +323,7 @@ export default function VideoFeed() {
               </button>
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => setIsAuthModalOpen(true)}
               className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left w-full"
             >
@@ -332,9 +332,9 @@ export default function VideoFeed() {
             </button>
           )}
         </div>
-        
+
         <div className="mt-auto">
-          <button 
+          <button
             onClick={() => {
               requireAuth(() => {
                 if (mongooseUser?.role === 'moderator') {
@@ -349,7 +349,7 @@ export default function VideoFeed() {
             <span className="material-symbols-outlined text-toka-flare text-[20px]">shield</span>
             Moderator Panel
           </button>
-          <button 
+          <button
             onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
             className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm"
           >
@@ -361,36 +361,34 @@ export default function VideoFeed() {
 
       {/* Main Feed Container */}
       <div className="flex-1 flex justify-center items-center h-full relative">
-        
+
         {/* Mobile Viewport Wrapper */}
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
-          
+
           {/* Top Translucent Navigation Bar Overlay */}
           <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-6 h-16 pointer-events-none">
-            <button className="pointer-events-auto flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors">
+            <Link href="/discover" className="pointer-events-auto flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors">
               <span className="material-symbols-outlined text-cloud-white">search</span>
-            </button>
+            </Link>
             <div className="pointer-events-auto flex gap-6 items-center">
-              <button 
+              <button
                 onClick={() => requireAuth(() => setFeedType('following'))}
-                className={`text-sm transition-colors ${
-                  feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
-                }`}
+                className={`text-sm transition-colors ${feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  }`}
               >
                 Following
               </button>
-              <button 
+              <button
                 onClick={() => setFeedType('foryou')}
-                className={`text-sm transition-colors ${
-                  feedType === 'foryou' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
-                }`}
+                className={`text-sm transition-colors ${feedType === 'foryou' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  }`}
               >
                 For You
               </button>
             </div>
             <div className="pointer-events-auto flex items-center gap-3 select-none">
               {isAuthenticated ? (
-                <Link 
+                <Link
                   href="/deposit"
                   className="flex flex-col items-end gap-0.5 max-w-[80px] cursor-pointer hover:opacity-85 transition-opacity"
                 >
@@ -398,7 +396,7 @@ export default function VideoFeed() {
                   <span className="text-[9px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
                 </Link>
               ) : (
-                <button 
+                <button
                   onClick={() => setIsAuthModalOpen(true)}
                   className="px-3 py-1 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-full text-xs font-bold active:scale-95 transition-all shadow-md"
                 >
@@ -409,7 +407,7 @@ export default function VideoFeed() {
           </header>
 
           {/* Snapping Scroll Container */}
-          <div 
+          <div
             ref={containerRef}
             onScroll={handleScroll}
             className="w-full h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar bg-black"
@@ -418,7 +416,7 @@ export default function VideoFeed() {
             {videos.map((video, index) => {
               const isActive = index === currentIndex;
               return (
-                <div 
+                <div
                   key={video.id}
                   onClick={(e) => {
                     if (e.detail === 2) {
@@ -436,7 +434,7 @@ export default function VideoFeed() {
                       className="absolute z-40 pointer-events-none text-red-500 animate-heart-burst"
                       style={{ left: heart.x, top: heart.y }}
                     >
-                      <span 
+                      <span
                         className="material-symbols-outlined text-[48px]"
                         style={{ fontVariationSettings: "'FILL' 1" }}
                       >
@@ -447,38 +445,38 @@ export default function VideoFeed() {
 
                   {/* Right Action Sidebar Overlay */}
                   <aside className="absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto">
-                    
+
                     {/* Creator Avatar & Follow Button */}
                     <div className="relative mb-3 group cursor-pointer select-none">
                       <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg">
-                        <img 
-                          src={video.creatorAvatar} 
+                        <img
+                          src={video.creatorAvatar}
                           alt={video.creatorName}
                           className="w-full h-full object-cover rounded-full bg-shaded-canopy"
                         />
                       </div>
-                      {mongooseUser?._id !== video.creatorId && !followedCreators.has(video.creatorId) && (
-                        <button 
+                      {mongooseUser?._id !== video.creatorId && (
+                        <button
                           onClick={() => handleFollowToggle(video.creatorId)}
-                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black bg-toka-flare text-cloud-white"
+                          className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black ${followedCreators.has(video.creatorId) ? 'bg-fintech-mint text-midnight-boma' : 'bg-toka-flare text-cloud-white'
+                            }`}
                         >
                           <span className="material-symbols-outlined text-[14px] font-bold">
-                            add
+                            {followedCreators.has(video.creatorId) ? 'check' : 'add'}
                           </span>
                         </button>
                       )}
                     </div>
 
                     {/* Like Action */}
-                    <button 
+                    <button
                       onClick={(e) => handleLikeToggle(video.id, e)}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <span 
-                          className={`material-symbols-outlined text-[24px] transition-all duration-200 ${
-                            video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
-                          }`}
+                        <span
+                          className={`material-symbols-outlined text-[24px] transition-all duration-200 ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
+                            }`}
                           style={video.isLiked ? { fontVariationSettings: "'FILL' 1" } : undefined}
                         >
                           favorite
@@ -490,7 +488,7 @@ export default function VideoFeed() {
                     </button>
 
                     {/* Tip Action (Prominent Toka Flare) */}
-                    <button 
+                    <button
                       onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
@@ -501,7 +499,7 @@ export default function VideoFeed() {
                     </button>
 
                     {/* Share Action */}
-                    <button 
+                    <button
                       onClick={() => handleShare(video)}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
@@ -513,7 +511,7 @@ export default function VideoFeed() {
 
                     {/* More Action */}
                     <div className="relative">
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveOptionsVideoId(activeOptionsVideoId === video.id ? null : video.id);
@@ -527,7 +525,7 @@ export default function VideoFeed() {
 
                       {activeOptionsVideoId === video.id && (
                         <div className="absolute right-12 bottom-0 z-50 w-44 bg-shaded-canopy/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 animate-scale-up select-none pointer-events-auto">
-                          <button 
+                          <button
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
@@ -543,8 +541,8 @@ export default function VideoFeed() {
                             <span className="material-symbols-outlined text-[18px]">content_copy</span>
                             Copy Link
                           </button>
-                          
-                          <button 
+
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               alert('Thank you! This video has been flagged and queued for moderation review.');
@@ -555,8 +553,8 @@ export default function VideoFeed() {
                             <span className="material-symbols-outlined text-[18px] text-red-500">flag</span>
                             Report Video
                           </button>
-                          
-                          <button 
+
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               alert(`Creator blocked. You will no longer see content from @${video.creatorName}.`);
@@ -574,9 +572,9 @@ export default function VideoFeed() {
                     {/* Vinyl Audio Disk */}
                     {video.audioArt && (
                       <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg">
-                        <img 
-                          src={video.audioArt} 
-                          alt="Audio art" 
+                        <img
+                          src={video.audioArt}
+                          alt="Audio art"
                           className="w-full h-full rounded-full object-cover"
                         />
                       </div>
@@ -585,7 +583,7 @@ export default function VideoFeed() {
 
                   {/* Bottom Left Info Overlay */}
                   <div className="absolute bottom-24 left-4 z-30 flex flex-col gap-2 max-w-[75%] pointer-events-auto select-none">
-                    
+
                     {/* Brand Safe Badge */}
                     {video.vettingStatus === 'approved' && (
                       <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-fintech-mint/10 border border-fintech-mint/30 w-fit backdrop-blur-sm shadow-sm">
@@ -635,7 +633,7 @@ export default function VideoFeed() {
               <span className="material-symbols-outlined">explore</span>
               <span className="text-[10px] font-mono">Discover</span>
             </Link>
-            <button 
+            <button
               onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
               className="flex flex-col items-center justify-center -mt-6 relative z-10 w-12 h-12 bg-cloud-white rounded-xl shadow-lg border-2 border-midnight-boma active:scale-95 transition-all select-none"
             >
@@ -674,7 +672,7 @@ export default function VideoFeed() {
 
       {/* Tip Popover Modal */}
       {activeTipVideoId && (
-        <TipModal 
+        <TipModal
           videoId={activeTipVideoId}
           isOpen={true}
           onClose={() => setActiveTipVideoId(null)}
@@ -682,13 +680,13 @@ export default function VideoFeed() {
       )}
 
       {/* Auth Modal Overlay */}
-      <AuthModal 
+      <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
 
       {/* Upload Video Modal Overlay */}
-      <UploadModal 
+      <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
