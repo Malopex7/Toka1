@@ -457,15 +457,13 @@ export default function VideoFeed() {
                           className="w-full h-full object-cover rounded-full bg-shaded-canopy"
                         />
                       </div>
-                      {mongooseUser?._id !== video.creatorId && (
+                      {mongooseUser?._id !== video.creatorId && !followedCreators.has(video.creatorId) && (
                         <button 
                           onClick={() => handleFollowToggle(video.creatorId)}
-                          className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black ${
-                            followedCreators.has(video.creatorId) ? 'bg-fintech-mint text-midnight-boma' : 'bg-toka-flare text-cloud-white'
-                          }`}
+                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black bg-toka-flare text-cloud-white"
                         >
                           <span className="material-symbols-outlined text-[14px] font-bold">
-                            {followedCreators.has(video.creatorId) ? 'check' : 'add'}
+                            add
                           </span>
                         </button>
                       )}
