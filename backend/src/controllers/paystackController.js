@@ -76,6 +76,105 @@ export const initializeDeposit = async (req, res, next) => {
 };
 
 /**
+ * POST /api/transactions/verify-deposit
+ * Called by the frontend after Paystack redirects back with ?reference=xxx.
+ * Verifies the payment with Paystack and credits the wallet if not already done.
+ * This ensures deposits work even in local dev where Paystack webhooks cannot reach localhost.
+ */
+export const verifyDeposit = async (req, res, next) => {
+  const { reference } = req.body;
+
+  if (!reference) {
+    throw new AppError('Payment reference is required.', 400);
+  }
+
+  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  if (!secretKey) {
+    throw new AppError('Paystack configuration error. Secret key missing.', 500);
+  }
+
+  // Idempotency check: if reference already processed, return updated balance only
+  const existingTx = await Transaction.findOne({ reference });
+  if (existingTx) {
+    const user = await User.findById(req.user._id);
+    return res.status(200).json({
+      status: 'success',
+      message: 'Deposit already credited.',
+      data: { walletBalance: user?.walletBalance ?? req.user.walletBalance, alreadyProcessed: true }
+    });
+  }
+
+  // Verify with Paystack API
+  let paystackData;
+  try {
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' }
+      }
+    );
+    const result = await response.json();
+
+    if (!result.status || result.data?.status !== 'success') {
+      throw new AppError('Payment has not been completed or was declined by Paystack.', 400);
+    }
+    paystackData = result.data;
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError('Failed to verify payment with Paystack.', 502);
+  }
+
+  const depositAmount = paystackData.amount / 100; // kobo → ZAR
+  const currency = paystackData.currency || 'ZAR';
+
+  // Security: ensure the metadata userId matches the authenticated user
+  const metaUserId = paystackData.metadata?.userId || paystackData.metadata?.user_id;
+  if (metaUserId && metaUserId !== req.user._id.toString()) {
+    throw new AppError('Payment reference does not match your account.', 403);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $inc: { walletBalance: depositAmount } },
+      { session, new: true }
+    );
+
+    if (!user) {
+      throw new AppError('User not found.', 404);
+    }
+
+    await Transaction.create([{
+      senderId: req.user._id,
+      receiverId: req.user._id,
+      amount: depositAmount,
+      currency,
+      status: 'success',
+      type: 'deposit',
+      reference
+    }], { session });
+
+    await session.commitTransaction();
+    console.log(`[VerifyDeposit] User ${req.user._id} credited with ${depositAmount} ${currency}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: `R${depositAmount.toFixed(2)} deposited successfully.`,
+      data: { walletBalance: user.walletBalance, depositAmount }
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
  * POST /api/webhooks/paystack
  * Receives updates from Paystack. Webhook signature is validated using HMAC SHA512.
  */

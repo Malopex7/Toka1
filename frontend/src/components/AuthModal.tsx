@@ -33,13 +33,20 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     e.preventDefault();
     setErrorMsg(null);
 
+    // Sanitize username by trimming and removing any leading '@'
+    const sanitizedUsername = username.trim().replace(/^@+/, '');
+
     try {
       if (profileSetupRequired) {
-        if (!username || !role) {
+        if (!sanitizedUsername || !role) {
           setErrorMsg('Username and role are required.');
           return;
         }
-        await completeProfileSetup(username, role);
+        if (sanitizedUsername.includes('@')) {
+          setErrorMsg('Username cannot contain the "@" symbol.');
+          return;
+        }
+        await completeProfileSetup(sanitizedUsername, role);
         onClose();
       } else if (activeTab === 'login') {
         if (!email || !password) {
@@ -49,15 +56,19 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await login(email, password);
         onClose();
       } else {
-        if (!email || !password || !username || !role) {
+        if (!email || !password || !sanitizedUsername || !role) {
           setErrorMsg('All fields are required.');
           return;
         }
-        if (username.length < 3) {
+        if (sanitizedUsername.includes('@')) {
+          setErrorMsg('Username cannot contain the "@" symbol.');
+          return;
+        }
+        if (sanitizedUsername.length < 3) {
           setErrorMsg('Username must be at least 3 characters.');
           return;
         }
-        await signup(email, password, username, role);
+        await signup(email, password, sanitizedUsername, role);
         onClose();
       }
     } catch (err: any) {

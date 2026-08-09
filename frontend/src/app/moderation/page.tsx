@@ -163,8 +163,21 @@ export default function ModerationQueue() {
 
           {/* Queue List Table */}
           {isFetchingQueue ? (
-            <div className="flex justify-center items-center py-12">
-              <span className="w-8 h-8 border-4 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+            <div className="space-y-4 animate-pulse py-4">
+              <div className="grid grid-cols-5 gap-4 border-b border-white/10 pb-3 text-cloud-white/20 font-bold uppercase tracking-wider text-[10px]">
+                <div className="h-3.5 bg-white/10 rounded col-span-2 w-32"></div>
+                <div className="h-3.5 bg-white/10 rounded w-20"></div>
+                <div className="h-3.5 bg-white/10 rounded w-16"></div>
+                <div className="h-3.5 bg-white/10 rounded w-20"></div>
+              </div>
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div key={idx} className="grid grid-cols-5 gap-4 border-b border-white/5 py-3 items-center">
+                  <div className="h-3.5 bg-white/10 rounded col-span-2 w-48"></div>
+                  <div className="h-3.5 bg-white/10 rounded w-24"></div>
+                  <div className="h-3.5 bg-white/10 rounded w-12"></div>
+                  <div className="h-3.5 bg-white/10 rounded w-20"></div>
+                </div>
+              ))}
             </div>
           ) : pendingVideos.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-10 bg-black/20 rounded-xl border border-white/5">

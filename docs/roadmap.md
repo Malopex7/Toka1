@@ -118,13 +118,13 @@
 - [x] **7.1 Video Optimization & Direct Uploads**
   - [x] Configure client-side compression before uploading videos directly to **Cloud Storage for Firebase** to minimize server load.
   - [x] Alternatively, set up server-side HLS video transcoding pipeline if required.
-- [ ] **7.2 UI/UX Refinements**
-  - [ ] Add micro-interactions (e.g., coin animation on tip, heart burst on like).
-  - [ ] Ensure strict responsive design for various mobile screen sizes.
-  - [ ] Implement loading skeletons for the feed and dashboards.
-- [ ] **7.3 Firebase Performance Monitoring & Crashlytics**
-  - [ ] **[NEW - Monitoring]** Initialize Firebase Performance Monitoring client-side to track vertical feed rendering latency, media stream start latency, and API network response speeds.
-  - [ ] Configure Firebase error reporting / Crashlytics web SDK to track unexpected client-side execution crashes.
+- [x] **7.2 UI/UX Refinements**
+  - [x] Add micro-interactions (e.g., coin animation on tip, heart burst on like).
+  - [x] Ensure strict responsive design for various mobile screen sizes.
+  - [x] Implement loading skeletons for the feed and dashboards.
+- [x] **7.3 Firebase Performance Monitoring & Crashlytics**
+  - [x] **[NEW - Monitoring]** Initialize Firebase Performance Monitoring client-side to track vertical feed rendering latency, media stream start latency, and API network response speeds.
+  - [x] Configure Firebase error reporting / Crashlytics web SDK to track unexpected client-side execution crashes.
 
 ---
 

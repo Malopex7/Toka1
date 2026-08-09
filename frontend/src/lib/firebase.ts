@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics";
+import { getPerformance } from "firebase/performance";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-api-key-for-build-prerender",
@@ -34,6 +35,13 @@ export const getFCM = async () => {
 export const getAnalyticsInstance = () => {
   if (typeof window !== "undefined") {
     return getAnalytics(app);
+  }
+  return null;
+};
+
+export const getPerformanceInstance = () => {
+  if (typeof window !== "undefined") {
+    return getPerformance(app);
   }
   return null;
 };

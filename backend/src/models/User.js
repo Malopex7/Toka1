@@ -20,7 +20,13 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide a username'],
     unique: true,
     trim: true,
-    minLength: [3, 'Username must be at least 3 characters long']
+    minLength: [3, 'Username must be at least 3 characters long'],
+    validate: {
+      validator: function(val) {
+        return !val.includes('@');
+      },
+      message: 'Username cannot contain the "@" symbol.'
+    }
   },
   walletBalance: {
     type: Number,
@@ -42,6 +48,14 @@ const userSchema = new mongoose.Schema({
   },
   fcmTokens: {
     type: [String],
+    default: []
+  },
+  following: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
+  followers: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: []
   }
 }, {

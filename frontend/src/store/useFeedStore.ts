@@ -30,6 +30,8 @@ interface FeedStore {
   currentPage: number;
   hasNextPage: boolean;
   userWalletBalance: number;
+  feedType: 'foryou' | 'following';
+  setFeedType: (type: 'foryou' | 'following') => void;
   setWalletBalance: (balance: number) => void;
   setCurrentIndex: (index: number) => void;
   optimisticTip: (videoId: string, amount: number) => void;
@@ -87,6 +89,13 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   currentPage: 1,
   hasNextPage: true,
   userWalletBalance: 100, // Starting balance fallback
+  feedType: 'foryou',
+
+  setFeedType: (type) => {
+    set({ feedType: type });
+    get().resetFeed();
+    get().fetchNextPage();
+  },
 
   setWalletBalance: (balance) => set({ userWalletBalance: balance }),
 
@@ -122,7 +131,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   })),
 
   fetchNextPage: async () => {
-    const { currentPage, videos, isLoading, hasNextPage } = get();
+    const { currentPage, videos, isLoading, hasNextPage, feedType } = get();
     if (isLoading || !hasNextPage) return;
 
     set({ isLoading: true });
@@ -136,7 +145,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/feed?page=${currentPage}&limit=5`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/feed?page=${currentPage}&limit=5${feedType === 'following' ? '&following=true' : ''}`,
         { headers }
       );
       

@@ -18,6 +18,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [coins, setCoins] = useState<{ id: string; left: number; delay: number }[]>([]);
 
   if (!isOpen) return null;
 
@@ -65,13 +66,28 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
         // optimistically update local UI states
         optimisticTip(videoId, amount);
         setSuccess(true);
+
+        // Flag inbox as having new activity so the unread dot appears
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('toka_inbox_unread', 'true');
+        }
+        
+        // Generate coin particles for animation
+        const coinParticles = Array.from({ length: 18 }).map((_, i) => ({
+          id: `coin-${i}-${Date.now()}-${Math.random()}`,
+          left: Math.random() * 80 + 10,
+          delay: Math.random() * 0.5
+        }));
+        setCoins(coinParticles);
+
         // refresh real profile balance
         await refreshProfile();
         
         setTimeout(() => {
           setSuccess(false);
+          setCoins([]);
           onClose();
-        }, 1500);
+        }, 2200); // Extended timeout to let coins fall
       } else {
         alert(data.message || 'Tipping failed. Please try again.');
       }
@@ -98,12 +114,27 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
         </div>
 
         {success ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-fintech-mint/20 border border-fintech-mint flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center p-8 text-center relative overflow-hidden min-h-[220px]">
+            {/* Falling coins particles */}
+            {coins.map((coin) => (
+              <div
+                key={coin.id}
+                className="absolute top-0 text-amber-400 animate-coin-fall pointer-events-none z-10"
+                style={{
+                  left: `${coin.left}%`,
+                  animationDelay: `${coin.delay}s`,
+                }}
+              >
+                <span className="material-symbols-outlined text-[20px] fill-current select-none">
+                  monetization_on
+                </span>
+              </div>
+            ))}
+            <div className="w-16 h-16 rounded-full bg-fintech-mint/20 border border-fintech-mint flex items-center justify-center mb-4 z-20">
               <Check className="w-8 h-8 text-fintech-mint" />
             </div>
-            <h4 className="text-lg font-bold text-cloud-white mb-1">Tip Sent successfully!</h4>
-            <p className="text-sm text-on-surface-variant">Thank you for supporting creators.</p>
+            <h4 className="text-lg font-bold text-cloud-white mb-1 z-20">Tip Sent Successfully!</h4>
+            <p className="text-sm text-cloud-white/60 z-20">Thank you for supporting creators.</p>
           </div>
         ) : (
           <div className="p-6 flex flex-col gap-6">

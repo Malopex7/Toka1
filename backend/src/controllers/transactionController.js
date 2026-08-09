@@ -164,3 +164,53 @@ export const tipCreator = async (req, res, next) => {
     session.endSession();
   }
 };
+
+/**
+ * Fetch the authenticated user's inbox activity (sent and received transactions).
+ * Deposits are returned separately so they don't appear mixed in with tips.
+ */
+export const getMyTransactions = async (req, res, next) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const skip = (page - 1) * limit;
+
+  // Tip-only filters (exclude deposits from sent/received tip lists)
+  const tipFilter = { status: 'success', type: { $in: ['tip', 'brand_sponsorship'] } };
+
+  const [sent, received, deposits, totalSent, totalReceived, totalDeposits] = await Promise.all([
+    Transaction.find({ senderId: req.user._id, ...tipFilter })
+      .populate('receiverId', 'username')
+      .populate('videoId', 'title')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Transaction.find({ receiverId: req.user._id, ...tipFilter,
+      // Exclude cases where sender === receiver (self-tips are deposits)
+      senderId: { $ne: req.user._id }
+    })
+      .populate('senderId', 'username')
+      .populate('videoId', 'title')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Transaction.find({ senderId: req.user._id, status: 'success', type: 'deposit' })
+      .sort({ createdAt: -1 })
+      .limit(10),
+    Transaction.countDocuments({ senderId: req.user._id, ...tipFilter }),
+    Transaction.countDocuments({ receiverId: req.user._id, ...tipFilter, senderId: { $ne: req.user._id } }),
+    Transaction.countDocuments({ senderId: req.user._id, status: 'success', type: 'deposit' })
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      sent,
+      received,
+      deposits,
+      totalSent,
+      totalReceived,
+      totalDeposits,
+      walletBalance: req.user.walletBalance
+    }
+  });
+};

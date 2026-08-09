@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { storage, getPerformanceInstance } from '@/lib/firebase';
+import { trace } from 'firebase/performance';
 
 interface VideoPlayerProps {
   src: string;
@@ -14,6 +15,47 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoSrc, setVideoSrc] = useState(src);
+
+  const mediaTraceRef = useRef<any>(null);
+
+  // Tracing media stream start latency
+  useEffect(() => {
+    if (isActive && videoSrc) {
+      const perf = getPerformanceInstance();
+      if (perf) {
+        try {
+          if (mediaTraceRef.current) {
+            mediaTraceRef.current.stop();
+          }
+          const t = trace(perf, 'media-stream-latency');
+          t.start();
+          console.log(`[Perf] Started media-stream-latency trace for: ${videoSrc.substring(0, 40)}...`);
+          mediaTraceRef.current = t;
+        } catch (e) {
+          console.error('[Perf] Failed to start media-stream-latency trace:', e);
+        }
+      }
+    }
+
+    return () => {
+      if (mediaTraceRef.current) {
+        try {
+          mediaTraceRef.current.stop();
+          mediaTraceRef.current = null;
+        } catch (e) {}
+      }
+    };
+  }, [isActive, videoSrc]);
+
+  const handlePlaying = () => {
+    if (mediaTraceRef.current) {
+      try {
+        mediaTraceRef.current.stop();
+        console.log('[Perf] Stopped media-stream-latency trace (video is playing)');
+        mediaTraceRef.current = null;
+      } catch (e) {}
+    }
+  };
 
   // Resolve Firebase Storage paths/URLs dynamically to CDN-cached HTTP download URLs
   useEffect(() => {
@@ -107,6 +149,7 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
         loop
         playsInline
         muted
+        onPlaying={handlePlaying}
       />
       
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none z-10" />

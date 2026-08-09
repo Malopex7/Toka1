@@ -15,15 +15,43 @@ function DepositContent() {
 
   // Check if redirecting back from a successful Paystack payment session
   useEffect(() => {
-    if (searchParams.get('status') === 'success') {
-      setSuccessState(true);
-      // Wait a moment and pull latest user profile wallet balance from DB
-      const timer = setTimeout(() => {
-        refreshProfile();
-      }, 2000);
-      return () => clearTimeout(timer);
+    const status = searchParams.get('status');
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+
+    if (status === 'success' && reference && firebaseUser) {
+      const verifyAndCredit = async () => {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions/verify-deposit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ reference })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            // Refresh auth profile to pull updated walletBalance from DB
+            await refreshProfile();
+            setSuccessState(true);
+          } else {
+            setErrorMsg(data.message || 'Payment verification failed. Please contact support.');
+          }
+        } catch (e) {
+          console.error('[VerifyDeposit] Error:', e);
+          // Fallback: still show success and refresh profile in case webhook ran first
+          await refreshProfile();
+          setSuccessState(true);
+        }
+      };
+
+      verifyAndCredit();
+    } else if (status === 'success') {
+      // No reference available — just refresh and show success (webhook may have run)
+      refreshProfile().then(() => setSuccessState(true));
     }
-  }, [searchParams]);
+  }, [searchParams, firebaseUser]);
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -23,6 +23,8 @@ export interface MongooseUser {
   walletBalance: number;
   isBrandSafeVerified: boolean;
   strikeCount: number;
+  followers?: string[];
+  following?: string[];
 }
 
 interface AuthContextType {

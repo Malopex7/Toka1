@@ -60,8 +60,19 @@ export const syncUser = async (req, res, next) => {
     });
   }
 
+  // Sanitize username by trimming and removing any leading '@'
+  const sanitizedUsername = username.trim().replace(/^@+/, '');
+
+  if (sanitizedUsername.includes('@')) {
+    throw new AppError('Username cannot contain the "@" symbol.', 400);
+  }
+
+  if (sanitizedUsername.length < 3) {
+    throw new AppError('Username must be at least 3 characters.', 400);
+  }
+
   // Ensure username is not already taken
-  const existingUsername = await User.findOne({ username });
+  const existingUsername = await User.findOne({ username: sanitizedUsername });
   if (existingUsername) {
     throw new AppError('Username is already taken.', 400);
   }
@@ -70,7 +81,7 @@ export const syncUser = async (req, res, next) => {
   user = await User.create({
     firebaseUid: uid,
     email: email || '',
-    username,
+    username: sanitizedUsername,
     role,
     walletBalance: 100 // Starting balance of ZAR 100 for onboarding
   });
@@ -117,5 +128,65 @@ export const saveFcmToken = async (req, res, next) => {
     data: {
       user
     }
+  });
+};
+
+/**
+ * Follow or unfollow a creator profile
+ */
+export const toggleFollow = async (req, res, next) => {
+  const { targetUserId } = req.params;
+
+  if (!targetUserId) {
+    throw new AppError('Target user ID is required.', 400);
+  }
+
+  if (targetUserId === req.user._id.toString()) {
+    throw new AppError('You cannot follow yourself.', 400);
+  }
+
+  const targetUser = await User.findById(targetUserId);
+  if (!targetUser) {
+    throw new AppError('Target user not found.', 404);
+  }
+
+  const isFollowing = req.user.following.includes(targetUserId);
+
+  if (isFollowing) {
+    await User.findByIdAndUpdate(req.user._id, { $pull: { following: targetUserId } });
+    await User.findByIdAndUpdate(targetUserId, { $pull: { followers: req.user._id } });
+
+    res.status(200).json({
+      status: 'success',
+      isFollowing: false,
+      message: 'Unfollowed successfully.'
+    });
+  } else {
+    await User.findByIdAndUpdate(req.user._id, { $addToSet: { following: targetUserId } });
+    await User.findByIdAndUpdate(targetUserId, { $addToSet: { followers: req.user._id } });
+
+    res.status(200).json({
+      status: 'success',
+      isFollowing: true,
+      message: 'Followed successfully.'
+    });
+  }
+};
+
+/**
+ * Check if current user is following a creator
+ */
+export const checkFollowStatus = async (req, res, next) => {
+  const { targetUserId } = req.params;
+
+  if (!targetUserId) {
+    throw new AppError('Target user ID is required.', 400);
+  }
+
+  const isFollowing = req.user.following.includes(targetUserId);
+
+  res.status(200).json({
+    status: 'success',
+    isFollowing
   });
 };

@@ -50,27 +50,19 @@ export const getFeed = async (req, res, next) => {
 
   if (req.user) {
     if (req.user.role === 'brand') {
-      // Brands can ONLY see approved videos
+      // Brands can ONLY see approved (brand-safe) videos
       query.vettingStatus = 'approved';
-    } else if (req.user.role === 'creator') {
-      // Creators can see approved videos OR their own videos (regardless of vetting status)
-      query.$or = [
-        { vettingStatus: 'approved' },
-        { creatorId: req.user._id }
-      ];
     } else if (req.user.role === 'moderator') {
-      // Moderators can see all videos (no vetting status restriction)
-      // Allow filtering by vettingStatus query parameter (e.g. human_review)
+      // Moderators can filter by specific vettingStatus (e.g., human_review)
       if (req.query.vettingStatus) {
         query.vettingStatus = req.query.vettingStatus;
       }
-    } else {
-      // Other roles (fans/users) can only see approved videos
-      query.vettingStatus = 'approved';
     }
-  } else {
-    // Guest (unauthenticated) users can only see approved videos
-    query.vettingStatus = 'approved';
+
+    // Filter by followed creators if requested
+    if (req.query.following === 'true') {
+      query.creatorId = { $in: req.user.following || [] };
+    }
   }
 
   // 3) Execute queries (getting documents and total counts for metadata)
