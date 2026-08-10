@@ -357,6 +357,18 @@ export const toggleLikeVideo = async (req, res, next) => {
 
   await video.save();
 
+  if (!isLiked && video.creatorId.toString() !== userId.toString()) {
+    sendFcmNotification(
+      video.creatorId,
+      'New Video Like!',
+      `@${req.user.username} liked your video "${video.title || ''}"`,
+      {
+        type: 'video_like',
+        videoId: video._id.toString()
+      }
+    ).catch(err => console.error('[FCM Video Like Notification Failed]', err));
+  }
+
   res.status(200).json({
     status: 'success',
     data: {

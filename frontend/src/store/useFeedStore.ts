@@ -55,7 +55,8 @@ interface FeedStore {
   toggleMute: () => void;
   notifications: TokaNotification[];
   addNotification: (notification: Omit<TokaNotification, 'id' | 'read' | 'createdAt'>) => void;
-  markNotificationsAsRead: () => void;
+  markNotificationsAsRead: () => Promise<void>;
+  fetchNotifications: () => Promise<void>;
 }
 
 const initialVideos: Video[] = [
@@ -355,9 +356,50 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     }));
   },
 
-  markNotificationsAsRead: () => {
+  markNotificationsAsRead: async () => {
+    // Optimistic local state update
     set(state => ({
       notifications: state.notifications.map(n => ({ ...n, read: true }))
     }));
+
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (err) {
+      console.error('Error marking notifications as read on backend:', err);
+    }
+  },
+
+  fetchNotifications: async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const mapped = data.data.notifications.map((n: any) => ({
+          id: n._id,
+          title: n.title,
+          body: n.body,
+          read: n.read,
+          createdAt: n.createdAt
+        }));
+        set({ notifications: mapped });
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
   }
 }));

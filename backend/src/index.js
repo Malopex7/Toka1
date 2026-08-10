@@ -18,6 +18,7 @@ import videoRoutes from './routes/videoRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 const app = express();
 
 app.use(helmet({
@@ -56,6 +57,7 @@ app.use('/api', videoRoutes);
 app.use('/api', transactionRoutes);
 app.use('/api', userRoutes);
 app.use('/api', commentRoutes);
+app.use('/api', notificationRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {

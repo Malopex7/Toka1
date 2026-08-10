@@ -1,5 +1,6 @@
 import { messaging } from '../config/firebase.js';
 import User from '../models/User.js';
+import NotificationModel from '../models/Notification.js';
 
 /**
  * sendFcmNotification
@@ -19,8 +20,17 @@ export const sendFcmNotification = async (userId, title, body, data = {}) => {
       return;
     }
 
+    // Persist to MongoDB for in-app notification center fallback
+    await NotificationModel.create({
+      userId,
+      title,
+      body,
+      type: data.type || 'general',
+      metadata: data
+    });
+
     if (!user.fcmTokens || user.fcmTokens.length === 0) {
-      console.log(`[Notification Service] No FCM tokens registered for User ${user.username} (${userId}).`);
+      console.log(`[Notification Service] Saved in DB. No FCM tokens registered for User ${user.username} (${userId}).`);
       return;
     }
 

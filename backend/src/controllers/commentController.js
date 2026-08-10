@@ -124,6 +124,23 @@ export const addComment = async (req, res, next) => {
       ).catch(err => console.error('[FCM Comment Notification Failed]', err));
     }
 
+    // Notify the parent comment author if this is a reply (and not replying to oneself)
+    if (parentId) {
+      const parentComment = await Comment.findById(parentId);
+      if (parentComment && parentComment.userId.toString() !== userId.toString()) {
+        sendFcmNotification(
+          parentComment.userId,
+          'New Reply on Your Comment!',
+          `@${req.user.username} replied: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
+          {
+            type: 'comment_reply',
+            videoId: videoId.toString(),
+            commentId: comment._id.toString()
+          }
+        ).catch(err => console.error('[FCM Reply Notification Failed]', err));
+      }
+    }
+
     res.status(201).json({
       status: 'success',
       data: { comment }
@@ -161,6 +178,18 @@ export const toggleLikeComment = async (req, res, next) => {
     }
 
     await comment.save();
+
+    if (!isLiked && comment.userId.toString() !== userId.toString()) {
+      sendFcmNotification(
+        comment.userId,
+        'Comment Liked!',
+        `@${req.user.username} liked your comment: "${comment.text.substring(0, 30)}${comment.text.length > 30 ? '...' : ''}"`,
+        {
+          type: 'comment_like',
+          commentId: comment._id.toString()
+        }
+      ).catch(err => console.error('[FCM Comment Like Notification Failed]', err));
+    }
 
     res.status(200).json({
       status: 'success',

@@ -17,7 +17,7 @@ function generateHeartId(prefix = 'heart'): string {
 }
 
 export default function VideoFeed() {
-  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead } = useFeedStore();
+  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
@@ -57,6 +57,18 @@ export default function VideoFeed() {
     localStorage.setItem('toka_inbox_unread', 'false');
     setHasUnreadInbox(false);
   };
+
+  // Poll for notifications in the database (fallback for FCM issues or background/foreground actions)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchNotifications();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 10000); // Check every 10s
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchNotifications]);
 
   const feedTraceRef = useRef<any>(null);
 
