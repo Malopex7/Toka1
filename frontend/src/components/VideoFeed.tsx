@@ -48,6 +48,7 @@ export default function VideoFeed() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
 
   // States for micro-interactions
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
@@ -114,8 +115,13 @@ export default function VideoFeed() {
 
   // Mark notifications as read when the dropdown is closed
   useEffect(() => {
-    if (!isNotificationsOpen && notifications.some(n => !n.read)) {
-      markNotificationsAsRead();
+    if (isNotificationsOpen) {
+      wasOpenRef.current = true;
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      if (notifications.some(n => !n.read)) {
+        markNotificationsAsRead();
+      }
     }
   }, [isNotificationsOpen, notifications, markNotificationsAsRead]);
 
