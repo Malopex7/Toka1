@@ -22,6 +22,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   // Input fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<'creator' | 'brand' | 'moderator' | 'fan'>('fan');
   
@@ -57,8 +58,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await login(email, password);
         onClose();
       } else {
-        if (!email || !password || !sanitizedUsername || !role) {
+        if (!email || !password || !confirmPassword || !sanitizedUsername || !role) {
           setErrorMsg('All fields are required.');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setErrorMsg('Passwords do not match.');
           return;
         }
         if (sanitizedUsername.includes('@')) {
@@ -144,7 +149,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         {!profileSetupRequired && (
           <div className="grid grid-cols-2 bg-black/30 p-1 rounded-xl border border-white/5">
             <button
-              onClick={() => { setActiveTab('login'); setErrorMsg(null); }}
+              onClick={() => { setActiveTab('login'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
               className={`py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'login' 
                   ? 'bg-shaded-canopy text-cloud-white shadow-md' 
@@ -154,7 +159,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               Sign In
             </button>
             <button
-              onClick={() => { setActiveTab('register'); setErrorMsg(null); }}
+              onClick={() => { setActiveTab('register'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
               className={`py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'register' 
                   ? 'bg-shaded-canopy text-cloud-white shadow-md' 
@@ -240,6 +245,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {/* Additional Registration Fields */}
               {activeTab === 'register' && (
                 <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-cloud-white/60 tracking-wider uppercase">Confirm Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-toka-flare transition-all text-cloud-white"
+                    />
+                  </div>
+
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-bold text-cloud-white/60 tracking-wider uppercase">Username</label>
                     <div className="relative flex items-center">
