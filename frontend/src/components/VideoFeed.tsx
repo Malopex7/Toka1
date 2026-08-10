@@ -755,6 +755,7 @@ export default function VideoFeed() {
           videoId={activeCommentsVideoId}
           isOpen={true}
           onClose={() => setActiveCommentsVideoId(null)}
+          creatorId={videos.find(v => v.id === activeCommentsVideoId)?.creatorId || ''}
         />
       )}
 

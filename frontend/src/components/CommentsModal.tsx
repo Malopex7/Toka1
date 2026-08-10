@@ -18,6 +18,7 @@ interface Comment {
   parentId: string | null;
   likesCount: number;
   isLiked?: boolean;
+  isLikedByCreator?: boolean;
   createdAt: string;
   replies?: Comment[];
 }
@@ -31,9 +32,10 @@ interface CommentsModalProps {
   isOpen: boolean;
   onClose: () => void;
   videoId: string;
+  creatorId: string;
 }
 
-export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModalProps) {
+export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: CommentsModalProps) {
   const { mongooseUser, isAuthenticated, firebaseUser } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -236,6 +238,8 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
     // Capture original state for rollback
     const originalComments = [...comments];
 
+    const isCreator = mongooseUser && String(mongooseUser._id) === String(creatorId);
+
     // Apply optimistic updates
     setComments(prev => prev.map(c => {
       // If updating a reply
@@ -246,6 +250,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             return {
               ...r,
               isLiked: !wasLiked,
+              isLikedByCreator: isCreator ? !wasLiked : r.isLikedByCreator,
               likesCount: wasLiked ? Math.max(0, r.likesCount - 1) : r.likesCount + 1
             };
           }
@@ -260,6 +265,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         return {
           ...c,
           isLiked: !wasLiked,
+          isLikedByCreator: isCreator ? !wasLiked : c.isLikedByCreator,
           likesCount: wasLiked ? Math.max(0, c.likesCount - 1) : c.likesCount + 1
         };
       }
@@ -485,7 +491,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
 
           {/* Reply Details */}
           <div className="flex-1 flex flex-col">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Link
                 href={`/profile?username=${node.userId?.username}`}
                 onClick={onClose}
@@ -493,6 +499,11 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
               >
                 @{node.userId?.username || 'user'}
               </Link>
+              {String(node.userId?._id) === String(creatorId) && (
+                <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
+                  Creator
+                </span>
+              )}
               <span className="text-[8px] text-cloud-white/30 font-medium font-mono">
                 {getRelativeTime(node.createdAt)}
               </span>
@@ -500,6 +511,12 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             <p className="text-xs text-cloud-white/80 mt-0.5 leading-relaxed">
               {renderCommentText(node.text)}
             </p>
+            {node.isLikedByCreator && (
+              <div className="flex items-center gap-1 mt-1 text-[9px] text-toka-flare font-semibold">
+                <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                <span>Liked by creator</span>
+              </div>
+            )}
 
             <div className="flex items-center gap-3.5 mt-1">
               <button
@@ -621,7 +638,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                     </div>
 
                     <div className="flex-1 flex flex-col">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Link
                           href={`/profile?username=${comment.userId?.username}`}
                           onClick={onClose}
@@ -629,6 +646,11 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                         >
                           @{comment.userId?.username || 'user'}
                         </Link>
+                        {String(comment.userId?._id) === String(creatorId) && (
+                          <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1.5 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
+                            Creator
+                          </span>
+                        )}
                         <span className="text-[10px] text-cloud-white/30 font-medium">
                           {getRelativeTime(comment.createdAt)}
                         </span>
@@ -636,6 +658,12 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                       <p className="text-xs text-cloud-white/80 mt-1 leading-relaxed">
                         {renderCommentText(comment.text)}
                       </p>
+                      {comment.isLikedByCreator && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-toka-flare font-semibold">
+                          <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                          <span>Liked by creator</span>
+                        </div>
+                      )}
 
                       {/* Comment Action Links */}
                     <div className="flex items-center gap-4 mt-2">

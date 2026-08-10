@@ -11,6 +11,9 @@ export const getVideoComments = async (req, res, next) => {
   const userId = req.user?._id; // Populate isLiked if optionalProtect is run
 
   try {
+    const video = await Video.findById(videoId);
+    const creatorIdStr = video ? video.creatorId.toString() : null;
+
     const allComments = await Comment.find({ videoId })
       .populate('userId', 'username role')
       .sort({ createdAt: 1 });
@@ -18,10 +21,12 @@ export const getVideoComments = async (req, res, next) => {
     const formattedComments = allComments.map(c => {
       const obj = c.toObject();
       const isLiked = userId ? (c.likedBy && c.likedBy.some(id => id.toString() === userId.toString())) : false;
+      const isLikedByCreator = creatorIdStr ? (c.likedBy && c.likedBy.some(id => id.toString() === creatorIdStr)) : false;
       delete obj.likedBy;
       return {
         ...obj,
-        isLiked
+        isLiked,
+        isLikedByCreator
       };
     });
 
