@@ -22,6 +22,11 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface CommentNode extends Comment {
+  depth: number;
+  children: CommentNode[];
+}
+
 interface CommentsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -298,6 +303,97 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
     return 'just now';
   };
 
+  const buildReplyTree = (repliesList: Comment[], parentId: string): CommentNode[] => {
+    const build = (currParentId: string, currentDepth: number): CommentNode[] => {
+      return repliesList
+        .filter(r => r.parentId === currParentId)
+        .map(r => ({
+          ...r,
+          depth: currentDepth,
+          children: build(r._id, currentDepth + 1)
+        }));
+    };
+    return build(parentId, 1);
+  };
+
+  const ReplyNode = ({ node, parentCommentId }: { node: CommentNode; parentCommentId: string }) => {
+    const isReplyOwner = mongooseUser && node.userId?._id === mongooseUser._id;
+    const isReplyMod = mongooseUser?.role === 'moderator';
+
+    // Indentation dynamic styling
+    const indentClass = node.depth === 1 ? 'pl-4' : node.depth === 2 ? 'pl-8' : 'pl-10';
+
+    return (
+      <div className={`flex flex-col gap-2 ${indentClass} border-l border-white/5 mt-2`}>
+        <div className="flex items-start gap-2.5 group/reply">
+          {/* User Initial Avatar */}
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white shrink-0 select-none shadow-sm">
+            {node.userId?.username?.charAt(0).toUpperCase()}
+          </div>
+
+          {/* Reply Details */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={`/profile?username=${node.userId?.username}`}
+                onClick={onClose}
+                className="text-[10px] font-bold text-cloud-white hover:underline"
+              >
+                @{node.userId?.username || 'user'}
+              </Link>
+              <span className="text-[8px] text-cloud-white/30 font-medium font-mono">
+                {getRelativeTime(node.createdAt)}
+              </span>
+            </div>
+            <p className="text-xs text-cloud-white/80 mt-0.5 leading-relaxed">
+              {renderCommentText(node.text)}
+            </p>
+
+            <div className="flex items-center gap-3.5 mt-1">
+              <button
+                onClick={() => {
+                  setReplyingTo({ commentId: parentCommentId, username: node.userId.username });
+                  setInputText(`@${node.userId.username} `);
+                }}
+                className="text-[8px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+              >
+                Reply
+              </button>
+              {(isReplyOwner || isReplyMod) && (
+                <button
+                  onClick={() => handleDeleteComment(node._id, parentCommentId)}
+                  className="text-[8px] font-bold text-red-500/60 hover:text-red-400 transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Like Reply Toggle */}
+          <button
+            onClick={() => handleLikeToggle(node._id, parentCommentId)}
+            className="flex flex-col items-center gap-0.5 text-cloud-white/40 hover:text-red-500 transition-colors pt-0.5"
+          >
+            <span className={`material-symbols-outlined text-[14px] ${node.isLiked ? 'text-red-500' : ''}`} style={node.isLiked ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+              favorite
+            </span>
+            <span className="text-[8px] font-mono font-medium">{node.likesCount}</span>
+          </button>
+        </div>
+
+        {/* Recursive Children rendering */}
+        {node.children && node.children.length > 0 && (
+          <div className="flex flex-col gap-2 mt-1">
+            {node.children.map(child => (
+              <ReplyNode key={child._id} node={child} parentCommentId={parentCommentId} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -405,80 +501,22 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                   </div>
 
                   {/* Nested Replies Section */}
-                  <div className="pl-12 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
                     {/* Expand/Collapse Trigger */}
                     {comment.replies && comment.replies.length > 0 && (
                       <button
                         onClick={() => toggleRepliesVisibility(comment._id)}
-                        className="text-[10px] font-bold text-toka-flare hover:underline flex items-center gap-1 w-fit select-none"
+                        className="text-[10px] font-bold text-toka-flare hover:underline flex items-center gap-1 w-fit select-none pl-6"
                       >
                         <span className="w-6 h-[1px] bg-toka-flare/20 inline-block mr-1"></span>
                         {showReplies ? 'Hide replies' : `View replies (${comment.replies.length})`}
                       </button>
                     )}
 
-                    {/* Nested Reply Item list */}
-                    {showReplies && comment.replies && comment.replies.map((reply) => {
-                      const isReplyOwner = mongooseUser && reply.userId?._id === mongooseUser._id;
-                      const isReplyMod = mongooseUser?.role === 'moderator';
-
-                      return (
-                        <div key={reply._id} className="flex items-start gap-3 group/reply mt-1">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white shrink-0 select-none shadow-sm">
-                            {reply.userId?.username?.charAt(0).toUpperCase()}
-                          </div>
-
-                          <div className="flex-1 flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <Link
-                                href={`/profile?username=${reply.userId?.username}`}
-                                onClick={onClose}
-                                className="text-[11px] font-bold text-cloud-white hover:underline"
-                              >
-                                @{reply.userId?.username || 'user'}
-                              </Link>
-                              <span className="text-[9px] text-cloud-white/30 font-medium">
-                                {getRelativeTime(reply.createdAt)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-cloud-white/80 mt-1 leading-relaxed">
-                              {renderCommentText(reply.text)}
-                            </p>
-
-                            <div className="flex items-center gap-4 mt-1.5">
-                              <button
-                                onClick={() => {
-                                  setReplyingTo({ commentId: comment._id, username: reply.userId.username });
-                                  setInputText(`@${reply.userId.username} `);
-                                }}
-                                className="text-[9px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
-                              >
-                                Reply
-                              </button>
-                              {(isReplyOwner || isReplyMod) && (
-                                <button
-                                  onClick={() => handleDeleteComment(reply._id, comment._id)}
-                                  className="text-[9px] font-bold text-red-500/60 hover:text-red-400 transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Reply Like Toggle */}
-                          <button
-                            onClick={() => handleLikeToggle(reply._id, comment._id)}
-                            className="flex flex-col items-center gap-0.5 text-cloud-white/40 hover:text-red-500 transition-colors"
-                          >
-                            <span className={`material-symbols-outlined text-[14px] ${reply.isLiked ? 'text-red-500' : ''}`} style={reply.isLiked ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-                              favorite
-                            </span>
-                            <span className="text-[8px] font-mono font-medium">{reply.likesCount}</span>
-                          </button>
-                        </div>
-                      );
-                    })}
+                    {/* Nested Reply Tree rendering */}
+                    {showReplies && buildReplyTree(comment.replies || [], comment._id).map(node => (
+                      <ReplyNode key={node._id} node={node} parentCommentId={comment._id} />
+                    ))}
                   </div>
                 </div>
               );
