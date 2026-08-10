@@ -22,7 +22,9 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigin = rawFrontendUrl.endsWith('/') ? rawFrontendUrl.slice(0, -1) : rawFrontendUrl;
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 
 // Connect to MongoDB (use MONGO_URI from .env)
