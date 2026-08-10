@@ -30,6 +30,8 @@ export interface TokaNotification {
   body: string;
   read: boolean;
   createdAt: string;
+  type?: string;
+  metadata?: Record<string, string>;
 }
 
 interface FeedStore {
@@ -394,7 +396,9 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           title: n.title,
           body: n.body,
           read: n.read,
-          createdAt: n.createdAt
+          createdAt: n.createdAt,
+          type: n.type,
+          metadata: n.metadata
         }));
         set({ notifications: mapped });
       }

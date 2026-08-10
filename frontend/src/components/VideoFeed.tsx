@@ -208,6 +208,34 @@ export default function VideoFeed() {
     fetchFollowStatuses();
   }, [videos, isAuthenticated, firebaseUser]);
 
+  const handleNotificationClick = (notif: any) => {
+    setIsNotificationsOpen(false);
+    const videoId = notif.metadata?.videoId;
+    if (videoId) {
+      const idx = videos.findIndex(v => String(v.id) === String(videoId));
+      if (idx !== -1) {
+        setCurrentIndex(idx);
+        const container = containerRef.current;
+        if (container) {
+          const target = container.children[idx] as HTMLElement;
+          if (target) {
+            container.scrollTo({
+              top: target.offsetTop,
+              behavior: 'smooth'
+            });
+          }
+        }
+        if (notif.type === 'new_comment' || notif.type === 'comment_reply') {
+          setTimeout(() => {
+            setActiveCommentsVideoId(videoId);
+          }, 600);
+        }
+      } else {
+        setActiveCommentsVideoId(videoId);
+      }
+    }
+  };
+
   const handleFollowToggle = async (creatorId: string) => {
     if (!creatorId) return;
     requireAuth(async () => {
@@ -464,13 +492,17 @@ export default function VideoFeed() {
                             </div>
                           ) : (
                             notifications.map((notif) => (
-                              <div key={notif.id} className="flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                                <div className="flex items-center gap-1.5 justify-between flex-wrap">
-                                  <span className="text-[10px] font-bold text-cloud-white">{notif.title}</span>
+                              <button
+                                key={notif.id}
+                                onClick={() => handleNotificationClick(notif)}
+                                className="flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left hover:bg-white/5 p-1.5 rounded-lg transition-colors w-full cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-1.5 justify-between flex-wrap w-full">
+                                  <span className="text-[10px] font-bold text-cloud-white group-hover:text-toka-flare transition-colors">{notif.title}</span>
                                   {!notif.read && <span className="w-1.5 h-1.5 bg-toka-flare rounded-full"></span>}
                                 </div>
                                 <p className="text-[10px] text-cloud-white/70 leading-normal">{notif.body}</p>
-                              </div>
+                              </button>
                             ))
                           )}
                         </div>
