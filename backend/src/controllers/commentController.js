@@ -25,13 +25,35 @@ export const getVideoComments = async (req, res, next) => {
       };
     });
 
+    // Create a map of all comments for quick hierarchy lookup
+    const commentsMap = new Map();
+    formattedComments.forEach(c => {
+      commentsMap.set(c._id.toString(), c);
+    });
+
+    const findRootParentId = (commentId) => {
+      let curr = commentsMap.get(commentId.toString());
+      if (!curr) return null;
+      while (curr.parentId) {
+        const parent = commentsMap.get(curr.parentId.toString());
+        if (!parent) break;
+        curr = parent;
+      }
+      return curr._id.toString();
+    };
+
     // Filter parents and replies
     const parents = formattedComments.filter(c => !c.parentId);
     const replies = formattedComments.filter(c => c.parentId);
 
-    // Map nested replies into parents
+    // Map replies (at any depth) under their root top-level parent comment
     const commentsWithReplies = parents.map(parent => {
-      const parentReplies = replies.filter(r => r.parentId.toString() === parent._id.toString());
+      const parentIdStr = parent._id.toString();
+      const parentReplies = replies.filter(r => {
+        const rootParentId = findRootParentId(r._id);
+        return rootParentId === parentIdStr;
+      });
+
       return {
         ...parent,
         replies: parentReplies

@@ -117,9 +117,12 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         newComment.likesCount = 0;
 
         if (parentId) {
-          // Add comment to parent replies
+          // Add comment to the correct parent (either direct or nested)
           setComments(prev => prev.map(c => {
-            if (c._id === parentId) {
+            const isDirectParent = c._id === parentId;
+            const hasTargetReply = c.replies?.some(r => r._id === parentId);
+
+            if (isDirectParent || hasTargetReply) {
               return {
                 ...c,
                 replies: [...(c.replies || []), newComment]
@@ -128,12 +131,15 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             return c;
           }));
 
-          // Automatically expand parent reply thread
-          setExpandedParents(prev => {
-            const next = new Set(prev);
-            next.add(parentId);
-            return next;
-          });
+          // Automatically expand parent reply thread (need the top-level parent ID)
+          const parentComment = comments.find(c => c._id === parentId || c.replies?.some(r => r._id === parentId));
+          if (parentComment) {
+            setExpandedParents(prev => {
+              const next = new Set(prev);
+              next.add(parentComment._id);
+              return next;
+            });
+          }
         } else {
           // Add to top-level comment list
           setComments(prev => [...prev, newComment]);
