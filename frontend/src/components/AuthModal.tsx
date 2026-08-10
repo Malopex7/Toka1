@@ -126,7 +126,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <img 
               src="/images/logo/logo.png" 
               alt="Toka" 
-              className="h-12 w-auto object-contain" 
+              className="h-40 w-auto object-contain" 
             />
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-cloud-white">

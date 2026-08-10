@@ -417,11 +417,11 @@ export default function VideoFeed() {
 
       {/* Desktop Navigation Left Sidebar (Hidden on Mobile) */}
       <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
-        <div className="mb-12 px-4 flex items-center h-10 select-none">
+        <div className="mb-12 px-4 flex items-center select-none">
           <img 
             src="/images/logo/logo.png" 
             alt="Toka" 
-            className="h-10 w-auto object-contain" 
+            className="h-36 w-auto object-contain" 
           />
         </div>
         <div className="flex flex-col gap-2">
