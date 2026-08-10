@@ -117,10 +117,10 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         newComment.likesCount = 0;
 
         if (parentId) {
-          // Add comment to the correct parent (either direct or nested)
+          // Add comment to the correct parent (either direct or nested reply)
           setComments(prev => prev.map(c => {
-            const isDirectParent = c._id === parentId;
-            const hasTargetReply = c.replies?.some(r => r._id === parentId);
+            const isDirectParent = String(c._id) === String(parentId);
+            const hasTargetReply = c.replies?.some(r => String(r._id) === String(parentId));
 
             if (isDirectParent || hasTargetReply) {
               return {
@@ -131,12 +131,15 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             return c;
           }));
 
-          // Automatically expand parent reply thread (need the top-level parent ID)
-          const parentComment = comments.find(c => c._id === parentId || c.replies?.some(r => r._id === parentId));
+          // Automatically expand the top-level parent's reply thread
+          const parentComment = comments.find(c =>
+            String(c._id) === String(parentId) ||
+            c.replies?.some(r => String(r._id) === String(parentId))
+          );
           if (parentComment) {
             setExpandedParents(prev => {
               const next = new Set(prev);
-              next.add(parentComment._id);
+              next.add(String(parentComment._id));
               return next;
             });
           }
@@ -256,12 +259,13 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   };
 
   const toggleRepliesVisibility = (parentId: string) => {
+    const strId = String(parentId);
     setExpandedParents(prev => {
       const next = new Set(prev);
-      if (next.has(parentId)) {
-        next.delete(parentId);
+      if (next.has(strId)) {
+        next.delete(strId);
       } else {
-        next.add(parentId);
+        next.add(strId);
       }
       return next;
     });
@@ -312,14 +316,14 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   const buildReplyTree = (repliesList: Comment[], parentId: string): CommentNode[] => {
     const build = (currParentId: string, currentDepth: number): CommentNode[] => {
       return repliesList
-        .filter(r => r.parentId === currParentId)
+        .filter(r => r.parentId && String(r.parentId) === String(currParentId))
         .map(r => ({
           ...r,
           depth: currentDepth,
-          children: build(r._id, currentDepth + 1)
+          children: build(String(r._id), currentDepth + 1)
         }));
     };
-    return build(parentId, 1);
+    return build(String(parentId), 1);
   };
 
   const ReplyNode = ({ node, parentCommentId }: { node: CommentNode; parentCommentId: string }) => {
@@ -445,7 +449,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             comments.map((comment) => {
               const isOwner = mongooseUser && comment.userId?._id === mongooseUser._id;
               const isMod = mongooseUser?.role === 'moderator';
-              const showReplies = expandedParents.has(comment._id);
+              const showReplies = expandedParents.has(String(comment._id));
 
               return (
                 <div key={comment._id} className="flex flex-col gap-3">
@@ -511,7 +515,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                     {/* Expand/Collapse Trigger */}
                     {comment.replies && comment.replies.length > 0 && (
                       <button
-                        onClick={() => toggleRepliesVisibility(comment._id)}
+                        onClick={() => toggleRepliesVisibility(String(comment._id))}
                         className="text-[10px] font-bold text-toka-flare hover:underline flex items-center gap-1 w-fit select-none pl-6"
                       >
                         <span className="w-6 h-[1px] bg-toka-flare/20 inline-block mr-1"></span>
@@ -520,7 +524,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                     )}
 
                     {/* Nested Reply Tree rendering */}
-                    {showReplies && buildReplyTree(comment.replies || [], comment._id).map(node => (
+                    {showReplies && buildReplyTree(comment.replies || [], String(comment._id)).map(node => (
                       <ReplyNode key={node._id} node={node} parentCommentId={comment._id} />
                     ))}
                   </div>
