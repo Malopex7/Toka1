@@ -23,9 +23,9 @@ const userSchema = new mongoose.Schema({
     minLength: [3, 'Username must be at least 3 characters long'],
     validate: {
       validator: function(val) {
-        return !val.includes('@');
+        return /^[a-zA-Z0-9_]+$/.test(val);
       },
-      message: 'Username cannot contain the "@" symbol.'
+      message: 'Username can only contain letters, numbers, and underscores (_).'
     }
   },
   walletBalance: {

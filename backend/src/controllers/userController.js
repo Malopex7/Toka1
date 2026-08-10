@@ -63,8 +63,8 @@ export const syncUser = async (req, res, next) => {
   // Sanitize username by trimming and removing any leading '@'
   const sanitizedUsername = username.trim().replace(/^@+/, '');
 
-  if (sanitizedUsername.includes('@')) {
-    throw new AppError('Username cannot contain the "@" symbol.', 400);
+  if (!/^[a-zA-Z0-9_]+$/.test(sanitizedUsername)) {
+    throw new AppError('Username can only contain letters, numbers, and underscores (_).', 400);
   }
 
   if (sanitizedUsername.length < 3) {

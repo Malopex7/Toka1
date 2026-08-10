@@ -34,8 +34,15 @@ export const errorHandler = (err, req, res, next) => {
 
   // Handle Mongoose Duplicate Key Error (e.g., unique email)
   if (err.code === 11000) {
-    const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
-    err = new AppError(`Duplicate field value: ${value}. Please use another value!`, 400);
+    const field = err.keyValue ? Object.keys(err.keyValue)[0] : '';
+    if (field === 'email') {
+      err = new AppError('An account with this email address already exists. Please sign in using your original method (Email/Password or Google).', 400);
+    } else if (field === 'username') {
+      err = new AppError('Username is already taken.', 400);
+    } else {
+      const value = err.errmsg ? (err.errmsg.match(/(["'])(\\?.)*?\1/)?.[0] || 'unknown') : 'unknown';
+      err = new AppError(`Duplicate field value: ${value}. Please use another value!`, 400);
+    }
   }
 
   // Handle JWT errors

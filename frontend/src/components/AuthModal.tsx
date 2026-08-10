@@ -44,8 +44,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           setErrorMsg('Username and role are required.');
           return;
         }
-        if (sanitizedUsername.includes('@')) {
-          setErrorMsg('Username cannot contain the "@" symbol.');
+        if (!/^[a-zA-Z0-9_]+$/.test(sanitizedUsername)) {
+          setErrorMsg('Username can only contain letters, numbers, and underscores (_).');
+          return;
+        }
+        if (sanitizedUsername.length < 3) {
+          setErrorMsg('Username must be at least 3 characters.');
           return;
         }
         await completeProfileSetup(sanitizedUsername, role);
@@ -66,8 +70,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           setErrorMsg('Passwords do not match.');
           return;
         }
-        if (sanitizedUsername.includes('@')) {
-          setErrorMsg('Username cannot contain the "@" symbol.');
+        if (!/^[a-zA-Z0-9_]+$/.test(sanitizedUsername)) {
+          setErrorMsg('Username can only contain letters, numbers, and underscores (_).');
           return;
         }
         if (sanitizedUsername.length < 3) {
