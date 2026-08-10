@@ -106,7 +106,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          text: text.trim(),
+          text: inputText.trim(),
           parentId
         })
       });
