@@ -16,6 +16,28 @@ function generateHeartId(prefix = 'heart'): string {
   return `${prefix}-${Date.now()}-${Math.random()}`;
 }
 
+function formatNotificationTime(isoString?: string): string {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    return date.toLocaleDateString('en-ZA', {
+      day: 'numeric',
+      month: 'short'
+    });
+  } catch (e) {
+    return '';
+  }
+}
+
 export default function VideoFeed() {
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
@@ -25,6 +47,7 @@ export default function VideoFeed() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   // States for micro-interactions
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
@@ -69,6 +92,32 @@ export default function VideoFeed() {
 
     return () => clearInterval(interval);
   }, [isAuthenticated, fetchNotifications]);
+
+  // Close notifications dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationsOpen(false);
+      }
+    }
+
+    if (isNotificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
+
+  // Mark notifications as read when the dropdown is closed
+  useEffect(() => {
+    if (!isNotificationsOpen && notifications.some(n => !n.read)) {
+      markNotificationsAsRead();
+    }
+  }, [isNotificationsOpen, notifications, markNotificationsAsRead]);
 
   const feedTraceRef = useRef<any>(null);
 
@@ -452,14 +501,10 @@ export default function VideoFeed() {
             <div className="pointer-events-auto flex items-center gap-3 select-none relative">
               {isAuthenticated ? (
                 <>
-                  <div className="relative">
+                  <div className="relative" ref={notificationsRef}>
                     <button
                       onClick={() => {
-                        const next = !isNotificationsOpen;
-                        setIsNotificationsOpen(next);
-                        if (next) {
-                          markNotificationsAsRead();
-                        }
+                        setIsNotificationsOpen(prev => !prev);
                       }}
                       className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-cloud-white"
                       title="Notifications"
@@ -468,7 +513,7 @@ export default function VideoFeed() {
                     </button>
                     
                     {/* Unread dot indicator */}
-                    {notifications.some(n => !n.read) && (
+                    {notifications.some(n => !n.read) && !isNotificationsOpen && (
                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-toka-flare rounded-full border border-midnight-boma animate-pulse"></span>
                     )}
 
@@ -495,13 +540,30 @@ export default function VideoFeed() {
                               <button
                                 key={notif.id}
                                 onClick={() => handleNotificationClick(notif)}
-                                className="flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left hover:bg-white/5 p-1.5 rounded-lg transition-colors w-full cursor-pointer group"
+                                className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${
+                                  !notif.read
+                                    ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
+                                    : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
+                                }`}
                               >
-                                <div className="flex items-center gap-1.5 justify-between flex-wrap w-full">
-                                  <span className="text-[10px] font-bold text-cloud-white group-hover:text-toka-flare transition-colors">{notif.title}</span>
-                                  {!notif.read && <span className="w-1.5 h-1.5 bg-toka-flare rounded-full"></span>}
+                                <div className="flex items-center justify-between gap-2 w-full">
+                                  <span className={`text-[10px] font-bold transition-colors ${
+                                    !notif.read ? 'text-cloud-white group-hover:text-toka-flare' : 'text-cloud-white/60 group-hover:text-cloud-white'
+                                  }`}>
+                                    {notif.title}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="text-[8px] text-cloud-white/30 font-mono">{formatNotificationTime(notif.createdAt)}</span>
+                                    {!notif.read && (
+                                      <span className="w-1.5 h-1.5 bg-toka-flare rounded-full shadow-[0_0_6px_rgba(255,79,0,0.8)] animate-pulse"></span>
+                                    )}
+                                  </div>
                                 </div>
-                                <p className="text-[10px] text-cloud-white/70 leading-normal">{notif.body}</p>
+                                <p className={`text-[10px] leading-normal transition-colors ${
+                                  !notif.read ? 'text-cloud-white/90' : 'text-cloud-white/50'
+                                }`}>
+                                  {notif.body}
+                                </p>
                               </button>
                             ))
                           )}
