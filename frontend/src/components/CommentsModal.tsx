@@ -164,7 +164,9 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   };
 
   // Wrapper to handle inline reply submission from a specific comment
-  const handleInlineReply = async (e: React.FormEvent, parentCommentId: string, targetUsername: string) => {
+  // - immediateParentId: the specific comment/reply being replied to (stored as parentId in DB)
+  // - rootCommentId: the top-level comment this thread belongs to (used for state updates)
+  const handleInlineReply = async (e: React.FormEvent, immediateParentId: string, rootCommentId: string, targetUsername: string) => {
     e.preventDefault();
     if (!isAuthenticated || !firebaseUser) {
       alert('Please sign in to reply.');
@@ -173,7 +175,6 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
     if (!inlineInputText.trim()) return;
 
     setSubmitting(true);
-    const parentId = parentCommentId;
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -185,7 +186,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         },
         body: JSON.stringify({
           text: inlineInputText.trim(),
-          parentId
+          parentId: immediateParentId  // correct: the specific reply being replied to
         })
       });
 
@@ -195,29 +196,23 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         newComment.replies = [];
         newComment.isLiked = false;
         newComment.likesCount = 0;
+        // Ensure parentId is set correctly for buildReplyTree to work
+        newComment.parentId = immediateParentId;
 
+        // Append to the flat replies array of the root comment
         setComments(prev => prev.map(c => {
-          const isDirectParent = String(c._id) === String(parentId);
-          const hasTargetReply = c.replies?.some(r => String(r._id) === String(parentId));
-
-          if (isDirectParent || hasTargetReply) {
+          if (String(c._id) === String(rootCommentId)) {
             return { ...c, replies: [...(c.replies || []), newComment] };
           }
           return c;
         }));
 
-        // Expand the parent thread
-        const parentComment = comments.find(c =>
-          String(c._id) === String(parentId) ||
-          c.replies?.some(r => String(r._id) === String(parentId))
-        );
-        if (parentComment) {
-          setExpandedParents(prev => {
-            const next = new Set(prev);
-            next.add(String(parentComment._id));
-            return next;
-          });
-        }
+        // Ensure the root comment thread is expanded
+        setExpandedParents(prev => {
+          const next = new Set(prev);
+          next.add(String(rootCommentId));
+          return next;
+        });
 
         setInlineInputText('');
         setActiveReplyBoxId(null);
@@ -399,11 +394,13 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   };
 
   // Inline reply box rendered directly beneath a comment or reply
-  const InlineReplyBox = ({ targetCommentId, parentCommentId, targetUsername }: { targetCommentId: string; parentCommentId: string; targetUsername: string }) => {
+  // - targetCommentId: the specific comment/reply being replied to (parentId for POST)
+  // - rootCommentId: the top-level parent comment (for state update)
+  const InlineReplyBox = ({ targetCommentId, rootCommentId, targetUsername }: { targetCommentId: string; rootCommentId: string; targetUsername: string }) => {
     if (!isAuthenticated) return null;
     return (
       <form
-        onSubmit={(e) => handleInlineReply(e, parentCommentId, targetUsername)}
+        onSubmit={(e) => handleInlineReply(e, targetCommentId, rootCommentId, targetUsername)}
         className="flex items-center gap-2 bg-black/25 border border-toka-flare/30 rounded-xl p-1.5 mt-1.5 focus-within:border-toka-flare transition-all"
         onClick={(e) => e.stopPropagation()}
       >
@@ -508,7 +505,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         {activeReplyBoxId === String(node._id) && (
           <InlineReplyBox
             targetCommentId={String(node._id)}
-            parentCommentId={parentCommentId}
+            rootCommentId={parentCommentId}
             targetUsername={node.userId.username}
           />
         )}
@@ -639,7 +636,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                   {activeReplyBoxId === String(comment._id) && (
                     <InlineReplyBox
                       targetCommentId={String(comment._id)}
-                      parentCommentId={String(comment._id)}
+                      rootCommentId={String(comment._id)}
                       targetUsername={comment.userId.username}
                     />
                   )}
