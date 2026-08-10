@@ -43,6 +43,7 @@ export default function VideoFeed() {
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
+  const [highlightCommentId, setHighlightCommentId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -266,29 +267,41 @@ export default function VideoFeed() {
   const handleNotificationClick = (notif: any) => {
     setIsNotificationsOpen(false);
     const videoId = notif.metadata?.videoId;
-    if (videoId) {
-      const idx = videos.findIndex(v => String(v.id) === String(videoId));
-      if (idx !== -1) {
-        setCurrentIndex(idx);
-        const container = containerRef.current;
-        if (container) {
-          const target = container.children[idx] as HTMLElement;
-          if (target) {
-            container.scrollTo({
-              top: target.offsetTop,
-              behavior: 'smooth'
-            });
-          }
+    const commentId = notif.metadata?.commentId;
+    const type = notif.type;
+
+    // Helper: scroll to a video in the feed by its ID
+    const scrollToVideo = (targetVideoId: string): boolean => {
+      const idx = videos.findIndex(v => String(v.id) === String(targetVideoId));
+      if (idx === -1) return false;
+      setCurrentIndex(idx);
+      const container = containerRef.current;
+      if (container) {
+        const target = container.children[idx] as HTMLElement;
+        if (target) {
+          container.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
         }
-        if (notif.type === 'new_comment' || notif.type === 'comment_reply') {
-          setTimeout(() => {
-            setActiveCommentsVideoId(videoId);
-          }, 600);
-        }
-      } else {
-        setActiveCommentsVideoId(videoId);
       }
+      return true;
+    };
+
+    // Helper: open comments modal for a video, optionally highlighting a comment
+    const openComments = (targetVideoId: string, targetCommentId?: string) => {
+      setHighlightCommentId(targetCommentId || null);
+      setTimeout(() => {
+        setActiveCommentsVideoId(targetVideoId);
+      }, 500);
+    };
+
+    if (!videoId) return;
+
+    const foundInFeed = scrollToVideo(videoId);
+
+    // For comment-related types, open the comments modal
+    if (type === 'new_comment' || type === 'comment_reply' || type === 'comment_like') {
+      openComments(videoId, commentId);
     }
+    // For video_like, tip_received, vetting_update — scrolling to the video is sufficient
   };
 
   const handleFollowToggle = async (creatorId: string) => {
@@ -922,8 +935,9 @@ export default function VideoFeed() {
         <CommentsModal
           videoId={activeCommentsVideoId}
           isOpen={true}
-          onClose={() => setActiveCommentsVideoId(null)}
+          onClose={() => { setActiveCommentsVideoId(null); setHighlightCommentId(null); }}
           creatorId={videos.find(v => v.id === activeCommentsVideoId)?.creatorId || ''}
+          highlightCommentId={highlightCommentId ?? undefined}
         />
       )}
 

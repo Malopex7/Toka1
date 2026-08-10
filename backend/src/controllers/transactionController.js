@@ -142,6 +142,7 @@ export const tipCreator = async (req, res, next) => {
       `@${req.user.username} tipped you R ${tipAmount.toFixed(2)} on your video "${video.title}"!`,
       {
         type: 'tip_received',
+        videoId: videoId.toString(),
         amount: String(tipAmount),
         senderName: req.user.username,
         videoTitle: video.title

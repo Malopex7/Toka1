@@ -186,6 +186,7 @@ export const toggleLikeComment = async (req, res, next) => {
         `@${req.user.username} liked your comment: "${comment.text.substring(0, 30)}${comment.text.length > 30 ? '...' : ''}"`,
         {
           type: 'comment_like',
+          videoId: comment.videoId.toString(),
           commentId: comment._id.toString()
         }
       ).catch(err => console.error('[FCM Comment Like Notification Failed]', err));

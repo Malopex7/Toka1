@@ -33,9 +33,10 @@ interface CommentsModalProps {
   onClose: () => void;
   videoId: string;
   creatorId: string;
+  highlightCommentId?: string;
 }
 
-export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: CommentsModalProps) {
+export default function CommentsModal({ isOpen, onClose, videoId, creatorId, highlightCommentId }: CommentsModalProps) {
   const { mongooseUser, isAuthenticated, firebaseUser } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: C
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; targetCommentId: string; username: string } | null>(null);
   // Track expanded reply sections (parent comment IDs)
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,12 +81,59 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: C
     fetchComments();
   }, [isOpen, videoId, firebaseUser]);
 
+  // 1.5) Handle auto-expanding and scrolling to the highlighted comment/reply
+  useEffect(() => {
+    if (!isOpen || !highlightCommentId || comments.length === 0) return;
+
+    // Find the parent comment of the highlighted comment (if it is a reply)
+    let parentId: string | null = null;
+    for (const c of comments) {
+      if (String(c._id) === String(highlightCommentId)) {
+        parentId = String(c._id);
+        break;
+      }
+      if (c.replies?.some(r => String(r._id) === String(highlightCommentId))) {
+        parentId = String(c._id);
+        break;
+      }
+    }
+
+    if (parentId) {
+      // Expand the parent thread so the reply is rendered in the DOM
+      setExpandedParents(prev => {
+        const next = new Set(prev);
+        next.add(parentId!);
+        return next;
+      });
+    }
+
+    setHighlightedId(highlightCommentId);
+
+    // Wait for the DOM to render the expanded thread, then scroll to it
+    const scrollTimer = setTimeout(() => {
+      const element = document.querySelector(`[data-comment-id="${highlightCommentId}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 450);
+
+    // Fade out the highlight after 3 seconds
+    const fadeTimer = setTimeout(() => {
+      setHighlightedId(null);
+    }, 3000);
+
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(fadeTimer);
+    };
+  }, [isOpen, highlightCommentId, comments]);
+
   // Scroll to bottom when root comment list length increases
   useEffect(() => {
-    if (!replyingTo) {
+    if (!replyingTo && !highlightCommentId) {
       commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [comments.length, replyingTo]);
+  }, [comments.length, replyingTo, highlightCommentId]);
 
   // 2) Handle posting comments or replies
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -480,10 +529,18 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: C
 
     // Indentation dynamic styling
     const indentClass = node.depth === 1 ? 'pl-4' : node.depth === 2 ? 'pl-8' : 'pl-10';
+    const isHighlighted = highlightedId === String(node._id);
 
     return (
       <div className={`flex flex-col gap-2 ${indentClass} border-l border-white/5 mt-2`}>
-        <div className="flex items-start gap-2.5 group/reply">
+        <div 
+          data-comment-id={node._id}
+          className={`flex items-start gap-2.5 group/reply p-2 rounded-xl transition-all duration-500 ${
+            isHighlighted 
+              ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse' 
+              : ''
+          }`}
+        >
           {/* User Initial Avatar */}
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white shrink-0 select-none shadow-sm">
             {node.userId?.username?.charAt(0).toUpperCase()}
@@ -628,11 +685,19 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId }: C
               const isOwner = mongooseUser && comment.userId?._id === mongooseUser._id;
               const isMod = mongooseUser?.role === 'moderator';
               const showReplies = expandedParents.has(String(comment._id));
+              const isHighlighted = highlightedId === String(comment._id);
 
               return (
                 <div key={comment._id} className="flex flex-col gap-3">
                   {/* Top-Level Parent Comment */}
-                  <div className="flex items-start gap-3 group">
+                  <div 
+                    data-comment-id={comment._id}
+                    className={`flex items-start gap-3 group p-2 rounded-xl transition-all duration-500 ${
+                      isHighlighted 
+                        ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse' 
+                        : ''
+                    }`}
+                  >
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 select-none shadow-sm">
                       {comment.userId?.username?.charAt(0).toUpperCase()}
                     </div>
