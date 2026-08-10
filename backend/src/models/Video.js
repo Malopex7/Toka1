@@ -52,6 +52,10 @@ const videoSchema = new mongoose.Schema({
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User',
     default: []
+  },
+  sharesCount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

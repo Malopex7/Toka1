@@ -362,3 +362,23 @@ export const toggleLikeVideo = async (req, res, next) => {
     }
   });
 };
+
+export const recordShare = async (req, res, next) => {
+  const { id } = req.params;
+  const video = await Video.findByIdAndUpdate(
+    id,
+    { $inc: { sharesCount: 1 } },
+    { new: true }
+  );
+
+  if (!video) {
+    throw new AppError('Video not found', 404);
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      sharesCount: video.sharesCount
+    }
+  });
+};

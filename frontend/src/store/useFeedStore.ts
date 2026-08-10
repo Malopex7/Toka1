@@ -40,7 +40,7 @@ interface FeedStore {
   toggleLikeVideo: (videoId: string) => Promise<void>;
   fetchNextPage: () => Promise<void>;
   resetFeed: () => void;
-  incrementShareCount: (videoId: string) => void;
+  incrementShareCount: (videoId: string) => Promise<void>;
 }
 
 const initialVideos: Video[] = [
@@ -226,7 +226,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           description: video.title + ' #toka #creator',
           likes: video.likesCount || 0,
           tips: 0,
-          shares: Math.floor(Math.random() * 200) + 15,
+          shares: video.sharesCount || 0,
           vettingStatus: video.vettingStatus,
           aiConfidenceScore: video.aiConfidenceScore || 0,
           riskFlags: video.riskFlags || [],
@@ -279,9 +279,34 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     isLoading: false
   }),
   
-  incrementShareCount: (videoId) => set((state) => ({
-    videos: state.videos.map((vid) =>
-      vid.id === videoId ? { ...vid, shares: vid.shares + 1 } : vid
-    )
-  }))
+  incrementShareCount: async (videoId) => {
+    const { videos } = get();
+    // 1) Optimistic update
+    set({
+      videos: videos.map((vid) =>
+        vid.id === videoId ? { ...vid, shares: vid.shares + 1 } : vid
+      )
+    });
+
+    try {
+      // 2) Hit backend API (no strict auth required, but pass token if logged in)
+      let headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        const token = await firebaseUser.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/share`, {
+        method: 'POST',
+        headers
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to record share count on backend');
+      }
+    } catch (err) {
+      console.error('[Store] incrementShareCount backend request failed:', err);
+    }
+  }
 }));
