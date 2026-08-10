@@ -26,6 +26,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [role, setRole] = useState<'creator' | 'brand' | 'moderator' | 'fan'>('fan');
   
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -69,7 +70,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           return;
         }
         await signup(email, password, sanitizedUsername, role);
-        onClose();
+        setSuccessMsg('Account created! A confirmation link has been sent to your email. Please verify your account.');
+        setTimeout(() => {
+          onClose();
+          setSuccessMsg(null);
+        }, 5000);
       }
     } catch (err: any) {
       console.error(err);
@@ -125,6 +130,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs py-2.5 px-3.5 rounded-xl font-medium flex gap-2 items-center">
             <span className="material-symbols-outlined text-[16px]">error</span>
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="bg-fintech-mint/10 border border-fintech-mint/20 text-fintech-mint text-xs py-2.5 px-3.5 rounded-xl font-medium flex gap-2 items-center">
+            <span className="material-symbols-outlined text-[16px] text-fintech-mint">check_circle</span>
+            <span>{successMsg}</span>
           </div>
         )}
 

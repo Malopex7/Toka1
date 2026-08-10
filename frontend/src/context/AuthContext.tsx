@@ -7,7 +7,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth, getFCM } from '@/lib/firebase';
 import { getToken, onMessage } from 'firebase/messaging';
@@ -170,6 +171,15 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Trigger email verification link
+      try {
+        await sendEmailVerification(userCredential.user);
+        console.log('[Auth] Verification email sent to:', email);
+      } catch (err) {
+        console.error('[Auth] Failed to send verification email:', err);
+      }
+
       const token = await userCredential.user.getIdToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/sync`, {
         method: 'POST',
