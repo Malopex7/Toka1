@@ -43,6 +43,8 @@ interface FeedStore {
   resetFeed: () => void;
   incrementShareCount: (videoId: string) => Promise<void>;
   updateCommentCount: (videoId: string, change: number) => void;
+  isMuted: boolean;
+  toggleMute: () => void;
 }
 
 const initialVideos: Video[] = [
@@ -95,6 +97,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   hasNextPage: true,
   userWalletBalance: 100, // Starting balance fallback
   feedType: 'foryou',
+  isMuted: true,
 
   setFeedType: (type) => {
     set({ feedType: type });
@@ -317,5 +320,13 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     videos: state.videos.map((vid) =>
       vid.id === videoId ? { ...vid, commentsCount: (vid.commentsCount || 0) + change } : vid
     )
-  }))
+  })),
+
+  toggleMute: () => {
+    const newMuted = !get().isMuted;
+    set({ isMuted: newMuted });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('toka_muted', String(newMuted));
+    }
+  }
 }));

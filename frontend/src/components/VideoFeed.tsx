@@ -4,6 +4,7 @@ import { useFeedStore } from '@/store/useFeedStore';
 import { getPerformanceInstance } from '@/lib/firebase';
 import { trace } from 'firebase/performance';
 import Link from 'next/link';
+import { Volume2, VolumeX } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
 import TipModal from './TipModal';
 import AuthModal from './AuthModal';
@@ -16,7 +17,7 @@ function generateHeartId(prefix = 'heart'): string {
 }
 
 export default function VideoFeed() {
-  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType } = useFeedStore();
+  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
@@ -28,6 +29,16 @@ export default function VideoFeed() {
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
   const [activeOptionsVideoId, setActiveOptionsVideoId] = useState<string | null>(null);
+
+  // Load saved volume preferences on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('toka_muted');
+      if (saved === 'false') {
+        useFeedStore.setState({ isMuted: false });
+      }
+    }
+  }, []);
 
   // Inbox unread dot — persisted in localStorage so it survives page refreshes.
   // Cleared when the user clicks the Inbox link.
@@ -609,6 +620,22 @@ export default function VideoFeed() {
 
                   {/* Bottom Left Info Overlay */}
                   <div className="absolute bottom-24 left-4 z-30 flex flex-col gap-2 max-w-[75%] pointer-events-auto select-none">
+
+                    {/* Synced Mute / Unmute Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMute();
+                      }}
+                      className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 text-white hover:bg-black/60 hover:scale-105 active:scale-95 transition-all mb-1 w-fit pointer-events-auto shadow-lg"
+                      title={isMuted ? "Unmute" : "Mute"}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-4.5 h-4.5 text-white" />
+                      ) : (
+                        <Volume2 className="w-4.5 h-4.5 text-white animate-pulse" />
+                      )}
+                    </button>
 
                     {/* Brand Safe Badge */}
                     {video.vettingStatus === 'approved' && (

@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
-import { Play, Volume2, VolumeX } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, getPerformanceInstance } from '@/lib/firebase';
 import { trace } from 'firebase/performance';
+import { useFeedStore } from '@/store/useFeedStore';
 
 interface VideoPlayerProps {
   src: string;
@@ -15,7 +16,7 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoSrc, setVideoSrc] = useState(src);
-  const [isMuted, setIsMuted] = useState(true);
+  const isMuted = useFeedStore((state) => state.isMuted);
 
   const mediaTraceRef = useRef<any>(null);
 
@@ -47,31 +48,6 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
       }
     };
   }, [isActive, videoSrc]);
-
-  // Synchronize mute/unmute state across players using localStorage and window events
-  useEffect(() => {
-    const syncMuteState = () => {
-      const savedMute = localStorage.getItem('toka_muted');
-      if (savedMute !== null) {
-        setIsMuted(savedMute === 'true');
-      }
-    };
-
-    syncMuteState();
-    window.addEventListener('toka_volume_change', syncMuteState);
-
-    return () => {
-      window.removeEventListener('toka_volume_change', syncMuteState);
-    };
-  }, []);
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent toggling play/pause
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    localStorage.setItem('toka_muted', String(newMuted));
-    window.dispatchEvent(new Event('toka_volume_change'));
-  };
 
   const handlePlaying = () => {
     if (mediaTraceRef.current) {
@@ -178,19 +154,6 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
         onPlaying={handlePlaying}
       />
       
-      {/* Sync Mute / Unmute Button */}
-      <button
-        onClick={toggleMute}
-        className="absolute top-20 right-4 z-30 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 text-white hover:bg-black/60 hover:scale-105 active:scale-95 transition-all pointer-events-auto"
-        title={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? (
-          <VolumeX className="w-5 h-5 text-white" />
-        ) : (
-          <Volume2 className="w-5 h-5 text-white animate-pulse" />
-        )}
-      </button>
-
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none z-10" />
 
       {!isPlaying && (
