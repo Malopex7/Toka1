@@ -1,5 +1,5 @@
 import express from 'express';
-import { syncUser, getMe, saveFcmToken, toggleFollow, checkFollowStatus } from '../controllers/userController.js';
+import { syncUser, getMe, saveFcmToken, toggleFollow, checkFollowStatus, getProfileByUsername } from '../controllers/userController.js';
 import { protect } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -9,5 +9,6 @@ router.get('/users/me', protect, getMe);
 router.post('/users/fcm-token', protect, saveFcmToken);
 router.post('/users/follow/:targetUserId', protect, toggleFollow);
 router.get('/users/follow/:targetUserId/status', protect, checkFollowStatus);
+router.get('/users/profile/:username', getProfileByUsername);
 
 export default router;

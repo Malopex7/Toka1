@@ -190,3 +190,18 @@ export const checkFollowStatus = async (req, res, next) => {
     isFollowing
   });
 };
+
+export const getProfileByUsername = async (req, res, next) => {
+  const { username } = req.params;
+  const user = await User.findOne({ username: username.toLowerCase().trim() })
+    .select('username role followers following');
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { user }
+  });
+};

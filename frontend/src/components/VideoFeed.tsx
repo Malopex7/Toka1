@@ -456,14 +456,16 @@ export default function VideoFeed() {
                   <aside className="absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto">
 
                     {/* Creator Avatar & Follow Button */}
-                    <div className="relative mb-3 group cursor-pointer select-none">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg">
-                        <img
-                          src={video.creatorAvatar}
-                          alt={video.creatorName}
-                          className="w-full h-full object-cover rounded-full bg-shaded-canopy"
-                        />
-                      </div>
+                    <div className="relative mb-3 group select-none">
+                      <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform">
+                          <img
+                            src={video.creatorAvatar}
+                            alt={video.creatorName}
+                            className="w-full h-full object-cover rounded-full bg-shaded-canopy"
+                          />
+                        </div>
+                      </Link>
                       {mongooseUser?._id !== video.creatorId && (
                         <button
                           onClick={() => handleFollowToggle(video.creatorId)}
@@ -603,7 +605,12 @@ export default function VideoFeed() {
 
                     {/* Username & Verification */}
                     <div className="flex items-center gap-1.5">
-                      <h2 className="font-bold text-base text-cloud-white drop-shadow-md">{video.creatorName}</h2>
+                      <Link
+                        href={`/profile?username=${video.creatorName.replace('@', '')}`}
+                        className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer"
+                      >
+                        {video.creatorName}
+                      </Link>
                       {video.isVerified && (
                         <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
                       )}
