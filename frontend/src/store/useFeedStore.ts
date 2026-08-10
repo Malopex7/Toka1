@@ -13,6 +13,7 @@ export interface Video {
   likes: number;
   tips: number;
   shares: number;
+  commentsCount?: number;
   vettingStatus: 'processing' | 'ai_review' | 'human_review' | 'approved' | 'rejected';
   aiConfidenceScore: number;
   riskFlags: string[];
@@ -41,6 +42,7 @@ interface FeedStore {
   fetchNextPage: () => Promise<void>;
   resetFeed: () => void;
   incrementShareCount: (videoId: string) => Promise<void>;
+  updateCommentCount: (videoId: string, change: number) => void;
 }
 
 const initialVideos: Video[] = [
@@ -227,6 +229,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           likes: video.likesCount || 0,
           tips: 0,
           shares: video.sharesCount || 0,
+          commentsCount: video.commentsCount || 0,
           vettingStatus: video.vettingStatus,
           aiConfidenceScore: video.aiConfidenceScore || 0,
           riskFlags: video.riskFlags || [],
@@ -308,5 +311,11 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     } catch (err) {
       console.error('[Store] incrementShareCount backend request failed:', err);
     }
-  }
+  },
+
+  updateCommentCount: (videoId, change) => set((state) => ({
+    videos: state.videos.map((vid) =>
+      vid.id === videoId ? { ...vid, commentsCount: (vid.commentsCount || 0) + change } : vid
+    )
+  }))
 }));

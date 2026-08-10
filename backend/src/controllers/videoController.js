@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { GridFSBucket } from 'mongodb';
 import Video from '../models/Video.js';
+import Comment from '../models/Comment.js';
 import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
@@ -77,16 +78,18 @@ export const getFeed = async (req, res, next) => {
 
   const totalPages = Math.ceil(totalVideos / limit);
 
-  // 4) Map videos to include isLiked flag and strip likedBy for safety
-  const formattedVideos = videos.map(video => {
+  // 4) Map videos to include isLiked flag, commentsCount, and strip likedBy for safety
+  const formattedVideos = await Promise.all(videos.map(async video => {
     const videoObj = video.toObject();
     const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
     delete videoObj.likedBy;
+    const commentsCount = await Comment.countDocuments({ videoId: video._id });
     return {
       ...videoObj,
-      isLiked
+      isLiked,
+      commentsCount
     };
-  });
+  }));
 
   // 5) Return paginated response
   res.status(200).json({

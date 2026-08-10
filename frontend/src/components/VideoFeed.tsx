@@ -8,6 +8,7 @@ import VideoPlayer from './VideoPlayer';
 import TipModal from './TipModal';
 import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
+import CommentsModal from './CommentsModal';
 import { useAuth } from '@/context/AuthContext';
 
 function generateHeartId(prefix = 'heart'): string {
@@ -18,6 +19,7 @@ export default function VideoFeed() {
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
+  const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -498,6 +500,19 @@ export default function VideoFeed() {
                       </span>
                     </button>
 
+                    {/* Comment Action */}
+                    <button
+                      onClick={() => setActiveCommentsVideoId(video.id)}
+                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
+                    >
+                      <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
+                        <span className="material-symbols-outlined text-cloud-white text-[24px]">forum</span>
+                      </div>
+                      <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
+                        {video.commentsCount || 0}
+                      </span>
+                    </button>
+
                     {/* Tip Action (Prominent Toka Flare) */}
                     <button
                       onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
@@ -706,6 +721,15 @@ export default function VideoFeed() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
+
+      {/* Comments Drawer/Modal Overlay */}
+      {activeCommentsVideoId && (
+        <CommentsModal
+          videoId={activeCommentsVideoId}
+          isOpen={true}
+          onClose={() => setActiveCommentsVideoId(null)}
+        />
+      )}
 
     </div>
   );
