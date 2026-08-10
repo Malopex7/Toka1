@@ -410,13 +410,22 @@ export default function VideoFeed() {
             </div>
             <div className="pointer-events-auto flex items-center gap-3 select-none">
               {isAuthenticated ? (
-                <Link
-                  href="/deposit"
-                  className="flex flex-col items-end gap-0.5 max-w-[80px] cursor-pointer hover:opacity-85 transition-opacity"
-                >
-                  <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
-                  <span className="text-[9px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
-                </Link>
+                <>
+                  <button
+                    onClick={() => alert('No new notifications.')}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-cloud-white"
+                    title="Notifications"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">notifications</span>
+                  </button>
+                  <Link
+                    href="/deposit"
+                    className="flex flex-col items-end gap-0.5 max-w-[80px] cursor-pointer hover:opacity-85 transition-opacity"
+                  >
+                    <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
+                    <span className="text-[9px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
+                  </Link>
+                </>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
