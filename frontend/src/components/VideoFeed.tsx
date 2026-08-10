@@ -228,20 +228,22 @@ export default function VideoFeed() {
 
   const handleShare = async (video: any) => {
     const shareData = {
-      title: `Watch @${video.creatorName} on Toka`,
-      text: video.description || 'Check out this awesome video on Toka!',
-      url: typeof window !== 'undefined' ? window.location.origin : ''
+      title: `Watch ${video.creatorName || 'Creator'} on Toka`,
+      text: video.title || 'Check out this awesome video on Toka!',
+      url: video.videoUrl || (typeof window !== 'undefined' ? window.location.origin : '')
     };
 
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
+        useFeedStore.getState().incrementShareCount(video.id);
       } catch (err) {
         console.log('[Share] Error sharing:', err);
       }
     } else {
       try {
         await navigator.clipboard.writeText(video.videoUrl);
+        useFeedStore.getState().incrementShareCount(video.id);
         alert('Video stream link copied to clipboard!');
       } catch (err) {
         console.error('[Share] Failed to copy link:', err);

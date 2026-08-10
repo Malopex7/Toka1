@@ -40,6 +40,7 @@ interface FeedStore {
   toggleLikeVideo: (videoId: string) => Promise<void>;
   fetchNextPage: () => Promise<void>;
   resetFeed: () => void;
+  incrementShareCount: (videoId: string) => void;
 }
 
 const initialVideos: Video[] = [
@@ -276,5 +277,11 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     currentPage: 1,
     hasNextPage: true,
     isLoading: false
-  })
+  }),
+  
+  incrementShareCount: (videoId) => set((state) => ({
+    videos: state.videos.map((vid) =>
+      vid.id === videoId ? { ...vid, shares: vid.shares + 1 } : vid
+    )
+  }))
 }));
