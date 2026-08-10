@@ -75,9 +75,13 @@ Configure the following environment variables in your hosting settings panel:
    * **Root Directory**: `backend`
    * **Runtime**: `Node`
    * **Build Command**: `npm install`
-   * **Start Command**: `node src/index.js`
+   * **Start Command**: `node src/index.js` (or `npm start`)
 4. Expand **Advanced** -> click **Add Environment Variable** and copy-paste the values from the required backend environment variables table above.
 5. Click **Create Web Service**. Render will spin up the Node environment, run your migrations, and host the live API.
+
+> [!WARNING]
+> **Avoid the `dist/index.js` Error**: If your Render deployment fails with `Error: Cannot find module '/opt/render/project/src/backend/dist/index.js'`, it means the Start Command in your Render Web Service settings is set to the default `node dist/index.js`.
+> **To fix it**: Go to your Render Web Service dashboard -> **Settings** -> find the **Start Command** field -> edit it to **`node src/index.js`** (or `npm start`) and save. Render will automatically deploy a new working build.
 
 ---
 
