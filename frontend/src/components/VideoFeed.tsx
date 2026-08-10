@@ -4,6 +4,7 @@ import { useFeedStore } from '@/store/useFeedStore';
 import { getPerformanceInstance } from '@/lib/firebase';
 import { trace } from 'firebase/performance';
 import Link from 'next/link';
+import { useModalStore } from '@/store/useModalStore';
 import { Volume2, VolumeX } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
 import TipModal from './TipModal';
@@ -41,6 +42,7 @@ function formatNotificationTime(isoString?: string): string {
 export default function VideoFeed() {
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
+  const { showAlert } = useModalStore();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
   const [highlightCommentId, setHighlightCommentId] = useState<string | null>(null);
@@ -366,10 +368,10 @@ export default function VideoFeed() {
       try {
         await navigator.clipboard.writeText(video.videoUrl);
         useFeedStore.getState().incrementShareCount(video.id);
-        alert('Video stream link copied to clipboard!');
+        showAlert('Link Copied', 'Video stream link copied to clipboard!');
       } catch (err) {
         console.error('[Share] Failed to copy link:', err);
-        alert('Could not copy link to clipboard.');
+        showAlert('Error', 'Could not copy link to clipboard.');
       }
     }
   };
@@ -471,7 +473,7 @@ export default function VideoFeed() {
                 if (mongooseUser?.role === 'moderator') {
                   window.location.href = '/moderation';
                 } else {
-                  alert('Access denied. Only moderators can access the Moderation queue.');
+                  showAlert('Access Denied', 'Access denied. Only moderators can access the Moderation queue.');
                 }
               });
             }}
@@ -748,9 +750,9 @@ export default function VideoFeed() {
                               e.stopPropagation();
                               try {
                                 await navigator.clipboard.writeText(video.videoUrl);
-                                alert('Video stream URL copied to clipboard!');
+                                showAlert('Link Copied', 'Video stream URL copied to clipboard!');
                               } catch (err) {
-                                alert('Failed to copy link.');
+                                showAlert('Error', 'Failed to copy link.');
                               }
                               setActiveOptionsVideoId(null);
                             }}
@@ -763,7 +765,7 @@ export default function VideoFeed() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              alert('Thank you! This video has been flagged and queued for moderation review.');
+                              showAlert('Report Submitted', 'Thank you! This video has been flagged and queued for moderation review.');
                               setActiveOptionsVideoId(null);
                             }}
                             className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-red-500 hover:text-red-400 transition-colors"
@@ -775,7 +777,7 @@ export default function VideoFeed() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              alert(`Creator blocked. You will no longer see content from @${video.creatorName}.`);
+                              showAlert('Creator Blocked', `Creator blocked. You will no longer see content from @${video.creatorName}.`);
                               setActiveOptionsVideoId(null);
                             }}
                             className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/60 hover:text-cloud-white transition-colors"

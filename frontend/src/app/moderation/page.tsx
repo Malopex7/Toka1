@@ -3,9 +3,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import VideoPlayer from '@/components/VideoPlayer';
+import { useModalStore } from '@/store/useModalStore';
 
 export default function ModerationQueue() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading: isAuthLoading } = useAuth();
+  const { showAlert } = useModalStore();
   
   const [pendingVideos, setPendingVideos] = useState<any[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
@@ -80,11 +82,11 @@ export default function ModerationQueue() {
 
         setTimeout(() => setSuccessMsg(null), 3000);
       } else {
-        alert(data.message || 'Action failed.');
+        showAlert('Action Failed', data.message || 'Action failed.');
       }
     } catch (err: any) {
       console.error(err);
-      alert('Failed to update video vetting status.');
+      showAlert('Error', 'Failed to update video vetting status.');
     } finally {
       setActionLoading(false);
     }

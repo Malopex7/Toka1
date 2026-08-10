@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { useFeedStore } from '@/store/useFeedStore';
 import { useAuth } from '@/context/AuthContext';
+import { useModalStore } from '@/store/useModalStore';
 
 interface TipModalProps {
   videoId: string;
@@ -13,6 +14,7 @@ interface TipModalProps {
 export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
   const { videos, optimisticTip, userWalletBalance } = useFeedStore();
   const { firebaseUser, refreshProfile } = useAuth();
+  const { showAlert } = useModalStore();
   
   const [selectedAmount, setSelectedAmount] = useState<number | null>(10);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -31,17 +33,17 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
     if (isNaN(amount) || amount <= 0) return;
 
     if (userWalletBalance < amount) {
-      alert("Insufficient wallet balance!");
+      showAlert("Insufficient Balance", "Insufficient wallet balance!");
       return;
     }
 
     if (!firebaseUser) {
-      alert("Please sign in to send a tip.");
+      showAlert("Sign In Required", "Please sign in to send a tip.");
       return;
     }
 
     if (!receiverId) {
-      alert("Could not identify creator for this video.");
+      showAlert("Error", "Could not identify creator for this video.");
       return;
     }
 
@@ -89,11 +91,11 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
           onClose();
         }, 2200); // Extended timeout to let coins fall
       } else {
-        alert(data.message || 'Tipping failed. Please try again.');
+        showAlert('Tip Failed', data.message || 'Tipping failed. Please try again.');
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'An error occurred while sending the tip.');
+      showAlert('Error', err.message || 'An error occurred while sending the tip.');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthContextProvider } from "@/context/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobalModal from "@/components/GlobalModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         <AuthContextProvider>
           <ErrorBoundary>
             {children}
+            <GlobalModal />
           </ErrorBoundary>
         </AuthContextProvider>
       </body>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
+import { useModalStore } from '@/store/useModalStore';
 import Link from 'next/link';
 
 interface CommentUser {
@@ -38,6 +39,7 @@ interface CommentsModalProps {
 
 export default function CommentsModal({ isOpen, onClose, videoId, creatorId, highlightCommentId }: CommentsModalProps) {
   const { mongooseUser, isAuthenticated, firebaseUser } = useAuth();
+  const { showAlert, showConfirm, showPrompt } = useModalStore();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputText, setInputText] = useState('');
@@ -139,7 +141,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated || !firebaseUser) {
-      alert('Please sign in to comment.');
+      showAlert('Sign In Required', 'Please sign in to comment.');
       return;
     }
 
@@ -220,7 +222,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
   const handleInlineReply = async (e: React.FormEvent, immediateParentId: string, rootCommentId: string, targetUsername: string) => {
     e.preventDefault();
     if (!isAuthenticated || !firebaseUser) {
-      alert('Please sign in to reply.');
+      showAlert('Sign In Required', 'Please sign in to reply.');
       return;
     }
     if (!inlineInputText.trim()) return;
@@ -280,7 +282,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
   // 3) Handle comment/reply likes (optimistic updates)
   const handleLikeToggle = async (commentId: string, parentId: string | null = null) => {
     if (!isAuthenticated || !firebaseUser) {
-      alert('Please sign in to like comments.');
+      showAlert('Sign In Required', 'Please sign in to like comments.');
       return;
     }
 
@@ -341,79 +343,89 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
   };
 
   // 4) Handle comment deletion
-  const handleDeleteComment = async (commentId: string, parentId: string | null = null) => {
+  const handleDeleteComment = (commentId: string, parentId: string | null = null) => {
     if (!isAuthenticated || !firebaseUser) return;
-    if (!confirm('Are you sure you want to delete this comment?')) return;
 
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        if (parentId) {
-          // Remove from parent replies list
-          setComments(prev => prev.map(c => {
-            if (c._id === parentId) {
-              return {
-                ...c,
-                replies: (c.replies || []).filter(r => r._id !== commentId)
-              };
+    showConfirm(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      async () => {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`
             }
-            return c;
-          }));
-        } else {
-          // Remove from parent comments list
-          setComments(prev => prev.filter(c => c._id !== commentId));
-        }
+          });
 
-        // Decrement commentsCount locally in FeedStore
-        useFeedStore.getState().updateCommentCount(videoId, -1);
+          if (res.ok) {
+            if (parentId) {
+              // Remove from parent replies list
+              setComments(prev => prev.map(c => {
+                if (c._id === parentId) {
+                  return {
+                    ...c,
+                    replies: (c.replies || []).filter(r => r._id !== commentId)
+                  };
+                }
+                return c;
+              }));
+            } else {
+              // Remove from parent comments list
+              setComments(prev => prev.filter(c => c._id !== commentId));
+            }
+
+            // Decrement commentsCount locally in FeedStore
+            useFeedStore.getState().updateCommentCount(videoId, -1);
+          }
+        } catch (err) {
+          console.error('Error deleting comment:', err);
+        }
       }
-    } catch (err) {
-      console.error('Error deleting comment:', err);
-    }
+    );
   };
 
   // 5) Handle comment reporting
-  const handleReportComment = async (commentId: string) => {
+  const handleReportComment = (commentId: string) => {
     if (!isAuthenticated || !firebaseUser) {
-      alert('Please sign in to report comments.');
+      showAlert('Sign In Required', 'Please sign in to report comments.');
       return;
     }
 
-    const reason = prompt('Please specify a reason for reporting this comment (e.g. spam, harassment, inappropriate content):');
-    if (reason === null) return; // User cancelled
-    if (reason.trim() === '') {
-      alert('A report reason is required.');
-      return;
-    }
+    showPrompt(
+      'Report Comment',
+      'Please specify a reason for reporting this comment (e.g. spam, harassment, inappropriate content):',
+      async (reason) => {
+        if (!reason || reason.trim() === '') {
+          showAlert('Validation Error', 'A report reason is required.');
+          return;
+        }
 
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}/report`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ reason: reason.trim() })
-      });
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}/report`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ reason: reason.trim() })
+          });
 
-      const data = await res.json();
-      if (res.ok) {
-        alert('Thank you! This comment has been flagged and queued for moderation review.');
-      } else {
-        alert(data.message || 'Failed to report comment.');
-      }
-    } catch (err) {
-      console.error('Error reporting comment:', err);
-      alert('Error submitting report.');
-    }
+          const data = await res.json();
+          if (res.ok) {
+            showAlert('Report Submitted', 'Thank you! This comment has been flagged and queued for moderation review.');
+          } else {
+            showAlert('Report Failed', data.message || 'Failed to report comment.');
+          }
+        } catch (err) {
+          console.error('Error reporting comment:', err);
+          showAlert('Error', 'Error submitting report.');
+        }
+      },
+      'Reason (e.g. spam, harassment)'
+    );
   };
 
   const toggleRepliesVisibility = (parentId: string) => {

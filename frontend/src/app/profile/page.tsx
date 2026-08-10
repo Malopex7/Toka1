@@ -3,6 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useModalStore } from '@/store/useModalStore';
 
 interface ProfileVideo {
   _id: string;
@@ -24,6 +25,7 @@ interface TargetUser {
 
 function ProfileContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout } = useAuth();
+  const { showAlert } = useModalStore();
   const searchParams = useSearchParams();
   const targetUsername = searchParams?.get('username') || '';
 
@@ -136,7 +138,7 @@ function ProfileContent() {
   // 3) Follow/Unfollow Handler
   const handleFollowToggle = async () => {
     if (!isAuthenticated || !firebaseUser || !targetUser || !mongooseUser) {
-      alert('Please sign in to follow creators.');
+      showAlert('Sign In Required', 'Please sign in to follow creators.');
       return;
     }
 
