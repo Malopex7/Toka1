@@ -10,6 +10,9 @@ This guide provides step-by-step instructions to configure, initialize, and depl
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Enable **Authentication** in your project (`toka-cd0bb`).
 3. Enable the **Email/Password** and **Google** sign-in providers in the "Sign-in method" tab.
+4. Add your deployed frontend domain (e.g. `toka-frontend-ruby.vercel.app`) to the **Authorized domains** list:
+   * Navigate to **Build** -> **Authentication** -> **Settings** tab.
+   * Click **Authorized domains** in the sidebar -> click **Add domain** -> enter your Vercel URL -> click **Add**.
 
 ### Storage Bucket & CORS
 1. In the Firebase Console, go to **Build** -> **Storage** and click **Get Started** to provision the default GCS bucket (e.g. `gs://toka-cd0bb.firebasestorage.app` or `gs://toka-cd0bb.appspot.com`).
