@@ -40,8 +40,10 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   const [inputText, setInputText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Thread reply state
-  const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
+  // Thread reply state — tracks which specific comment/reply has the inline reply box open
+  const [activeReplyBoxId, setActiveReplyBoxId] = useState<string | null>(null);
+  const [inlineInputText, setInlineInputText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string; targetCommentId: string; username: string } | null>(null);
   // Track expanded reply sections (parent comment IDs)
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
@@ -104,7 +106,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          text: inputText.trim(),
+          text: text.trim(),
           parentId
         })
       });
@@ -148,13 +150,82 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
           setComments(prev => [...prev, newComment]);
         }
 
-        setInputText('');
+        setInlineInputText('');
+        setActiveReplyBoxId(null);
         setReplyingTo(null);
         // Increment commentsCount locally in FeedStore
         useFeedStore.getState().updateCommentCount(videoId, 1);
       }
     } catch (err) {
       console.error('Error posting comment:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Wrapper to handle inline reply submission from a specific comment
+  const handleInlineReply = async (e: React.FormEvent, parentCommentId: string, targetUsername: string) => {
+    e.preventDefault();
+    if (!isAuthenticated || !firebaseUser) {
+      alert('Please sign in to reply.');
+      return;
+    }
+    if (!inlineInputText.trim()) return;
+
+    setSubmitting(true);
+    const parentId = parentCommentId;
+
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: inlineInputText.trim(),
+          parentId
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'success') {
+        const newComment: Comment = data.data.comment;
+        newComment.replies = [];
+        newComment.isLiked = false;
+        newComment.likesCount = 0;
+
+        setComments(prev => prev.map(c => {
+          const isDirectParent = String(c._id) === String(parentId);
+          const hasTargetReply = c.replies?.some(r => String(r._id) === String(parentId));
+
+          if (isDirectParent || hasTargetReply) {
+            return { ...c, replies: [...(c.replies || []), newComment] };
+          }
+          return c;
+        }));
+
+        // Expand the parent thread
+        const parentComment = comments.find(c =>
+          String(c._id) === String(parentId) ||
+          c.replies?.some(r => String(r._id) === String(parentId))
+        );
+        if (parentComment) {
+          setExpandedParents(prev => {
+            const next = new Set(prev);
+            next.add(String(parentComment._id));
+            return next;
+          });
+        }
+
+        setInlineInputText('');
+        setActiveReplyBoxId(null);
+        setReplyingTo(null);
+        useFeedStore.getState().updateCommentCount(videoId, 1);
+      }
+    } catch (err) {
+      console.error('Error posting reply:', err);
     } finally {
       setSubmitting(false);
     }
@@ -292,10 +363,11 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
   };
 
   const handleCancelReply = () => {
-    if (replyingTo && inputText.trim() === `@${replyingTo.username}`) {
-      setInputText('');
+    if (replyingTo && inlineInputText.trim().startsWith(`@${replyingTo.username}`)) {
+      setInlineInputText('');
     }
     setReplyingTo(null);
+    setActiveReplyBoxId(null);
   };
 
   const getRelativeTime = (dateString: string) => {
@@ -324,6 +396,42 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
         }));
     };
     return build(String(parentId), 1);
+  };
+
+  // Inline reply box rendered directly beneath a comment or reply
+  const InlineReplyBox = ({ targetCommentId, parentCommentId, targetUsername }: { targetCommentId: string; parentCommentId: string; targetUsername: string }) => {
+    if (!isAuthenticated) return null;
+    return (
+      <form
+        onSubmit={(e) => handleInlineReply(e, parentCommentId, targetUsername)}
+        className="flex items-center gap-2 bg-black/25 border border-toka-flare/30 rounded-xl p-1.5 mt-1.5 focus-within:border-toka-flare transition-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <input
+          type="text"
+          autoFocus
+          placeholder={`Reply to @${targetUsername}...`}
+          value={inlineInputText}
+          onChange={(e) => setInlineInputText(e.target.value)}
+          maxLength={500}
+          className="flex-1 bg-transparent px-2 py-1.5 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/30"
+        />
+        <button
+          type="button"
+          onClick={handleCancelReply}
+          className="text-[9px] font-bold text-cloud-white/40 hover:text-red-400 px-1 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting || !inlineInputText.trim()}
+          className="px-3 py-1.5 bg-toka-flare hover:bg-toka-flare/90 disabled:bg-white/5 disabled:text-white/20 text-cloud-white rounded-lg text-[10px] font-bold transition-all active:scale-95 shrink-0"
+        >
+          {submitting ? '...' : 'Post'}
+        </button>
+      </form>
+    );
   };
 
   const ReplyNode = ({ node, parentCommentId }: { node: CommentNode; parentCommentId: string }) => {
@@ -362,12 +470,16 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             <div className="flex items-center gap-3.5 mt-1">
               <button
                 onClick={() => {
-                  setReplyingTo({ commentId: parentCommentId, username: node.userId.username });
-                  setInputText(`@${node.userId.username} `);
+                  const isOpen = activeReplyBoxId === String(node._id);
+                  setActiveReplyBoxId(isOpen ? null : String(node._id));
+                  setInlineInputText(isOpen ? '' : `@${node.userId.username} `);
+                  setReplyingTo(isOpen ? null : { commentId: parentCommentId, targetCommentId: String(node._id), username: node.userId.username });
                 }}
-                className="text-[8px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+                className={`text-[8px] font-bold transition-colors ${
+                  activeReplyBoxId === String(node._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
+                }`}
               >
-                Reply
+                {activeReplyBoxId === String(node._id) ? 'Cancel' : 'Reply'}
               </button>
               {(isReplyOwner || isReplyMod) && (
                 <button
@@ -391,6 +503,15 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             <span className="text-[8px] font-mono font-medium">{node.likesCount}</span>
           </button>
         </div>
+
+        {/* Inline reply box beneath this specific reply */}
+        {activeReplyBoxId === String(node._id) && (
+          <InlineReplyBox
+            targetCommentId={String(node._id)}
+            parentCommentId={parentCommentId}
+            targetUsername={node.userId.username}
+          />
+        )}
 
         {/* Recursive Children rendering */}
         {node.children && node.children.length > 0 && (
@@ -477,16 +598,20 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                       </p>
 
                       {/* Comment Action Links */}
-                      <div className="flex items-center gap-4 mt-2">
-                        <button
-                          onClick={() => {
-                            setReplyingTo({ commentId: comment._id, username: comment.userId.username });
-                            setInputText(`@${comment.userId.username} `);
-                          }}
-                          className="text-[10px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
-                        >
-                          Reply
-                        </button>
+                    <div className="flex items-center gap-4 mt-2">
+                      <button
+                        onClick={() => {
+                          const isOpen = activeReplyBoxId === String(comment._id);
+                          setActiveReplyBoxId(isOpen ? null : String(comment._id));
+                          setInlineInputText(isOpen ? '' : `@${comment.userId.username} `);
+                          setReplyingTo(isOpen ? null : { commentId: String(comment._id), targetCommentId: String(comment._id), username: comment.userId.username });
+                        }}
+                        className={`text-[10px] font-bold transition-colors ${
+                          activeReplyBoxId === String(comment._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
+                        }`}
+                      >
+                        {activeReplyBoxId === String(comment._id) ? 'Cancel' : 'Reply'}
+                      </button>
                         {(isOwner || isMod) && (
                           <button
                             onClick={() => handleDeleteComment(comment._id, null)}
@@ -509,6 +634,15 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                       <span className="text-[9px] font-mono font-medium">{comment.likesCount}</span>
                     </button>
                   </div>
+
+                  {/* Inline reply box beneath this specific parent comment */}
+                  {activeReplyBoxId === String(comment._id) && (
+                    <InlineReplyBox
+                      targetCommentId={String(comment._id)}
+                      parentCommentId={String(comment._id)}
+                      targetUsername={comment.userId.username}
+                    />
+                  )}
 
                   {/* Nested Replies Section */}
                   <div className="flex flex-col gap-1">
@@ -535,28 +669,13 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
           <div ref={commentsEndRef} />
         </div>
 
-        {/* Input Form Footer */}
-        <footer className="p-4 bg-shaded-canopy/60 border-t border-white/5 flex flex-col gap-2">
-          {/* Thread replying indicator banner */}
-          {replyingTo && (
-            <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl select-none">
-              <span className="text-[10px] text-cloud-white/60 font-semibold">
-                Replying to <span className="text-toka-flare font-bold">@{replyingTo.username}</span>
-              </span>
-              <button
-                onClick={handleCancelReply}
-                className="text-[10px] font-bold text-red-500 hover:text-red-400"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
+        {/* Footer: only for new top-level comments */}
+        <footer className="p-4 bg-shaded-canopy/60 border-t border-white/5">
           {isAuthenticated ? (
             <form onSubmit={handleSubmitComment} className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-2xl p-1.5 focus-within:border-toka-flare transition-all">
               <input
                 type="text"
-                placeholder={replyingTo ? `Reply to @${replyingTo.username}...` : "Add a comment..."}
+                placeholder="Add a comment..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 maxLength={500}
@@ -572,9 +691,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
             </form>
           ) : (
             <div className="text-center py-2">
-              <p className="text-xs text-cloud-white/50">
-                Please sign in to comment or reply.
-              </p>
+              <p className="text-xs text-cloud-white/50">Please sign in to comment.</p>
             </div>
           )}
         </footer>
