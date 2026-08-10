@@ -199,3 +199,50 @@ export const deleteComment = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Report a comment or reply for moderation review
+ */
+export const reportComment = async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user._id;
+
+  try {
+    const comment = await Comment.findById(id);
+    if (!comment) {
+      throw new AppError('Comment not found', 404);
+    }
+
+    if (!comment.reportedBy) {
+      comment.reportedBy = [];
+    }
+
+    const alreadyReported = comment.reportedBy.some(uid => uid.toString() === userId.toString());
+    if (alreadyReported) {
+      throw new AppError('You have already reported this comment.', 400);
+    }
+
+    comment.reportedBy.push(userId);
+    comment.reportsCount = (comment.reportsCount || 0) + 1;
+    
+    if (reason && reason.trim() !== '') {
+      if (!comment.reportReasons) {
+        comment.reportReasons = [];
+      }
+      comment.reportReasons.push(reason.trim());
+    }
+
+    await comment.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Comment reported successfully for moderation review.',
+      data: {
+        reportsCount: comment.reportsCount
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

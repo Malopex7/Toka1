@@ -32,6 +32,19 @@ const commentSchema = new mongoose.Schema({
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User',
     default: []
+  },
+  reportsCount: {
+    type: Number,
+    default: 0
+  },
+  reportedBy: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: []
+  },
+  reportReasons: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

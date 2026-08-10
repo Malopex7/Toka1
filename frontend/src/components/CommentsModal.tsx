@@ -324,6 +324,43 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
     }
   };
 
+  // 5) Handle comment reporting
+  const handleReportComment = async (commentId: string) => {
+    if (!isAuthenticated || !firebaseUser) {
+      alert('Please sign in to report comments.');
+      return;
+    }
+
+    const reason = prompt('Please specify a reason for reporting this comment (e.g. spam, harassment, inappropriate content):');
+    if (reason === null) return; // User cancelled
+    if (reason.trim() === '') {
+      alert('A report reason is required.');
+      return;
+    }
+
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason: reason.trim() })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert('Thank you! This comment has been flagged and queued for moderation review.');
+      } else {
+        alert(data.message || 'Failed to report comment.');
+      }
+    } catch (err) {
+      console.error('Error reporting comment:', err);
+      alert('Error submitting report.');
+    }
+  };
+
   const toggleRepliesVisibility = (parentId: string) => {
     const strId = String(parentId);
     setExpandedParents(prev => {
@@ -478,6 +515,12 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
               >
                 {activeReplyBoxId === String(node._id) ? 'Cancel' : 'Reply'}
               </button>
+              <button
+                onClick={() => handleReportComment(node._id)}
+                className="text-[8px] font-bold text-cloud-white/45 hover:text-red-400 transition-colors"
+              >
+                Report
+              </button>
               {(isReplyOwner || isReplyMod) && (
                 <button
                   onClick={() => handleDeleteComment(node._id, parentCommentId)}
@@ -608,6 +651,12 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                         }`}
                       >
                         {activeReplyBoxId === String(comment._id) ? 'Cancel' : 'Reply'}
+                      </button>
+                      <button
+                        onClick={() => handleReportComment(comment._id)}
+                        className="text-[10px] font-bold text-cloud-white/45 hover:text-red-400 transition-colors"
+                      >
+                        Report
                       </button>
                         {(isOwner || isMod) && (
                           <button
