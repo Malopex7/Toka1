@@ -122,8 +122,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         {/* Modal Title */}
         <div className="flex flex-col gap-1 text-center items-center">
-          <div className="text-4xl font-black text-toka-flare tracking-tighter mb-2 select-none">
-            Toka
+          <div className="mb-2 select-none flex justify-center items-center">
+            <img 
+              src="/images/logo/logo.png" 
+              alt="Toka" 
+              className="h-12 w-auto object-contain" 
+            />
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-cloud-white">
             {profileSetupRequired ? 'Setup Profile' : activeTab === 'login' ? 'Welcome Back' : 'Create Account'}

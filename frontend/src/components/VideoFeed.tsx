@@ -417,7 +417,13 @@ export default function VideoFeed() {
 
       {/* Desktop Navigation Left Sidebar (Hidden on Mobile) */}
       <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
-        <div className="text-3xl font-black text-toka-flare tracking-tighter mb-12 px-4">Toka</div>
+        <div className="mb-12 px-4 flex items-center h-10 select-none">
+          <img 
+            src="/images/logo/logo.png" 
+            alt="Toka" 
+            className="h-10 w-auto object-contain" 
+          />
+        </div>
         <div className="flex flex-col gap-2">
           <button className="flex items-center gap-4 px-4 py-3 bg-white/10 rounded-xl text-cloud-white font-bold transition-all text-left">
             <span className="material-symbols-outlined text-toka-flare">home</span>
