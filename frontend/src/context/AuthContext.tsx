@@ -121,6 +121,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
               body: payload.notification.body,
               icon: '/favicon.ico'
             });
+            useFeedStore.getState().addNotification({
+              title: payload.notification.title || 'Toka Alert',
+              body: payload.notification.body || ''
+            });
           }
         });
       }

@@ -24,6 +24,14 @@ export interface Video {
   poster?: string;
 }
 
+export interface TokaNotification {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}
+
 interface FeedStore {
   videos: Video[];
   currentIndex: number;
@@ -45,6 +53,9 @@ interface FeedStore {
   updateCommentCount: (videoId: string, change: number) => void;
   isMuted: boolean;
   toggleMute: () => void;
+  notifications: TokaNotification[];
+  addNotification: (notification: Omit<TokaNotification, 'id' | 'read' | 'createdAt'>) => void;
+  markNotificationsAsRead: () => void;
 }
 
 const initialVideos: Video[] = [
@@ -98,6 +109,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   userWalletBalance: 100, // Starting balance fallback
   feedType: 'foryou',
   isMuted: true,
+  notifications: [],
 
   setFeedType: (type) => {
     set({ feedType: type });
@@ -328,5 +340,24 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.setItem('toka_muted', String(newMuted));
     }
+  },
+
+  addNotification: (notification) => {
+    const newNotif: TokaNotification = {
+      id: Math.random().toString(36).substring(7),
+      title: notification.title,
+      body: notification.body,
+      read: false,
+      createdAt: new Date().toISOString()
+    };
+    set(state => ({
+      notifications: [newNotif, ...state.notifications]
+    }));
+  },
+
+  markNotificationsAsRead: () => {
+    set(state => ({
+      notifications: state.notifications.map(n => ({ ...n, read: true }))
+    }));
   }
 }));

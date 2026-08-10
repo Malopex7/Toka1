@@ -17,11 +17,12 @@ function generateHeartId(prefix = 'heart'): string {
 }
 
 export default function VideoFeed() {
-  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute } = useFeedStore();
+  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -408,16 +409,62 @@ export default function VideoFeed() {
                 For You
               </button>
             </div>
-            <div className="pointer-events-auto flex items-center gap-3 select-none">
+            <div className="pointer-events-auto flex items-center gap-3 select-none relative">
               {isAuthenticated ? (
                 <>
-                  <button
-                    onClick={() => alert('No new notifications.')}
-                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-cloud-white"
-                    title="Notifications"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">notifications</span>
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        const next = !isNotificationsOpen;
+                        setIsNotificationsOpen(next);
+                        if (next) {
+                          markNotificationsAsRead();
+                        }
+                      }}
+                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-cloud-white"
+                      title="Notifications"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">notifications</span>
+                    </button>
+                    
+                    {/* Unread dot indicator */}
+                    {notifications.some(n => !n.read) && (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-toka-flare rounded-full border border-midnight-boma animate-pulse"></span>
+                    )}
+
+                    {/* Notifications Dropdown Panel */}
+                    {isNotificationsOpen && (
+                      <div className="absolute right-0 top-10 w-72 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                          <span className="text-xs font-bold text-cloud-white">Notifications</span>
+                          <button 
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="text-[10px] font-bold text-cloud-white/40 hover:text-cloud-white transition-colors"
+                          >
+                            Close
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar max-h-56">
+                          {notifications.length === 0 ? (
+                            <div className="text-center py-6">
+                              <span className="material-symbols-outlined text-cloud-white/10 text-3xl">notifications_off</span>
+                              <p className="text-[10px] text-cloud-white/40 mt-1">No new notifications</p>
+                            </div>
+                          ) : (
+                            notifications.map((notif) => (
+                              <div key={notif.id} className="flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                                <div className="flex items-center gap-1.5 justify-between flex-wrap">
+                                  <span className="text-[10px] font-bold text-cloud-white">{notif.title}</span>
+                                  {!notif.read && <span className="w-1.5 h-1.5 bg-toka-flare rounded-full"></span>}
+                                </div>
+                                <p className="text-[10px] text-cloud-white/70 leading-normal">{notif.body}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <Link
                     href="/deposit"
                     className="flex flex-col items-end gap-0.5 max-w-[80px] cursor-pointer hover:opacity-85 transition-opacity"
