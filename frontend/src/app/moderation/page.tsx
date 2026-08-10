@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import VideoPlayer from '@/components/VideoPlayer';
@@ -14,7 +14,7 @@ export default function ModerationQueue() {
   const [actionLoading, setActionLoading] = useState(false);
 
   // Fetch pending moderation queue from the backend
-  const fetchQueue = async () => {
+  const fetchQueue = useCallback(async () => {
     if (!firebaseUser) return;
     setIsFetchingQueue(true);
     try {
@@ -28,8 +28,8 @@ export default function ModerationQueue() {
       if (data.status === 'success') {
         setPendingVideos(data.data.videos);
         // Automatically select first item if none is selected
-        if (data.data.videos.length > 0 && !selectedVideo) {
-          setSelectedVideo(data.data.videos[0]);
+        if (data.data.videos.length > 0) {
+          setSelectedVideo((prev: any) => prev || data.data.videos[0]);
         }
       }
     } catch (err) {
@@ -37,13 +37,16 @@ export default function ModerationQueue() {
     } finally {
       setIsFetchingQueue(false);
     }
-  };
+  }, [firebaseUser]);
 
   useEffect(() => {
     if (isAuthenticated && mongooseUser?.role === 'moderator') {
-      fetchQueue();
+      const timer = setTimeout(() => {
+        fetchQueue();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, mongooseUser]);
+  }, [isAuthenticated, mongooseUser, fetchQueue]);
 
   const handleAction = async (status: 'approved' | 'rejected') => {
     if (!selectedVideo || !firebaseUser) return;

@@ -8,6 +8,11 @@ interface UploadModalProps {
   onClose: () => void;
 }
 
+function generateUniqueFilename(originalName: string): string {
+  const fileExtension = originalName.split('.').pop() || 'mp4';
+  return `${Date.now()}_upload.${fileExtension}`;
+}
+
 export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const { firebaseUser } = useAuth();
   
@@ -92,8 +97,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
     try {
       const fileToUpload = compressedFile;
-      const fileExtension = selectedFile.name.split('.').pop() || 'mp4';
-      const filename = `${Date.now()}_upload.${fileExtension}`;
+      const filename = generateUniqueFilename(selectedFile.name);
 
       // Create FormData payload
       const formData = new FormData();

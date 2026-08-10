@@ -51,7 +51,7 @@ function DepositContent() {
       // No reference available — just refresh and show success (webhook may have run)
       refreshProfile().then(() => setSuccessState(true));
     }
-  }, [searchParams, firebaseUser]);
+  }, [searchParams, firebaseUser, refreshProfile]);
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();

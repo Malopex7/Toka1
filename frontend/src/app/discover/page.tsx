@@ -47,11 +47,12 @@ export default function DiscoverPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
-  // Fetch search results when debounced query changes
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults([]);
-      return;
+      const timer = setTimeout(() => {
+        setResults([]);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     const doSearch = async () => {

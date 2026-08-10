@@ -10,6 +10,10 @@ import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
 import { useAuth } from '@/context/AuthContext';
 
+function generateHeartId(prefix = 'heart'): string {
+  return `${prefix}-${Date.now()}-${Math.random()}`;
+}
+
 export default function VideoFeed() {
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
@@ -29,7 +33,10 @@ export default function VideoFeed() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = localStorage.getItem('toka_inbox_unread');
-    setHasUnreadInbox(stored === 'true');
+    const timer = setTimeout(() => {
+      setHasUnreadInbox(stored === 'true');
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const clearInboxDot = () => {
@@ -106,7 +113,7 @@ export default function VideoFeed() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const heartId = `heart-${Date.now()}-${Math.random()}`;
+    const heartId = generateHeartId('heart');
     const newHeart = { id: heartId, x, y };
     setHearts((prev) => [...prev, newHeart]);
 
@@ -134,7 +141,7 @@ export default function VideoFeed() {
         const cardRect = cardContainer.getBoundingClientRect();
         const x = rect.left - cardRect.left + rect.width / 2;
         const y = rect.top - cardRect.top + rect.height / 2;
-        const heartId = `heart-btn-${Date.now()}-${Math.random()}`;
+        const heartId = generateHeartId('heart-btn');
         setHearts((prev) => [...prev, { id: heartId, x, y }]);
         setTimeout(() => {
           setHearts((prev) => prev.filter((h) => h.id !== heartId));
