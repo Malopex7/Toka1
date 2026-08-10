@@ -256,6 +256,33 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
     });
   };
 
+  const renderCommentText = (text: string) => {
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        const username = part.replace(/^@/, '').replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+        return (
+          <Link
+            key={index}
+            href={`/profile?username=${username}`}
+            onClick={onClose}
+            className="text-toka-flare font-bold hover:underline"
+          >
+            {part}
+          </Link>
+        );
+      }
+      return part;
+    });
+  };
+
+  const handleCancelReply = () => {
+    if (replyingTo && inputText.trim() === `@${replyingTo.username}`) {
+      setInputText('');
+    }
+    setReplyingTo(null);
+  };
+
   const getRelativeTime = (dateString: string) => {
     const now = new Date();
     const created = new Date(dateString);
@@ -340,13 +367,16 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                         </span>
                       </div>
                       <p className="text-xs text-cloud-white/80 mt-1 leading-relaxed">
-                        {comment.text}
+                        {renderCommentText(comment.text)}
                       </p>
 
                       {/* Comment Action Links */}
                       <div className="flex items-center gap-4 mt-2">
                         <button
-                          onClick={() => setReplyingTo({ commentId: comment._id, username: comment.userId.username })}
+                          onClick={() => {
+                            setReplyingTo({ commentId: comment._id, username: comment.userId.username });
+                            setInputText(`@${comment.userId.username} `);
+                          }}
                           className="text-[10px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
                         >
                           Reply
@@ -412,12 +442,15 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                               </span>
                             </div>
                             <p className="text-xs text-cloud-white/80 mt-1 leading-relaxed">
-                              {reply.text}
+                              {renderCommentText(reply.text)}
                             </p>
 
                             <div className="flex items-center gap-4 mt-1.5">
                               <button
-                                onClick={() => setReplyingTo({ commentId: comment._id, username: reply.userId.username })}
+                                onClick={() => {
+                                  setReplyingTo({ commentId: comment._id, username: reply.userId.username });
+                                  setInputText(`@${reply.userId.username} `);
+                                }}
                                 className="text-[9px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
                               >
                                 Reply
@@ -463,7 +496,7 @@ export default function CommentsModal({ isOpen, onClose, videoId }: CommentsModa
                 Replying to <span className="text-toka-flare font-bold">@{replyingTo.username}</span>
               </span>
               <button
-                onClick={() => setReplyingTo(null)}
+                onClick={handleCancelReply}
                 className="text-[10px] font-bold text-red-500 hover:text-red-400"
               >
                 Cancel
