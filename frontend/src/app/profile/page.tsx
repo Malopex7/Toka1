@@ -493,8 +493,12 @@ function ProfileContent() {
         <div className="bg-shaded-canopy border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 text-center shadow-xl">
           <div className="relative group">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-lg text-3xl font-black text-cloud-white select-none overflow-hidden border-2 border-white/10">
-              {targetUser.avatarUrl ? (
-                <img src={targetUser.avatarUrl} alt={targetUser.username} className="w-full h-full object-cover" />
+              {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
+                <img 
+                  src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 
+                  alt={targetUser.username} 
+                  className="w-full h-full object-cover" 
+                />
               ) : (
                 targetUser.username.charAt(0).toUpperCase()
               )}
@@ -506,7 +510,7 @@ function ProfileContent() {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-toka-flare hover:bg-toka-flare/90 text-cloud-white flex items-center justify-center shadow-lg border-2 border-midnight-boma transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-toka-flare hover:bg-toka-flare/90 text-cloud-white flex items-center justify-center shadow-lg border-2 border-midnight-boma transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer z-10"
                   title="Change Profile Photo"
                 >
                   {uploadingAvatar ? (
@@ -526,7 +530,7 @@ function ProfileContent() {
             )}
           </div>
 
-          {isOwnProfile && targetUser.avatarUrl && (
+          {isOwnProfile && (targetUser.avatarUrl || mongooseUser?.avatarUrl) && (
             <button
               onClick={handleRemoveAvatar}
               disabled={uploadingAvatar}
