@@ -26,6 +26,7 @@ export interface MongooseUser {
   verificationRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
   strikeCount: number;
   avatarUrl?: string;
+  followListPrivacy?: 'everyone' | 'followers_only' | 'only_me';
   followers?: string[];
   following?: string[];
 }

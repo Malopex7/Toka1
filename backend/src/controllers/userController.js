@@ -203,7 +203,7 @@ export const checkFollowStatus = async (req, res, next) => {
 export const getProfileByUsername = async (req, res, next) => {
   const { username } = req.params;
   const user = await User.findOne({ username: username.toLowerCase().trim() })
-    .select('username role followers following isBrandSafeVerified verificationRequestStatus avatarUrl taggingPermission');
+    .select('username role followers following isBrandSafeVerified verificationRequestStatus avatarUrl taggingPermission followListPrivacy');
 
   if (!user) {
     throw new AppError('User not found', 404);
@@ -401,19 +401,25 @@ export const getMutualFollowers = async (req, res, next) => {
 
 /**
  * PATCH /api/users/settings
- * Update user preferences such as tagging permissions.
+ * Update user preferences such as tagging permissions and follower list privacy.
  */
 export const updateSettings = async (req, res, next) => {
-  const { taggingPermission } = req.body;
-  const validPermissions = ['allow_all', 'require_approval', 'disabled'];
+  const { taggingPermission, followListPrivacy } = req.body;
+  const validTagPermissions = ['allow_all', 'require_approval', 'disabled'];
+  const validPrivacyOptions = ['everyone', 'followers_only', 'only_me'];
 
   try {
-    if (taggingPermission && !validPermissions.includes(taggingPermission)) {
+    if (taggingPermission && !validTagPermissions.includes(taggingPermission)) {
       throw new AppError('Invalid tagging permission setting. Use allow_all, require_approval, or disabled.', 400);
+    }
+
+    if (followListPrivacy && !validPrivacyOptions.includes(followListPrivacy)) {
+      throw new AppError('Invalid follow list privacy setting. Use everyone, followers_only, or only_me.', 400);
     }
 
     const updates = {};
     if (taggingPermission) updates.taggingPermission = taggingPermission;
+    if (followListPrivacy) updates.followListPrivacy = followListPrivacy;
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
 
@@ -484,6 +490,122 @@ export const updateAvatar = async (req, res, next) => {
       status: 'success',
       message: 'Avatar updated successfully.',
       data: { user: updatedUser }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/users/profile/:username/followers
+ * Fetch followers list respecting user's followListPrivacy setting.
+ */
+export const getFollowersList = async (req, res, next) => {
+  const { username } = req.params;
+  const q = (req.query.q || '').trim();
+
+  try {
+    const targetUser = await User.findOne({ username: username.toLowerCase().trim() });
+    if (!targetUser) {
+      throw new AppError('User not found', 404);
+    }
+
+    const privacy = targetUser.followListPrivacy || 'everyone';
+    const isOwner = req.user && req.user._id.toString() === targetUser._id.toString();
+    const isFollower = req.user && targetUser.followers.some(id => id.toString() === req.user._id.toString());
+
+    if (!isOwner) {
+      if (privacy === 'only_me') {
+        return res.status(200).json({
+          status: 'success',
+          isPrivate: true,
+          message: 'This user\'s follower list is private.',
+          data: { users: [] }
+        });
+      }
+      if (privacy === 'followers_only' && !isFollower) {
+        return res.status(200).json({
+          status: 'success',
+          isPrivate: true,
+          message: 'Only followers can view this list.',
+          data: { users: [] }
+        });
+      }
+    }
+
+    const filter = { _id: { $in: targetUser.followers } };
+    if (q) {
+      filter.username = { $regex: q.replace(/^@/, ''), $options: 'i' };
+    }
+
+    const followers = await User.find(filter)
+      .select('username role avatarUrl isBrandSafeVerified')
+      .limit(50)
+      .lean();
+
+    res.status(200).json({
+      status: 'success',
+      isPrivate: false,
+      results: followers.length,
+      data: { users: followers }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/users/profile/:username/following
+ * Fetch following list respecting user's followListPrivacy setting.
+ */
+export const getFollowingList = async (req, res, next) => {
+  const { username } = req.params;
+  const q = (req.query.q || '').trim();
+
+  try {
+    const targetUser = await User.findOne({ username: username.toLowerCase().trim() });
+    if (!targetUser) {
+      throw new AppError('User not found', 404);
+    }
+
+    const privacy = targetUser.followListPrivacy || 'everyone';
+    const isOwner = req.user && req.user._id.toString() === targetUser._id.toString();
+    const isFollower = req.user && targetUser.followers.some(id => id.toString() === req.user._id.toString());
+
+    if (!isOwner) {
+      if (privacy === 'only_me') {
+        return res.status(200).json({
+          status: 'success',
+          isPrivate: true,
+          message: 'This user\'s following list is private.',
+          data: { users: [] }
+        });
+      }
+      if (privacy === 'followers_only' && !isFollower) {
+        return res.status(200).json({
+          status: 'success',
+          isPrivate: true,
+          message: 'Only followers can view this list.',
+          data: { users: [] }
+        });
+      }
+    }
+
+    const filter = { _id: { $in: targetUser.following } };
+    if (q) {
+      filter.username = { $regex: q.replace(/^@/, ''), $options: 'i' };
+    }
+
+    const following = await User.find(filter)
+      .select('username role avatarUrl isBrandSafeVerified')
+      .limit(50)
+      .lean();
+
+    res.status(200).json({
+      status: 'success',
+      isPrivate: false,
+      results: following.length,
+      data: { users: following }
     });
   } catch (err) {
     next(err);

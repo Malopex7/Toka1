@@ -16,9 +16,11 @@ import {
   getMutualFollowers,
   updateSettings,
   updateAvatar,
-  uploadAvatarFile
+  uploadAvatarFile,
+  getFollowersList,
+  getFollowingList
 } from '../controllers/userController.js';
-import { protect, requireModerator } from '../middlewares/auth.js';
+import { protect, optionalProtect, requireModerator } from '../middlewares/auth.js';
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -47,6 +49,8 @@ router.post('/users/fcm-token', protect, saveFcmToken);
 router.post('/users/follow/:targetUserId', protect, toggleFollow);
 router.get('/users/follow/:targetUserId/status', protect, checkFollowStatus);
 router.get('/users/profile/:username', getProfileByUsername);
+router.get('/users/profile/:username/followers', optionalProtect, getFollowersList);
+router.get('/users/profile/:username/following', optionalProtect, getFollowingList);
 
 // Verification and Directory Routes
 router.post('/users/request-verification', protect, requestVerification);

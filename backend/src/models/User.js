@@ -71,6 +71,11 @@ const userSchema = new mongoose.Schema({
   avatarUrl: {
     type: String,
     default: ''
+  },
+  followListPrivacy: {
+    type: String,
+    enum: ['everyone', 'followers_only', 'only_me'],
+    default: 'everyone'
   }
 }, {
   timestamps: true,

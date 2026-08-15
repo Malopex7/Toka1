@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
+import FollowListModal from '@/components/FollowListModal';
 
 interface ProfileVideo {
   _id: string;
@@ -30,6 +31,7 @@ interface TargetUser {
   isBrandSafeVerified?: boolean;
   verificationRequestStatus?: string;
   taggingPermission?: string;
+  followListPrivacy?: string;
 }
 
 function ProfileContent() {
@@ -54,9 +56,15 @@ function ProfileContent() {
   // Verification request state
   const [verificationLoading, setVerificationLoading] = useState(false);
 
-  // Tagging permission setting state
+  // Follow list modal state
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+  const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
+
+  // Privacy setting states
   const [taggingPermission, setTaggingPermission] = useState<string>('allow_all');
+  const [followListPrivacy, setFollowListPrivacy] = useState<string>('everyone');
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const isOwnProfile = !targetUsername || (mongooseUser && targetUsername.toLowerCase() === mongooseUser.username.toLowerCase());
 
@@ -89,6 +97,9 @@ function ProfileContent() {
           if (data.data.user.taggingPermission) {
             setTaggingPermission(data.data.user.taggingPermission);
           }
+          if (data.data.user.followListPrivacy) {
+            setFollowListPrivacy(data.data.user.followListPrivacy);
+          }
           
           // Check if currently following
           if (mongooseUser) {
@@ -106,7 +117,7 @@ function ProfileContent() {
     };
 
     fetchProfile();
-  }, [targetUsername, isOwnProfile, mongooseUser]);
+  }, [targetUsername, isOwnProfile, mongooseUser, refreshTrigger]);
 
   // 2) Fetch Videos
   useEffect(() => {
@@ -306,8 +317,8 @@ function ProfileContent() {
     if (!targetUser || targetUser.taggingPermission === newPermission || isUpdatingSettings) return;
 
     setIsUpdatingSettings(true);
-    // Optimistic UI update
     setTargetUser(prev => prev ? { ...prev, taggingPermission: newPermission } : null);
+    setTaggingPermission(newPermission);
 
     try {
       const token = await firebaseUser?.getIdToken();
@@ -329,9 +340,44 @@ function ProfileContent() {
     } catch (err: any) {
       console.error('[Tagging Setting Error]:', err);
       showAlert('Update Failed', err.message || 'Could not save tagging privacy settings.');
-      // Revert
       if (mongooseUser) {
         setTargetUser(prev => prev ? { ...prev, taggingPermission: (mongooseUser as any).taggingPermission || 'allow_all' } : null);
+      }
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  // 8) Update Followers/Following List Privacy Handler
+  const handleUpdateFollowListPrivacy = async (newPrivacy: string) => {
+    if (!targetUser || targetUser.followListPrivacy === newPrivacy || isUpdatingSettings) return;
+
+    setIsUpdatingSettings(true);
+    setTargetUser(prev => prev ? { ...prev, followListPrivacy: newPrivacy } : null);
+    setFollowListPrivacy(newPrivacy);
+
+    try {
+      const token = await firebaseUser?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/settings`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ followListPrivacy: newPrivacy })
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        throw new Error(data.message || 'Failed to update follow list privacy setting.');
+      }
+    } catch (err: any) {
+      console.error('[Follow List Privacy Error]:', err);
+      showAlert('Update Failed', err.message || 'Could not save follow list privacy settings.');
+      if (mongooseUser) {
+        setTargetUser(prev => prev ? { ...prev, followListPrivacy: (mongooseUser as any).followListPrivacy || 'everyone' } : null);
       }
     } finally {
       setIsUpdatingSettings(false);
@@ -633,86 +679,156 @@ function ProfileContent() {
 
         {/* Tagging & Privacy Settings */}
         {isOwnProfile && targetUser && (
-          <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-toka-flare text-[22px]">sell</span>
-                <div>
-                  <h4 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions Privacy</h4>
-                  <p className="text-[10px] text-cloud-white/50 mt-0.5">
-                    Control how other creators can tag you in videos.
-                  </p>
+          <div className="flex flex-col gap-4">
+            {/* Tagging Permissions */}
+            <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-toka-flare text-[22px]">sell</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions Privacy</h4>
+                    <p className="text-[10px] text-cloud-white/50 mt-0.5">
+                      Control how other creators can tag you in videos.
+                    </p>
+                  </div>
                 </div>
+                {isUpdatingSettings && (
+                  <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+                )}
               </div>
-              {isUpdatingSettings && (
-                <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
-              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                {[
+                  {
+                    id: 'allow_all',
+                    label: 'Allow Tags',
+                    desc: 'Tags are active immediately (Default)'
+                  },
+                  {
+                    id: 'require_approval',
+                    label: 'Review Tags',
+                    desc: 'Require manual approval in Inbox'
+                  },
+                  {
+                    id: 'disabled',
+                    label: 'Turn Tags Off',
+                    desc: 'No one can tag you in videos'
+                  }
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleUpdateTaggingPermission(opt.id)}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      taggingPermission === opt.id
+                        ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
+                        : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold">{opt.label}</span>
+                      {taggingPermission === opt.id && (
+                        <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
+                      )}
+                    </div>
+                    <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-              {[
-                {
-                  id: 'allow_all',
-                  label: 'Allow Tags',
-                  desc: 'Tags are active immediately (Default)'
-                },
-                {
-                  id: 'require_approval',
-                  label: 'Review Tags',
-                  desc: 'Require manual approval in Inbox'
-                },
-                {
-                  id: 'disabled',
-                  label: 'Turn Tags Off',
-                  desc: 'No one can tag you in videos'
-                }
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => handleUpdateTaggingPermission(opt.id)}
-                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all ${
-                    taggingPermission === opt.id
-                      ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
-                      : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-xs font-bold">{opt.label}</span>
-                    {taggingPermission === opt.id && (
-                      <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
-                    )}
+            {/* Followers & Following List Privacy */}
+            <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-toka-flare text-[22px]">visibility</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-cloud-white">Followers &amp; Following List Privacy</h4>
+                    <p className="text-[10px] text-cloud-white/50 mt-0.5">
+                      Choose who can see your followers and following lists.
+                    </p>
                   </div>
-                  <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
-                </button>
-              ))}
+                </div>
+                {isUpdatingSettings && (
+                  <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                {[
+                  {
+                    id: 'everyone',
+                    label: 'Everyone',
+                    desc: 'Public to all users (Default)'
+                  },
+                  {
+                    id: 'followers_only',
+                    label: 'Followers Only',
+                    desc: 'Only your followers can view'
+                  },
+                  {
+                    id: 'only_me',
+                    label: 'Only Me',
+                    desc: 'Private (Visible only to you)'
+                  }
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleUpdateFollowListPrivacy(opt.id)}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      (targetUser.followListPrivacy || 'everyone') === opt.id
+                        ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
+                        : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold">{opt.label}</span>
+                      {(targetUser.followListPrivacy || 'everyone') === opt.id && (
+                        <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
+                      )}
+                    </div>
+                    <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className={`grid ${isOwnProfile ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-3`}>
           <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
             <span className="material-symbols-outlined text-toka-flare text-[24px]">videocam</span>
             <span className="text-xl font-black font-mono">{videos.length}</span>
             <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Videos</span>
           </div>
-          <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
-            <span className="material-symbols-outlined text-amber-400 text-[24px]">group</span>
+
+          <button 
+            type="button"
+            onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
+            className="bg-shaded-canopy border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+          >
+            <span className="material-symbols-outlined text-amber-400 text-[24px] group-hover:scale-110 transition-transform">group</span>
             <span className="text-xl font-black font-mono">{followerCount}</span>
-            <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Followers</span>
-          </div>
-          {isOwnProfile && mongooseUser ? (
+            <span className="text-[9px] text-cloud-white/40 group-hover:text-amber-400 uppercase font-bold tracking-wider">Followers</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
+            className="bg-shaded-canopy border border-white/10 hover:border-blue-400/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+          >
+            <span className="material-symbols-outlined text-blue-400 text-[24px] group-hover:scale-110 transition-transform">person_check</span>
+            <span className="text-xl font-black font-mono">{targetUser.following?.length || 0}</span>
+            <span className="text-[9px] text-cloud-white/40 group-hover:text-blue-400 uppercase font-bold tracking-wider">Following</span>
+          </button>
+
+          {isOwnProfile && mongooseUser && (
             <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
               <span className="material-symbols-outlined text-fintech-mint text-[24px]">account_balance_wallet</span>
               <span className="text-xl font-black font-mono">R {mongooseUser.walletBalance.toFixed(2)}</span>
               <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Balance</span>
-            </div>
-          ) : (
-            <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
-              <span className="material-symbols-outlined text-blue-400 text-[24px]">person_check</span>
-              <span className="text-xl font-black font-mono">{targetUser.following?.length || 0}</span>
-              <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Following</span>
             </div>
           )}
         </div>
@@ -839,6 +955,19 @@ function ProfileContent() {
           </div>
           )}
         </div>
+
+        {/* Followers & Following List Modal */}
+        {targetUser && (
+          <FollowListModal
+            isOpen={isFollowModalOpen}
+            onClose={() => setIsFollowModalOpen(false)}
+            targetUsername={targetUser.username}
+            initialTab={followModalTab}
+            followersCount={followerCount}
+            followingCount={targetUser.following?.length || 0}
+            onFollowCountChange={() => setRefreshTrigger(prev => prev + 1)}
+          />
+        )}
       </main>
     </div>
   );
