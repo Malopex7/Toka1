@@ -25,7 +25,7 @@ interface TargetUser {
 
 function ProfileContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout } = useAuth();
-  const { showAlert, showConfirm } = useModalStore();
+  const { showAlert, showConfirm, showPrompt } = useModalStore();
   const searchParams = useSearchParams();
   const targetUsername = searchParams?.get('username') || '';
 
@@ -199,6 +199,46 @@ function ProfileContent() {
     );
   };
 
+  const handleEditCaption = (video: ProfileVideo) => {
+    if (!firebaseUser) return;
+
+    showPrompt(
+      'Edit Caption',
+      'Enter the new caption/title for your video:',
+      async (newTitle) => {
+        if (!newTitle || !newTitle.trim()) {
+          showAlert('Error', 'Caption cannot be empty.');
+          return;
+        }
+
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${video._id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ title: newTitle.trim() })
+          });
+
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            setVideos(prev => prev.map(v => v._id === video._id ? { ...v, title: data.data.video.title } : v));
+            showAlert('Success', 'Caption updated successfully.');
+          } else {
+            showAlert('Error', data.message || 'Failed to update caption.');
+          }
+        } catch (err: any) {
+          console.error('[Edit Caption] Request failed:', err);
+          showAlert('Error', err.message || 'An error occurred while updating the caption.');
+        }
+      },
+      'Video caption...',
+      video.title
+    );
+  };
+
   if (isLoading || fetchingProfile) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-midnight-boma text-cloud-white font-sans">
@@ -363,16 +403,28 @@ function ProfileContent() {
                   className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
                 >
                   {isOwnProfile && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteVideo(video._id);
-                      }}
-                      className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10"
-                      title="Delete Video"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
-                    </button>
+                    <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCaption(video);
+                        }}
+                        className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                        title="Edit Caption"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteVideo(video._id);
+                        }}
+                        className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                        title="Delete Video"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
                   )}
                   <video
                     src={video.videoUrl}
@@ -405,18 +457,30 @@ function ProfileContent() {
       {selectedVideo && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
           <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
-             {/* Delete Button for own video */}
+             {/* Edit/Delete Buttons for own video */}
             {isOwnProfile && (
-              <button
-                onClick={() => {
-                  handleDeleteVideo(selectedVideo._id);
-                  setSelectedVideo(null);
-                }}
-                className="absolute top-4 left-4 z-50 w-8 h-8 rounded-full bg-black/50 hover:bg-red-500/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
-                title="Delete Video"
-              >
-                <span className="material-symbols-outlined text-[18px]">delete</span>
-              </button>
+              <div className="absolute top-4 left-4 z-50 flex gap-2">
+                <button
+                  onClick={() => {
+                    handleEditCaption(selectedVideo);
+                    setSelectedVideo(null);
+                  }}
+                  className="w-8 h-8 rounded-full bg-black/50 hover:bg-toka-flare/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
+                  title="Edit Caption"
+                >
+                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleDeleteVideo(selectedVideo._id);
+                    setSelectedVideo(null);
+                  }}
+                  className="w-8 h-8 rounded-full bg-black/50 hover:bg-red-500/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
+                  title="Delete Video"
+                >
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
             )}
             {/* Close Button */}
             <button

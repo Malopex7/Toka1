@@ -9,7 +9,8 @@ import {
   streamGridFSVideo,
   toggleLikeVideo,
   recordShare,
-  deleteVideo
+  deleteVideo,
+  updateVideo
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -39,5 +40,6 @@ router.patch('/videos/:id/vetting-status', protect, requireModerator, updateVett
 router.post('/videos/:id/like', protect, toggleLikeVideo);
 router.post('/videos/:id/share', recordShare);
 router.delete('/videos/:id', protect, deleteVideo);
+router.patch('/videos/:id', protect, updateVideo);
 
 export default router;

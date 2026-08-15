@@ -444,3 +444,36 @@ export const deleteVideo = async (req, res, next) => {
     next(err);
   }
 };
+
+export const updateVideo = async (req, res, next) => {
+  const { id } = req.params;
+  const { title } = req.body;
+  const userId = req.user._id;
+
+  try {
+    if (!title || !title.trim()) {
+      throw new AppError('Please provide a video title/caption.', 400);
+    }
+
+    const video = await Video.findById(id);
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    // Auth check: Must be the creator of the video
+    if (video.creatorId.toString() !== userId.toString()) {
+      throw new AppError('You do not have permission to edit this video.', 403);
+    }
+
+    video.title = title.trim();
+    await video.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Video caption updated successfully.',
+      data: { video }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
