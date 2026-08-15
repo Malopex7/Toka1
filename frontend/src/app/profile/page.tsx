@@ -432,7 +432,7 @@ function ProfileContent() {
           {isOwnProfile && mongooseUser ? (
             <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
               <span className="material-symbols-outlined text-fintech-mint text-[24px]">account_balance_wallet</span>
-              <span className="text-xl font-black font-mono">R{mongooseUser.walletBalance.toFixed(0)}</span>
+              <span className="text-xl font-black font-mono">R {mongooseUser.walletBalance.toFixed(2)}</span>
               <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Balance</span>
             </div>
           ) : (

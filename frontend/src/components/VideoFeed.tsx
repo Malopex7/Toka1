@@ -627,9 +627,9 @@ export default function VideoFeed() {
                   </div>
                   <Link
                     href="/profile"
-                    className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
+                    className="cursor-pointer hover:opacity-90 transition-opacity select-none"
+                    title={`@${mongooseUser?.username} Profile`}
                   >
-                    <span className="text-[10px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-md text-lg font-black text-cloud-white relative">
                       {mongooseUser?.username ? mongooseUser.username.charAt(0).toUpperCase() : ''}
                       {mongooseUser?.isBrandSafeVerified && (
