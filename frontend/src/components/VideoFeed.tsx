@@ -777,12 +777,18 @@ export default function VideoFeed() {
                     {/* Creator Avatar & Follow Button */}
                     <div className="relative mb-3 group select-none">
                       <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
-                        <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform">
-                          <img
-                            src={video.creatorAvatar}
-                            alt={video.creatorName}
-                            className="w-full h-full object-cover rounded-full bg-shaded-canopy"
-                          />
+                        <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform flex items-center justify-center bg-gradient-to-br from-toka-flare to-orange-700">
+                          {video.creatorAvatar ? (
+                            <img
+                              src={video.creatorAvatar}
+                              alt={video.creatorName}
+                              className="w-full h-full object-cover rounded-full bg-shaded-canopy"
+                            />
+                          ) : (
+                            <span className="font-black text-sm text-cloud-white">
+                              {video.creatorName.replace('@', '').charAt(0).toUpperCase()}
+                            </span>
+                          )}
                         </div>
                       </Link>
                       {mongooseUser?._id !== video.creatorId && (
@@ -913,15 +919,11 @@ export default function VideoFeed() {
                     </div>
 
                     {/* Vinyl Audio Disk */}
-                    {video.audioArt && (
-                      <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg">
-                        <img
-                          src={video.audioArt}
-                          alt="Audio art"
-                          className="w-full h-full rounded-full object-cover"
-                        />
+                    <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg flex items-center justify-center">
+                      <div className="w-full h-full rounded-full bg-midnight-boma border border-white/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-toka-flare text-[14px]">music_note</span>
                       </div>
-                    )}
+                    </div>
                   </aside>
 
                   {/* Bottom Left Info Overlay */}

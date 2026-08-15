@@ -222,7 +222,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           id: video._id,
           creatorId: video.creatorId?._id || video.creatorId,
           creatorName: video.creatorId?.username ? `@${video.creatorId.username}` : '@unknown',
-          creatorAvatar: video.creatorId?.role === 'moderator' ? '/images/moderator-avatar.png' : '/images/creator-avatar.png',
+          creatorAvatar: video.creatorId?.avatarUrl || '',
           videoUrl: video.videoUrl,
           title: video.title,
           description: video.title + ' #toka #creator',
@@ -236,8 +236,8 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           isVerified: video.creatorId?.isBrandSafeVerified || false,
           isLiked: video.isLiked || false,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
-          audioArt: '/images/audio-album.jpg',
-          poster: '/images/dance-video.png',
+          audioArt: '',
+          poster: video.thumbnailUrl || '',
           coAuthors: video.coAuthors || []
         }));
 
