@@ -24,6 +24,13 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [sponsorshipTerms, setSponsorshipTerms] = useState('');
   const [verifiedBrands, setVerifiedBrands] = useState<{ _id: string; username: string }[]>([]);
 
+  // Co-Author state fields
+  const [isCoAuthorEnabled, setIsCoAuthorEnabled] = useState(false);
+  const [selectedCoAuthor, setSelectedCoAuthor] = useState<{ _id: string; username: string; isBrandSafeVerified?: boolean } | null>(null);
+  const [coAuthorQuery, setCoAuthorQuery] = useState('');
+  const [mutualFollowers, setMutualFollowers] = useState<{ _id: string; username: string; role: string; isBrandSafeVerified: boolean }[]>([]);
+  const [isSearchingMutual, setIsSearchingMutual] = useState(false);
+
   // Fetch verified brands when verified creator enables dashboard
   useEffect(() => {
     if (!isOpen || !firebaseUser || !mongooseUser?.isBrandSafeVerified) return;
@@ -45,6 +52,35 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
     fetchBrands();
   }, [isOpen, firebaseUser, mongooseUser]);
+
+  // Fetch mutual followers when co-author section is open
+  useEffect(() => {
+    if (!isOpen || !firebaseUser || !isCoAuthorEnabled) return;
+
+    const fetchMutualFollowers = async () => {
+      setIsSearchingMutual(true);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/mutual-followers?q=${encodeURIComponent(coAuthorQuery)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        const json = await res.json();
+        if (json.status === 'success') {
+          setMutualFollowers(json.data.users || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch mutual followers:', err);
+      } finally {
+        setIsSearchingMutual(false);
+      }
+    };
+
+    const timer = setTimeout(fetchMutualFollowers, 250);
+    return () => clearTimeout(timer);
+  }, [isOpen, firebaseUser, isCoAuthorEnabled, coAuthorQuery]);
   
   const [title, setTitle] = useState('');
   const [tier, setTier] = useState<'fan_funded' | 'brand_safe'>('fan_funded');
@@ -139,6 +175,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         formData.append('brandId', selectedBrandId);
         formData.append('sponsorshipAmount', sponsorshipAmount);
         formData.append('sponsorshipTerms', sponsorshipTerms);
+      }
+
+      if (isCoAuthorEnabled && selectedCoAuthor) {
+        formData.append('coAuthorId', selectedCoAuthor._id);
       }
 
       const token = await firebaseUser.getIdToken();
@@ -422,6 +462,100 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                   )}
                 </div>
               )}
+
+              {/* Co-Authors & Collaborative Posting Section */}
+              <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={isCoAuthorEnabled}
+                      onChange={(e) => {
+                        setIsCoAuthorEnabled(e.target.checked);
+                        if (!e.target.checked) setSelectedCoAuthor(null);
+                      }}
+                      className="rounded border-white/20 bg-black/40 text-toka-flare focus:ring-toka-flare accent-toka-flare w-4 h-4 cursor-pointer"
+                    />
+                    <span>Invite Co-Author / Collaborator</span>
+                  </label>
+                  <span className="bg-toka-flare/10 text-toka-flare text-[9px] font-bold px-2 py-0.5 rounded-full border border-toka-flare/20">
+                    Mutual Follows
+                  </span>
+                </div>
+
+                {isCoAuthorEnabled && (
+                  <div className="flex flex-col gap-2.5 mt-1 border-t border-white/5 pt-3 animate-scale-up">
+                    <p className="text-[10px] text-cloud-white/50 leading-relaxed">
+                      Invited co-authors will receive an invitation. Once accepted, the video will appear on both creators&apos; profile feeds.
+                    </p>
+
+                    {selectedCoAuthor ? (
+                      <div className="flex items-center justify-between bg-toka-flare/10 border border-toka-flare/30 rounded-xl p-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white">
+                            {selectedCoAuthor.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs font-bold text-cloud-white">@{selectedCoAuthor.username}</span>
+                            {selectedCoAuthor.isBrandSafeVerified && (
+                              <span className="material-symbols-outlined text-fintech-mint text-[14px]">verified</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCoAuthor(null)}
+                          className="text-[10px] font-bold text-cloud-white/40 hover:text-red-400 px-2 py-1 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="text"
+                          value={coAuthorQuery}
+                          onChange={(e) => setCoAuthorQuery(e.target.value)}
+                          placeholder="Search mutual followers by @username..."
+                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors placeholder-cloud-white/30"
+                        />
+
+                        <div className="flex flex-col gap-1 max-h-36 overflow-y-auto no-scrollbar bg-black/30 rounded-xl border border-white/5 p-1">
+                          {isSearchingMutual ? (
+                            <div className="py-3 text-center text-xs text-cloud-white/40 font-mono">
+                              Searching mutual follows...
+                            </div>
+                          ) : mutualFollowers.length === 0 ? (
+                            <div className="py-3 text-center text-[10px] text-cloud-white/40 font-mono">
+                              {coAuthorQuery ? 'No matching mutual followers found.' : 'You can only invite creators who follow you back.'}
+                            </div>
+                          ) : (
+                            mutualFollowers.map((user) => (
+                              <button
+                                key={user._id}
+                                type="button"
+                                onClick={() => setSelectedCoAuthor(user)}
+                                className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-left hover:bg-white/5 text-cloud-white/80 transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white">
+                                    {user.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="text-xs font-bold text-cloud-white">@{user.username}</span>
+                                  {user.isBrandSafeVerified && (
+                                    <span className="material-symbols-outlined text-fintech-mint text-[12px]">verified</span>
+                                  )}
+                                </div>
+                                <span className="text-[9px] font-bold text-toka-flare hover:underline">Select</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Upload progress indicator */}
               {isUploading && (

@@ -356,3 +356,36 @@ export const searchUsers = async (req, res, next) => {
     data: { users: rankedUsers }
   });
 };
+
+/**
+ * Fetch mutual followers (users who follow each other) for co-author eligibility.
+ */
+export const getMutualFollowers = async (req, res, next) => {
+  const q = (req.query.q || '').trim();
+  const currentUserId = req.user._id;
+  const followingIds = req.user.following || [];
+
+  if (followingIds.length === 0) {
+    return res.status(200).json({ status: 'success', results: 0, data: { users: [] } });
+  }
+
+  const filter = {
+    _id: { $in: followingIds },
+    following: currentUserId
+  };
+
+  if (q) {
+    filter.username = { $regex: q.replace(/^@/, ''), $options: 'i' };
+  }
+
+  const mutualUsers = await User.find(filter)
+    .select('username role isBrandSafeVerified')
+    .limit(15)
+    .lean();
+
+  res.status(200).json({
+    status: 'success',
+    results: mutualUsers.length,
+    data: { users: mutualUsers }
+  });
+};

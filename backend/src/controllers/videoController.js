@@ -28,7 +28,7 @@ export const extractMentions = async (text, currentUserId) => {
  * Creates the Video document and immediately fires the AI pipeline in background.
  */
 export const uploadVideo = async (req, res, next) => {
-  const { videoUrl, title, tier } = req.body;
+  const { videoUrl, title, tier, coAuthorId } = req.body;
 
   if (!videoUrl || !title) {
     throw new AppError('Please provide videoUrl and title.', 400);
@@ -36,6 +36,21 @@ export const uploadVideo = async (req, res, next) => {
 
   const validTiers = ['fan_funded', 'brand_safe'];
   const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
+
+  let initialCoAuthors = [];
+  if (coAuthorId) {
+    const isMutual = (req.user.following || []).some(id => id.toString() === coAuthorId.toString());
+    const targetUser = await User.findById(coAuthorId);
+    const targetFollowsMe = targetUser && (targetUser.following || []).some(id => id.toString() === req.user._id.toString());
+    if (!isMutual || !targetFollowsMe) {
+      throw new AppError('You can only invite mutual followers as co-authors.', 400);
+    }
+    initialCoAuthors.push({
+      user: coAuthorId,
+      status: 'pending',
+      invitedAt: new Date()
+    });
+  }
 
   const mentionedUsers = await extractMentions(title, req.user._id);
 
@@ -47,11 +62,26 @@ export const uploadVideo = async (req, res, next) => {
     tier: resolvedTier,
     vettingStatus: 'processing',
     aiPipelineStatus: 'pending',
-    mentions: mentionedUsers.map(u => u._id)
+    mentions: mentionedUsers.map(u => u._id),
+    coAuthors: initialCoAuthors
   });
 
   // Fire AI pipeline asynchronously — do NOT await (non-blocking)
   runAiPipeline(video._id.toString(), videoUrl);
+
+  // Send notification to invited co-author
+  if (coAuthorId) {
+    sendFcmNotification(
+      coAuthorId,
+      'Co-Author Invitation! 🤝',
+      `@${req.user.username} invited you to be a co-author on their video: "${title}"`,
+      {
+        type: 'coauthor_invite',
+        videoId: video._id.toString(),
+        creatorName: req.user.username
+      }
+    ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
+  }
 
   // Send notifications to mentioned users
   for (const mentionedUser of mentionedUsers) {
@@ -119,6 +149,7 @@ export const getFeed = async (req, res, next) => {
   const [videos, totalVideos] = await Promise.all([
     Video.find(query)
       .populate('creatorId', 'username role isBrandSafeVerified')
+      .populate('coAuthors.user', 'username role isBrandSafeVerified')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -264,13 +295,28 @@ export const updateVettingStatus = async (req, res, next) => {
  * creator/brand upload a new video directly to MongoDB GridFS.
  */
 export const uploadGridFSVideo = async (req, res, next) => {
-  const { title, tier, brandId, sponsorshipAmount, sponsorshipTerms } = req.body;
+  const { title, tier, brandId, sponsorshipAmount, sponsorshipTerms, coAuthorId } = req.body;
 
   if (!req.file) {
     throw new AppError('Please upload a video file.', 400);
   }
   if (!title) {
     throw new AppError('Please provide a title.', 400);
+  }
+
+  let initialCoAuthors = [];
+  if (coAuthorId) {
+    const isMutual = (req.user.following || []).some(id => id.toString() === coAuthorId.toString());
+    const targetUser = await User.findById(coAuthorId);
+    const targetFollowsMe = targetUser && (targetUser.following || []).some(id => id.toString() === req.user._id.toString());
+    if (!isMutual || !targetFollowsMe) {
+      throw new AppError('You can only invite mutual followers as co-authors.', 400);
+    }
+    initialCoAuthors.push({
+      user: coAuthorId,
+      status: 'pending',
+      invitedAt: new Date()
+    });
   }
 
   // If sponsorship parameters are provided, perform validation
@@ -333,7 +379,8 @@ export const uploadGridFSVideo = async (req, res, next) => {
       vettingStatus: 'processing',
       aiPipelineStatus: 'pending',
       visibility: hasSponsorship ? 'private' : 'public',
-      mentions: mentionedUsers.map(u => u._id)
+      mentions: mentionedUsers.map(u => u._id),
+      coAuthors: initialCoAuthors
     };
 
     if (hasSponsorship) {
@@ -362,6 +409,20 @@ export const uploadGridFSVideo = async (req, res, next) => {
     await session.commitTransaction();
 
     runAiPipeline(video[0]._id.toString(), videoUrl);
+
+    // Send notification to invited co-author
+    if (coAuthorId) {
+      sendFcmNotification(
+        coAuthorId,
+        'Co-Author Invitation! 🤝',
+        `@${req.user.username} invited you to be a co-author on their video: "${title}"`,
+        {
+          type: 'coauthor_invite',
+          videoId: video[0]._id.toString(),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
+    }
 
     // Send notifications to mentioned users
     for (const mentionedUser of mentionedUsers) {
@@ -619,6 +680,121 @@ export const updateVideo = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       message: 'Video caption updated successfully.',
+      data: { video }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/videos/coauthor/invites
+ * List pending co-author invitations for the authenticated user.
+ */
+export const getCoAuthorInvites = async (req, res, next) => {
+  try {
+    const invites = await Video.find({
+      'coAuthors': {
+        $elemMatch: {
+          user: req.user._id,
+          status: 'pending'
+        }
+      }
+    })
+      .populate('creatorId', 'username role isBrandSafeVerified')
+      .populate('coAuthors.user', 'username role isBrandSafeVerified')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: invites.length,
+      data: { invites }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/videos/:id/coauthor/respond
+ * Accept or decline a co-author invitation.
+ */
+export const respondToCoAuthorInvite = async (req, res, next) => {
+  const { id } = req.params;
+  const { action } = req.body; // 'accept' | 'decline'
+
+  try {
+    if (!['accept', 'decline'].includes(action)) {
+      throw new AppError('Invalid response action. Choose accept or decline.', 400);
+    }
+
+    const video = await Video.findById(id).populate('creatorId', 'username');
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    const coAuthorEntry = video.coAuthors.find(
+      ca => ca.user.toString() === req.user._id.toString() && ca.status === 'pending'
+    );
+
+    if (!coAuthorEntry) {
+      throw new AppError('No pending co-author invitation found for this video.', 404);
+    }
+
+    const newStatus = action === 'accept' ? 'accepted' : 'declined';
+    coAuthorEntry.status = newStatus;
+    coAuthorEntry.respondedAt = new Date();
+    await video.save();
+
+    // Notify the primary video author
+    sendFcmNotification(
+      video.creatorId._id || video.creatorId,
+      action === 'accept' ? 'Co-Author Accepted! 🎉' : 'Co-Author Invitation Declined',
+      `@${req.user.username} has ${newStatus} your co-author invitation for "${video.title}"`,
+      {
+        type: action === 'accept' ? 'coauthor_accepted' : 'coauthor_declined',
+        videoId: video._id.toString(),
+        creatorName: req.user.username
+      }
+    ).catch(err => console.error('[FCM Coauthor Response Failed]', err));
+
+    res.status(200).json({
+      status: 'success',
+      message: `Co-author invitation successfully ${newStatus}.`,
+      data: { video }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * DELETE /api/videos/:id/coauthor
+ * Remove oneself from an accepted co-authorship.
+ */
+export const removeCoAuthor = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const video = await Video.findById(id);
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    const coAuthorEntry = video.coAuthors.find(
+      ca => ca.user.toString() === req.user._id.toString() && ca.status === 'accepted'
+    );
+
+    if (!coAuthorEntry) {
+      throw new AppError('You are not an active co-author on this video.', 400);
+    }
+
+    coAuthorEntry.status = 'removed';
+    await video.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'You have removed yourself from this collaboration.',
       data: { video }
     });
   } catch (err) {

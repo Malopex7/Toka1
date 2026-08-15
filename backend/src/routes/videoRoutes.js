@@ -10,7 +10,10 @@ import {
   toggleLikeVideo,
   recordShare,
   deleteVideo,
-  updateVideo
+  updateVideo,
+  getCoAuthorInvites,
+  respondToCoAuthorInvite,
+  removeCoAuthor
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -46,6 +49,9 @@ const multerErrorHandler = (err, req, res, next) => {
 const router = express.Router();
 
 router.get('/feed', optionalProtect, getFeed);
+router.get('/videos/coauthor/invites', protect, getCoAuthorInvites);
+router.post('/videos/:id/coauthor/respond', protect, respondToCoAuthorInvite);
+router.delete('/videos/:id/coauthor', protect, removeCoAuthor);
 router.post('/videos', protect, restrictTo('creator', 'brand'), uploadVideo);
 router.post('/videos/upload', protect, restrictTo('creator', 'brand'), upload.single('video'), multerErrorHandler, uploadGridFSVideo);
 router.get('/videos/stream/:filename', streamGridFSVideo);

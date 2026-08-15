@@ -296,6 +296,16 @@ export default function VideoFeed() {
       return;
     }
 
+    // 3) Co-Author invitation & response notifications: navigate to /inbox
+    if (
+      type?.startsWith('coauthor_') ||
+      notif.title?.toLowerCase().includes('co-author') ||
+      notif.body?.toLowerCase().includes('co-author')
+    ) {
+      router.push('/inbox');
+      return;
+    }
+
     // Helper: scroll to a video in the feed by its ID
     const scrollToVideo = (targetVideoId: string): boolean => {
       const idx = videos.findIndex(v => String(v.id) === String(targetVideoId));
@@ -873,18 +883,51 @@ export default function VideoFeed() {
                       </div>
                     )}
 
-                    {/* Username & Verification */}
-                    <div className="flex items-center gap-1.5">
-                      <Link
-                        href={`/profile?username=${video.creatorName.replace('@', '')}`}
-                        className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer"
-                      >
-                        {video.creatorName}
-                      </Link>
-                      {video.isVerified && (
-                        <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
-                      )}
-                    </div>
+                    {/* Username & Verification (Supports Dual Authorship / Co-Authors) */}
+                    {(() => {
+                      const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted')?.user;
+                      if (acceptedCoAuthor) {
+                        return (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/profile?username=${video.creatorName.replace('@', '')}`}
+                              className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              {video.creatorName}
+                              {video.isVerified && (
+                                <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
+                              )}
+                            </Link>
+                            <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1.5 py-0.5 rounded border border-white/10">
+                              &amp;
+                            </span>
+                            <Link
+                              href={`/profile?username=${acceptedCoAuthor.username}`}
+                              className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              @{acceptedCoAuthor.username}
+                              {acceptedCoAuthor.isBrandSafeVerified && (
+                                <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
+                              )}
+                            </Link>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/profile?username=${video.creatorName.replace('@', '')}`}
+                            className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer"
+                          >
+                            {video.creatorName}
+                          </Link>
+                          {video.isVerified && (
+                            <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Description Caption */}
                     <p className="text-sm text-cloud-white/90 drop-shadow-md leading-snug line-clamp-2">

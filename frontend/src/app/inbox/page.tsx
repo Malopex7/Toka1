@@ -15,6 +15,20 @@ interface Transaction {
   videoId?: { title: string };
 }
 
+interface CoAuthorInvite {
+  _id: string;
+  title: string;
+  videoUrl: string;
+  tier: string;
+  createdAt: string;
+  creatorId: {
+    _id: string;
+    username: string;
+    role: string;
+    isBrandSafeVerified?: boolean;
+  };
+}
+
 interface InboxData {
   received: Transaction[];
   sent: Transaction[];
@@ -25,12 +39,14 @@ interface InboxData {
   walletBalance: number;
 }
 
-type Tab = 'received' | 'sent' | 'deposits';
+type Tab = 'received' | 'sent' | 'deposits' | 'collabs';
 
 export default function InboxPage() {
   const { isAuthenticated, firebaseUser, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('received');
   const [data, setData] = useState<InboxData | null>(null);
+  const [collabInvites, setCollabInvites] = useState<CoAuthorInvite[]>([]);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +63,24 @@ export default function InboxPage() {
       setError(null);
       try {
         const token = await firebaseUser.getIdToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions/my`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const json = await res.json();
-        if (json.status === 'success') {
-          setData(json.data);
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [txRes, invitesRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions/my`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/coauthor/invites`, { headers })
+        ]);
+
+        const txJson = await txRes.json();
+        const invitesJson = await invitesRes.json();
+
+        if (txJson.status === 'success') {
+          setData(txJson.data);
         } else {
           setError('Failed to load inbox activity.');
+        }
+
+        if (invitesJson.status === 'success') {
+          setCollabInvites(invitesJson.data.invites || []);
         }
       } catch (e) {
         setError('Network error. Could not fetch transactions.');
@@ -65,6 +91,30 @@ export default function InboxPage() {
 
     fetchInbox();
   }, [isAuthenticated, firebaseUser]);
+
+  const handleRespondCollab = async (videoId: string, action: 'accept' | 'decline') => {
+    if (!firebaseUser) return;
+    setRespondingId(videoId);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/coauthor/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ action })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        setCollabInvites(prev => prev.filter(inv => inv._id !== videoId));
+      }
+    } catch (err) {
+      console.error('Failed to respond to collab:', err);
+    } finally {
+      setRespondingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -91,6 +141,7 @@ export default function InboxPage() {
     { id: 'received', label: 'Received', emoji: '📥', count: data?.totalReceived ?? 0 },
     { id: 'sent',     label: 'Sent',     emoji: '📤', count: data?.totalSent     ?? 0 },
     { id: 'deposits', label: 'Top-Ups',  emoji: '💳', count: data?.totalDeposits ?? 0 },
+    { id: 'collabs',  label: 'Collabs',  emoji: '🤝', count: collabInvites.length },
   ];
 
   const activeList: Transaction[] =
@@ -100,86 +151,138 @@ export default function InboxPage() {
       ? (data?.sent ?? [])
       : (data?.deposits ?? []);
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-ZA', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
+  const formatDate = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return iso;
+    }
+  };
 
   return (
-    <div className="bg-midnight-boma text-cloud-white min-h-screen antialiased font-sans">
-
-      {/* Header */}
-      <header className="sticky top-0 w-full border-b border-white/10 bg-shaded-canopy flex justify-between items-center px-6 h-16 z-50 select-none">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
+    <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans flex flex-col pb-24">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-40 bg-midnight-boma/90 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back
           </Link>
-          <h1 className="text-base font-bold text-toka-flare tracking-tight border-l border-white/15 pl-4">
-            Inbox & Activity
-          </h1>
+          <div>
+            <h1 className="text-lg font-black tracking-tight">Activity Inbox</h1>
+            <p className="text-[11px] text-cloud-white/50">Track tips, collabs &amp; top-ups</p>
+          </div>
         </div>
-        <span className="bg-fintech-mint/10 border border-fintech-mint/35 text-fintech-mint text-xs font-mono font-bold px-3 py-1 rounded-lg">
-          Balance: R {data?.walletBalance?.toFixed(2) ?? '—'}
-        </span>
+        <div className="text-right">
+          <span className="text-[10px] text-cloud-white/40 uppercase tracking-widest block font-bold">Balance</span>
+          <span className="text-sm font-black font-mono text-fintech-mint">
+            R {data?.walletBalance?.toFixed(2) ?? '—'}
+          </span>
+        </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-1">
-            <span className="material-symbols-outlined text-fintech-mint text-[24px]">south_west</span>
-            <span className="text-xl font-black font-mono text-cloud-white">{data?.totalReceived ?? '—'}</span>
-            <span className="text-[9px] text-cloud-white/50 font-semibold uppercase tracking-wider">Tips In</span>
-          </div>
-          <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-1">
-            <span className="material-symbols-outlined text-toka-flare text-[24px]">north_east</span>
-            <span className="text-xl font-black font-mono text-cloud-white">{data?.totalSent ?? '—'}</span>
-            <span className="text-[9px] text-cloud-white/50 font-semibold uppercase tracking-wider">Tips Out</span>
-          </div>
-          <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-1">
-            <span className="material-symbols-outlined text-blue-400 text-[24px]">add_card</span>
-            <span className="text-xl font-black font-mono text-cloud-white">{data?.totalDeposits ?? '—'}</span>
-            <span className="text-[9px] text-cloud-white/50 font-semibold uppercase tracking-wider">Top-Ups</span>
-          </div>
-        </div>
-
+      <main className="flex-1 max-w-xl w-full mx-auto px-4 pt-6 flex flex-col gap-6">
         {/* Tab Switcher */}
-        <div className="flex gap-1.5 bg-black/20 rounded-xl p-1 border border-white/10">
+        <div className="grid grid-cols-4 bg-shaded-canopy border border-white/10 rounded-2xl p-1 gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === tab.id ? 'bg-toka-flare text-cloud-white shadow-lg' : 'text-cloud-white/50 hover:text-cloud-white'
+              className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 relative ${
+                activeTab === tab.id
+                  ? 'bg-toka-flare text-cloud-white shadow-[0_0_12px_rgba(255,79,0,0.3)]'
+                  : 'text-cloud-white/50 hover:text-cloud-white'
               }`}
             >
-              {tab.emoji} {tab.label}
+              <div className="flex items-center gap-1">
+                <span className="text-xs">{tab.emoji}</span>
+                <span className="truncate">{tab.label}</span>
+              </div>
+              {tab.count > 0 && (
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-black ${
+                  activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-toka-flare/20 text-toka-flare'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* List */}
+        {/* Content Section */}
         {fetching ? (
-          <div className="flex flex-col gap-3 animate-pulse">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-white/10 shrink-0"></div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="h-3 bg-white/10 rounded w-36"></div>
-                  <div className="h-2.5 bg-white/10 rounded w-24"></div>
-                </div>
-                <div className="h-4 bg-white/10 rounded w-14"></div>
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-cloud-white/50">
+            <span className="w-8 h-8 border-3 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+            <p className="text-xs font-medium">Loading activity...</p>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center text-center py-10 gap-3">
+          <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-red-500/20 rounded-2xl gap-3">
             <span className="material-symbols-outlined text-red-500 text-[40px]">error</span>
             <p className="text-sm text-cloud-white/60">{error}</p>
           </div>
+        ) : activeTab === 'collabs' ? (
+          /* ---- Collab Invites Tab ---- */
+          collabInvites.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
+              <span className="material-symbols-outlined text-cloud-white/20 text-[56px]">handshake</span>
+              <h3 className="text-base font-bold text-cloud-white">No Pending Collaboration Invites</h3>
+              <p className="text-xs text-cloud-white/40 max-w-xs">
+                When creators invite you to co-author videos, they will appear here for your review and approval.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {collabInvites.map((invite) => (
+                <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
+                        {invite.creatorId?.username?.charAt(0).toUpperCase()}
+                        {invite.creatorId?.isBrandSafeVerified && (
+                          <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                            <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <Link href={`/profile?username=${invite.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
+                            @{invite.creatorId?.username}
+                          </Link>
+                          <span className="text-[9px] bg-toka-flare/20 text-toka-flare px-1.5 py-0.2 rounded font-bold uppercase">
+                            Co-Author Invite
+                          </span>
+                        </div>
+                        <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
+                          &quot;{invite.title}&quot;
+                        </p>
+                        <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
+                          {formatDate(invite.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                    <button
+                      disabled={respondingId === invite._id}
+                      onClick={() => handleRespondCollab(invite._id, 'accept')}
+                      className="flex-1 py-2 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {respondingId === invite._id ? 'Processing...' : 'Accept Collaboration'}
+                    </button>
+                    <button
+                      disabled={respondingId === invite._id}
+                      onClick={() => handleRespondCollab(invite._id, 'decline')}
+                      className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : activeList.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
             <span className="material-symbols-outlined text-cloud-white/20 text-[56px]">

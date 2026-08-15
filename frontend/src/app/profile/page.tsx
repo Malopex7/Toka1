@@ -7,12 +7,17 @@ import { useModalStore } from '@/store/useModalStore';
 
 interface ProfileVideo {
   _id: string;
+  creatorId?: any;
   title: string;
   videoUrl: string;
   vettingStatus: string;
   aiConfidenceScore: number;
   tips: number;
   createdAt: string;
+  coAuthors?: Array<{
+    user: any;
+    status: 'pending' | 'accepted' | 'declined' | 'removed';
+  }>;
 }
 
 interface TargetUser {
@@ -111,7 +116,11 @@ function ProfileContent() {
         
         if (data.status === 'success') {
           const userVideos = data.data.videos.filter(
-            (v: any) => (v.creatorId?._id || v.creatorId) === targetUser._id
+            (v: any) =>
+              (v.creatorId?._id || v.creatorId) === targetUser._id ||
+              (v.coAuthors && v.coAuthors.some((ca: any) => 
+                (ca.user?._id || ca.user) === targetUser._id && ca.status === 'accepted'
+              ))
           );
           setVideos(userVideos);
         }
@@ -259,6 +268,27 @@ function ProfileContent() {
       'Video caption...',
       video.title
     );
+  };
+
+  // 6) Leave Collaboration Handler
+  const handleLeaveCollab = async (videoId: string) => {
+    if (!firebaseUser) return;
+    if (!confirm('Are you sure you want to leave this collaboration? The video will no longer appear on your profile.')) return;
+
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/coauthor`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        setVideos(prev => prev.filter(v => v._id !== videoId));
+        showAlert('Left Collaboration', 'You have been removed as a co-author on this video.');
+      }
+    } catch (err) {
+      console.error('Error leaving collaboration:', err);
+    }
   };
 
   if (isLoading || fetchingProfile) {
@@ -482,36 +512,63 @@ function ProfileContent() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {videos.map((video) => (
-                <div 
-                  key={video._id} 
-                  onClick={() => setSelectedVideo(video)}
-                  className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
-                >
-                  {isOwnProfile && (
-                    <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditCaption(video);
-                        }}
-                        className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
-                        title="Edit Caption"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">edit</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteVideo(video._id);
-                        }}
-                        className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
-                        title="Delete Video"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
-                    </div>
-                  )}
+              {videos.map((video) => {
+                const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
+                const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
+
+                return (
+                  <div 
+                    key={video._id} 
+                    onClick={() => setSelectedVideo(video)}
+                    className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
+                  >
+                    {/* Collab Indicator */}
+                    {isCollab && (
+                      <div className="absolute top-2.5 left-2.5 z-10 bg-black/60 backdrop-blur-md border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <span className="text-[10px]">🤝</span>
+                        <span className="text-[9px] font-black tracking-wider uppercase text-cloud-white">Collab</span>
+                      </div>
+                    )}
+
+                    {isOwnProfile && (
+                      <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
+                        {isPrimaryCreator ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditCaption(video);
+                              }}
+                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                              title="Edit Caption"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteVideo(video._id);
+                              }}
+                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                              title="Delete Video"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLeaveCollab(video._id);
+                            }}
+                            className="w-8 h-8 rounded-full bg-black/40 hover:bg-amber-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                            title="Leave Collaboration"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">logout</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   <video
                     src={video.videoUrl}
                     className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
@@ -533,8 +590,9 @@ function ProfileContent() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
           )}
         </div>
       </main>

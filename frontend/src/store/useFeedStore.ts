@@ -2,6 +2,16 @@
 import { create } from 'zustand';
 import { auth } from '@/lib/firebase';
 
+export interface CoAuthor {
+  user: {
+    _id: string;
+    username: string;
+    role: string;
+    isBrandSafeVerified?: boolean;
+  };
+  status: 'pending' | 'accepted' | 'declined' | 'removed';
+}
+
 export interface Video {
   id: string;
   creatorId: string;
@@ -22,6 +32,7 @@ export interface Video {
   audioName?: string;
   audioArt?: string;
   poster?: string;
+  coAuthors?: CoAuthor[];
 }
 
 export interface TokaNotification {
@@ -255,7 +266,8 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           isLiked: video.isLiked || false,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
           audioArt: '/images/audio-album.jpg',
-          poster: '/images/dance-video.png'
+          poster: '/images/dance-video.png',
+          coAuthors: video.coAuthors || []
         }));
 
         if (mappedVideos.length === 0 && currentPage === 1) {

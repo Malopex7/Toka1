@@ -73,6 +73,25 @@ const videoSchema = new mongoose.Schema({
   mentions: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  }],
+  coAuthors: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'declined', 'removed'],
+      default: 'pending'
+    },
+    invitedAt: {
+      type: Date,
+      default: Date.now
+    },
+    respondedAt: {
+      type: Date
+    }
   }]
 }, {
   timestamps: true
