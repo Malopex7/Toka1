@@ -204,9 +204,15 @@ export const getFeed = async (req, res, next) => {
 
   const totalPages = Math.ceil(totalVideos / limit);
 
-  // 4) Map videos to include isLiked, isReposted flag, commentsCount, and strip sensitive arrays
+  // 4) Map videos to include isLiked, isReposted flag, commentsCount, sanitize HTTPS URLs, and strip sensitive arrays
+  const sanitizeUrl = (url) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : url;
+
   const formattedVideos = await Promise.all(videos.map(async video => {
     const videoObj = video.toObject();
+    if (videoObj.videoUrl) videoObj.videoUrl = sanitizeUrl(videoObj.videoUrl);
+    if (videoObj.thumbnailUrl) videoObj.thumbnailUrl = sanitizeUrl(videoObj.thumbnailUrl);
+    if (videoObj.creatorId?.avatarUrl) videoObj.creatorId.avatarUrl = sanitizeUrl(videoObj.creatorId.avatarUrl);
+
     const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
     const isReposted = req.user ? (video.repostedBy && video.repostedBy.some(id => id.toString() === req.user._id.toString())) : false;
     delete videoObj.likedBy;
@@ -416,7 +422,10 @@ export const uploadGridFSVideo = async (req, res, next) => {
     uploadStream.on('error', reject);
   });
 
-  const videoUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
+  const host = req.get('host');
+  const isLocal = host?.includes('localhost') || host?.includes('127.0.0.1');
+  const protocol = isLocal ? req.protocol : 'https';
+  const videoUrl = `${protocol}://${host}/api/videos/stream/${filename}`;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -1060,8 +1069,14 @@ export const getUserReposts = async (req, res, next) => {
       .sort({ updatedAt: -1 })
       .limit(50);
 
+    const sanitizeUrl = (url) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : url;
+
     const formattedVideos = await Promise.all(videos.map(async video => {
       const videoObj = video.toObject();
+      if (videoObj.videoUrl) videoObj.videoUrl = sanitizeUrl(videoObj.videoUrl);
+      if (videoObj.thumbnailUrl) videoObj.thumbnailUrl = sanitizeUrl(videoObj.thumbnailUrl);
+      if (videoObj.creatorId?.avatarUrl) videoObj.creatorId.avatarUrl = sanitizeUrl(videoObj.creatorId.avatarUrl);
+
       const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
       const isReposted = req.user ? (video.repostedBy && video.repostedBy.some(id => id.toString() === req.user._id.toString())) : false;
       delete videoObj.likedBy;

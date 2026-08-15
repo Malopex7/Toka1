@@ -274,13 +274,15 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
       if (data.status === 'success') {
         const newMongooseVideos = data.data.videos;
         
+        const ensureHttps = (url?: string) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : (url || '');
+
         // Map backend response models to frontend expected schema
         const mappedVideos: Video[] = newMongooseVideos.map((video: any) => ({
           id: video._id,
           creatorId: video.creatorId?._id || video.creatorId,
           creatorName: video.creatorId?.username ? `@${video.creatorId.username}` : '@unknown',
-          creatorAvatar: video.creatorId?.avatarUrl || '',
-          videoUrl: video.videoUrl,
+          creatorAvatar: ensureHttps(video.creatorId?.avatarUrl),
+          videoUrl: ensureHttps(video.videoUrl),
           title: video.title,
           description: video.title + ' #toka #creator',
           likes: video.likesCount || 0,
@@ -295,8 +297,8 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           isReposted: video.isReposted || false,
           repostsCount: video.repostsCount || 0,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
-          audioArt: video.audioArt || '/images/audio-album.jpg',
-          poster: video.thumbnailUrl || '',
+          audioArt: ensureHttps(video.audioArt) || '/images/audio-album.jpg',
+          poster: ensureHttps(video.thumbnailUrl),
           coAuthors: video.coAuthors || []
         }));
 

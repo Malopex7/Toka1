@@ -141,13 +141,16 @@ function ProfileContent() {
         const data = await res.json();
         
         if (data.status === 'success') {
-          const userVideos = data.data.videos.filter(
-            (v: any) =>
-              (v.creatorId?._id || v.creatorId) === targetUser._id ||
-              (v.coAuthors && v.coAuthors.some((ca: any) => 
-                (ca.user?._id || ca.user) === targetUser._id && ca.status === 'accepted'
-              ))
-          );
+          const ensureHttps = (url?: string) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : (url || '');
+          const userVideos = data.data.videos
+            .filter(
+              (v: any) =>
+                (v.creatorId?._id || v.creatorId) === targetUser._id ||
+                (v.coAuthors && v.coAuthors.some((ca: any) => 
+                  (ca.user?._id || ca.user) === targetUser._id && ca.status === 'accepted'
+                ))
+            )
+            .map((v: any) => ({ ...v, videoUrl: ensureHttps(v.videoUrl) }));
           setVideos(userVideos);
         }
       } catch (err) {
@@ -160,7 +163,38 @@ function ProfileContent() {
     fetchVideos();
   }, [targetUser, firebaseUser]);
 
-  // 3) Follow/Unfollow Handler
+  // 3) Fetch Reposted Videos
+  useEffect(() => {
+    const queryUsername = isOwnProfile ? mongooseUser?.username : targetUsername;
+
+    const fetchReposts = async () => {
+      if (!queryUsername) {
+        setFetchingReposts(false);
+        return;
+      }
+
+      try {
+        const ensureHttps = (url?: string) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : (url || '');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/user/${queryUsername}/reposts`);
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+          const mapped = (data.data?.videos || []).map((v: any) => ({
+            ...v,
+            videoUrl: ensureHttps(v.videoUrl)
+          }));
+          setRepostVideos(mapped);
+        }
+      } catch (err) {
+        console.error('Error fetching reposts:', err);
+      } finally {
+        setFetchingReposts(false);
+      }
+    };
+
+    fetchReposts();
+  }, [targetUsername, isOwnProfile, mongooseUser, refreshTrigger]);
+
+  // 4) Follow/Unfollow Handler
   const handleFollowToggle = async () => {
     if (!isAuthenticated || !firebaseUser || !targetUser || !mongooseUser) {
       showAlert('Sign In Required', 'Please sign in to follow creators.');
