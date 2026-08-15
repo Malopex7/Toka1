@@ -14,6 +14,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     loginWithGoogle, 
     completeProfileSetup, 
     profileSetupRequired,
+    emailVerificationRequired,
+    pendingVerificationEmail,
+    resendVerificationEmail,
+    checkEmailVerified,
+    logout,
+    firebaseUser,
     isLoading 
   } = useAuth();
 
@@ -28,12 +34,64 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   if (!isOpen) return null;
+
+  const handleCheckVerified = async () => {
+    setErrorMsg(null);
+    setVerificationNotice(null);
+    setCheckingStatus(true);
+    try {
+      const isVerified = await checkEmailVerified();
+      if (isVerified) {
+        setSuccessMsg('Email verified successfully! Welcome to Toka.');
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        setErrorMsg('Your email is not verified yet. Please check your inbox (and Spam) and click the verification link.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Could not verify status. Please try again.');
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setErrorMsg(null);
+    setVerificationNotice(null);
+    setResending(true);
+    try {
+      await resendVerificationEmail();
+      setVerificationNotice('Verification email resent! Please check your inbox.');
+      setResendCooldown(60);
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setVerificationNotice(null);
 
     // Sanitize username by trimming and removing any leading '@'
     const sanitizedUsername = username.trim().replace(/^@+/, '');
@@ -60,7 +118,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           return;
         }
         await login(email, password);
-        onClose();
+        if (!emailVerificationRequired) {
+          onClose();
+        }
       } else {
         if (!email || !password || !confirmPassword || !sanitizedUsername || !role) {
           setErrorMsg('All fields are required.');
@@ -79,11 +139,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           return;
         }
         await signup(email, password, sanitizedUsername, role);
-        setSuccessMsg('Account created! A confirmation link has been sent to your email. Please verify your account.');
-        setTimeout(() => {
-          onClose();
-          setSuccessMsg(null);
-        }, 5000);
       }
     } catch (err: any) {
       console.error(err);
@@ -95,8 +150,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setErrorMsg(null);
     try {
       await loginWithGoogle();
-      // If profile setup is not required, we close immediately. 
-      // If it is, the modal will automatically render the profile setup screen.
       if (!profileSetupRequired) {
         onClose();
       }
@@ -111,7 +164,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       <div className="relative w-full max-w-[400px] bg-shaded-canopy border border-white/10 rounded-[20px] p-6 shadow-2xl overflow-hidden flex flex-col gap-6">
         
         {/* Close Button */}
-        {!profileSetupRequired && (
+        {!profileSetupRequired && !emailVerificationRequired && (
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 text-cloud-white/60 hover:text-cloud-white hover:bg-white/10 p-1.5 rounded-full transition-all active:scale-95 flex items-center justify-center"
@@ -126,23 +179,31 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <img 
               src="/images/logo/logo.png" 
               alt="Toka" 
-              className="h-40 w-auto object-contain" 
+              className="h-28 w-auto object-contain" 
             />
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-cloud-white">
-            {profileSetupRequired ? 'Setup Profile' : activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
+            {emailVerificationRequired 
+              ? 'Verify Your Email'
+              : profileSetupRequired 
+                ? 'Setup Profile' 
+                : activeTab === 'login' 
+                  ? 'Welcome Back' 
+                  : 'Create Account'}
           </h2>
           <p className="text-xs text-cloud-white/60">
-            {profileSetupRequired 
-              ? 'Complete your profile setup to join the Toka community.' 
-              : activeTab === 'login' 
-                ? 'Sign in to tip your favorite creators and view personalized feeds.' 
-                : 'Join Toka as a creator or advertiser brand.'}
+            {emailVerificationRequired
+              ? 'Confirm your email address before accessing Toka.'
+              : profileSetupRequired 
+                ? 'Complete your profile setup to join the Toka community.' 
+                : activeTab === 'login' 
+                  ? 'Sign in to tip your favorite creators and view personalized feeds.' 
+                  : 'Join Toka as a creator or advertiser brand.'}
           </p>
         </div>
 
         {/* Error message */}
-        {errorMsg && (
+        {errorMsg && !emailVerificationRequired && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs py-2.5 px-3.5 rounded-xl font-medium flex gap-2 items-center">
             <span className="material-symbols-outlined text-[16px]">error</span>
             <span>{errorMsg}</span>
@@ -156,31 +217,107 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
         )}
 
-        {/* Tab Selectors (Omitted during profile setup) */}
-        {!profileSetupRequired && (
-          <div className="grid grid-cols-2 bg-black/30 p-1 rounded-xl border border-white/5">
-            <button
-              onClick={() => { setActiveTab('login'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
-              className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'login' 
-                  ? 'bg-shaded-canopy text-cloud-white shadow-md' 
-                  : 'text-cloud-white/50 hover:text-cloud-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setActiveTab('register'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
-              className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'register' 
-                  ? 'bg-shaded-canopy text-cloud-white shadow-md' 
-                  : 'text-cloud-white/50 hover:text-cloud-white'
-              }`}
-            >
-              Register
-            </button>
+        {/* Email Verification Screen */}
+        {emailVerificationRequired ? (
+          <div className="flex flex-col items-center gap-4 text-center py-1 animate-fade-in">
+            <div className="w-14 h-14 rounded-full bg-toka-flare/15 border border-toka-flare/30 flex items-center justify-center text-toka-flare shadow-lg animate-pulse">
+              <span className="material-symbols-outlined text-[28px]">mark_email_unread</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs text-cloud-white/70 leading-relaxed max-w-xs">
+                We’ve sent a confirmation link to:
+              </p>
+              <span className="text-xs font-mono font-bold text-toka-flare bg-toka-flare/10 border border-toka-flare/20 px-3 py-1 rounded-full inline-block break-all select-all">
+                {pendingVerificationEmail || firebaseUser?.email || email}
+              </span>
+              <p className="text-[11px] text-cloud-white/50 mt-1 leading-relaxed">
+                Please check your inbox (and Spam folder) and click the link to activate your Toka account.
+              </p>
+            </div>
+
+            {verificationNotice && (
+              <div className="w-full bg-fintech-mint/10 border border-fintech-mint/20 text-fintech-mint text-xs py-2 px-3 rounded-xl font-medium flex gap-2 items-center justify-center">
+                <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                <span>{verificationNotice}</span>
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="w-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs py-2 px-3 rounded-xl font-medium flex gap-2 items-center justify-center">
+                <span className="material-symbols-outlined text-[15px]">error</span>
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="w-full flex flex-col gap-2.5 mt-2">
+              <button
+                type="button"
+                onClick={handleCheckVerified}
+                disabled={checkingStatus}
+                className="w-full py-3 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-xl font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 text-xs cursor-pointer"
+              >
+                {checkingStatus ? (
+                  <span className="w-4 h-4 border-2 border-cloud-white border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">verified</span>
+                    I’ve Verified My Email
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendEmail}
+                disabled={resending || resendCooldown > 0}
+                className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white/80 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px]">send</span>
+                {resendCooldown > 0 ? `Resend email in ${resendCooldown}s` : 'Resend Verification Link'}
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  setErrorMsg(null);
+                  setVerificationNotice(null);
+                }}
+                className="text-[11px] text-cloud-white/40 hover:text-red-400 transition-colors mt-1 hover:underline flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[13px]">logout</span>
+                Use a different email / Sign Out
+              </button>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Tab Selectors (Omitted during profile setup) */}
+            {!profileSetupRequired && (
+              <div className="grid grid-cols-2 bg-black/30 p-1 rounded-xl border border-white/5">
+                <button
+                  onClick={() => { setActiveTab('login'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'login' 
+                      ? 'bg-shaded-canopy text-cloud-white shadow-md' 
+                      : 'text-cloud-white/50 hover:text-cloud-white'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { setActiveTab('register'); setErrorMsg(null); setPassword(''); setConfirmPassword(''); }}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'register' 
+                      ? 'bg-shaded-canopy text-cloud-white shadow-md' 
+                      : 'text-cloud-white/50 hover:text-cloud-white'
+                  }`}
+                >
+                  Register
+                </button>
+              </div>
+            )}
 
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -347,6 +484,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </svg>
               Google Account
             </button>
+          </>
+        )}
           </>
         )}
       </div>

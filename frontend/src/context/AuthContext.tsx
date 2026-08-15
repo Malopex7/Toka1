@@ -36,10 +36,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   profileSetupRequired: boolean;
+  emailVerificationRequired: boolean;
+  pendingVerificationEmail: string;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, username: string, role: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   completeProfileSetup: (username: string, role: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  checkEmailVerified: () => Promise<boolean>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -51,17 +55,21 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [mongooseUser, setMongooseUser] = useState<MongooseUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [profileSetupRequired, setProfileSetupRequired] = useState<boolean>(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState<boolean>(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string>('');
 
   // Sync user profile from Firebase token with Mongoose Backend
-  const syncWithBackend = async (fUser: FirebaseUser) => {
+  const syncWithBackend = async (fUser: FirebaseUser, customData?: { username: string; role: string }) => {
     try {
-      const token = await fUser.getIdToken();
+      const token = await fUser.getIdToken(true);
+      const body = customData ? JSON.stringify(customData) : JSON.stringify({});
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        }
+        },
+        body
       });
       const data = await res.json();
       if (data.status === 'success') {
@@ -71,7 +79,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         } else {
           setMongooseUser(data.data.user);
           setProfileSetupRequired(false);
+          setEmailVerificationRequired(false);
         }
+      } else if (data.emailVerificationRequired) {
+        setEmailVerificationRequired(true);
+        setPendingVerificationEmail(fUser.email || '');
+        setMongooseUser(null);
       } else {
         throw new Error(data.message || 'Failed to sync user profile.');
       }
@@ -139,11 +152,24 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
+        const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
+        if (isPasswordUser && !user.emailVerified) {
+          setEmailVerificationRequired(true);
+          setPendingVerificationEmail(user.email || '');
+          setMongooseUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        setEmailVerificationRequired(false);
+        setPendingVerificationEmail('');
         await syncWithBackend(user);
         initFcmNotifications(user);
       } else {
         setMongooseUser(null);
         setProfileSetupRequired(false);
+        setEmailVerificationRequired(false);
+        setPendingVerificationEmail('');
       }
       setIsLoading(false);
     });
@@ -167,6 +193,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (!userCredential.user.emailVerified) {
+        setEmailVerificationRequired(true);
+        setPendingVerificationEmail(userCredential.user.email || email);
+        setMongooseUser(null);
+        return;
+      }
+      setEmailVerificationRequired(false);
       await syncWithBackend(userCredential.user);
     } finally {
       setIsLoading(false);
@@ -178,7 +211,14 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Trigger email verification link
+      // Save pending profile setup in sessionStorage for activation after email confirmation
+      try {
+        sessionStorage.setItem('toka_pending_profile', JSON.stringify({ username, role }));
+      } catch (e) {
+        console.warn('Could not cache pending profile to sessionStorage', e);
+      }
+
+      // Send Firebase confirmation email
       try {
         await sendEmailVerification(userCredential.user);
         console.log('[Auth] Verification email sent to:', email);
@@ -186,25 +226,44 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         console.error('[Auth] Failed to send verification email:', err);
       }
 
-      const token = await userCredential.user.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ username, role })
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setMongooseUser(data.data.user);
-        setProfileSetupRequired(false);
-      } else {
-        throw new Error(data.message || 'Failed to sync profile after signup.');
-      }
+      setEmailVerificationRequired(true);
+      setPendingVerificationEmail(email);
+      setMongooseUser(null);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const resendVerificationEmail = async () => {
+    if (!auth.currentUser) throw new Error('No user currently signed in.');
+    await sendEmailVerification(auth.currentUser);
+    console.log('[Auth] Resent verification email to:', auth.currentUser.email);
+  };
+
+  const checkEmailVerified = async (): Promise<boolean> => {
+    if (!auth.currentUser) return false;
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      setEmailVerificationRequired(false);
+      setPendingVerificationEmail('');
+
+      let pendingProfile: { username: string; role: string } | null = null;
+      try {
+        const saved = sessionStorage.getItem('toka_pending_profile');
+        if (saved) pendingProfile = JSON.parse(saved);
+      } catch {}
+
+      if (pendingProfile?.username && pendingProfile?.role) {
+        await syncWithBackend(auth.currentUser, pendingProfile);
+        try {
+          sessionStorage.removeItem('toka_pending_profile');
+        } catch {}
+      } else {
+        await syncWithBackend(auth.currentUser);
+      }
+      return true;
+    }
+    return false;
   };
 
   const loginWithGoogle = async () => {
@@ -212,6 +271,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
+      setEmailVerificationRequired(false);
       await syncWithBackend(userCredential.user);
     } finally {
       setIsLoading(false);
@@ -222,22 +282,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     if (!firebaseUser) throw new Error('No authenticated user found.');
     setIsLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ username, role })
-      });
-      const data = await res.json();
-      if (data.status === 'success' && !data.profileRequired) {
-        setMongooseUser(data.data.user);
-        setProfileSetupRequired(false);
-      } else {
-        throw new Error(data.message || 'Failed to complete profile setup.');
-      }
+      await syncWithBackend(firebaseUser, { username, role });
     } finally {
       setIsLoading(false);
     }
@@ -281,10 +326,14 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       isAuthenticated,
       isLoading,
       profileSetupRequired,
+      emailVerificationRequired,
+      pendingVerificationEmail,
       login,
       signup,
       loginWithGoogle,
       completeProfileSetup,
+      resendVerificationEmail,
+      checkEmailVerified,
       logout,
       refreshProfile
     }}>

@@ -33,6 +33,15 @@ export const syncUser = async (req, res, next) => {
 
   const { uid, email } = decodedToken;
 
+  // Enforce email verification for password authentication accounts
+  if (decodedToken.firebase?.sign_in_provider === 'password' && !decodedToken.email_verified) {
+    return res.status(403).json({
+      status: 'fail',
+      emailVerificationRequired: true,
+      message: 'Email confirmation required. Please check your inbox and verify your email before accessing Toka.'
+    });
+  }
+
   // 2) Check if user profile already exists in MongoDB
   let user = await User.findOne({ firebaseUid: uid });
 

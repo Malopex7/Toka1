@@ -28,13 +28,18 @@ export const protect = async (req, res, next) => {
     throw new AppError('Invalid or expired token. Please log in again!', 401);
   }
 
-  // 3) Find user in Mongoose using the firebaseUid
+  // 3) Enforce email verification for password accounts
+  if (decodedToken.firebase?.sign_in_provider === 'password' && !decodedToken.email_verified) {
+    throw new AppError('Email verification required. Please verify your email before accessing Toka.', 403);
+  }
+
+  // 4) Find user in Mongoose using the firebaseUid
   const currentUser = await User.findOne({ firebaseUid: decodedToken.uid });
   if (!currentUser) {
     throw new AppError('The user belonging to this token no longer exists on our database.', 401);
   }
 
-  // 4) Hydrate request user object
+  // 5) Hydrate request user object
   req.user = currentUser;
   next();
 };
