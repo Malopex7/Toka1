@@ -33,7 +33,7 @@ function ProfileContent() {
 
   const [targetUser, setTargetUser] = useState<TargetUser | null>(null);
   const [videos, setVideos] = useState<ProfileVideo[]>([]);
-  const [fetchingProfile, setFetchingProfile] = useState(false);
+  const [fetchingProfile, setFetchingProfile] = useState(true);
   const [fetchingVideos, setFetchingVideos] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -57,35 +57,18 @@ function ProfileContent() {
 
   // 1) Fetch Profile details
   useEffect(() => {
-    if (isOwnProfile) {
-      if (mongooseUser) {
-        const ownUser = {
-          _id: mongooseUser._id,
-          username: mongooseUser.username,
-          role: mongooseUser.role,
-          followers: mongooseUser.followers,
-          following: mongooseUser.following,
-          isBrandSafeVerified: mongooseUser.isBrandSafeVerified,
-          verificationRequestStatus: mongooseUser.verificationRequestStatus
-        };
-        setTimeout(() => {
-          setTargetUser(ownUser);
-          setFollowerCount(ownUser.followers?.length || 0);
-          setErrorMsg(null);
-        }, 0);
-      } else {
-        setTimeout(() => {
-          setErrorMsg(null);
-        }, 0);
+    const fetchProfile = async () => {
+      const queryUsername = isOwnProfile ? mongooseUser?.username : targetUsername;
+      if (!queryUsername) {
+        setFetchingProfile(false);
+        setTargetUser(null);
+        return;
       }
-      return;
-    }
 
-    const fetchOtherProfile = async () => {
       setFetchingProfile(true);
       setErrorMsg(null);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/${targetUsername}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/${queryUsername}`);
         const data = await res.json();
         if (data.status === 'success' && data.data.user) {
           const user = data.data.user;
@@ -97,7 +80,7 @@ function ProfileContent() {
             setIsFollowing(mongooseUser.following?.includes(user._id) || false);
           }
         } else {
-          setErrorMsg(`User "@${targetUsername}" not found.`);
+          setErrorMsg(data.message || `User "@${queryUsername}" not found.`);
         }
       } catch (err) {
         console.error('Error fetching target profile:', err);
@@ -107,7 +90,7 @@ function ProfileContent() {
       }
     };
 
-    fetchOtherProfile();
+    fetchProfile();
   }, [targetUsername, isOwnProfile, mongooseUser]);
 
   // 2) Fetch Videos

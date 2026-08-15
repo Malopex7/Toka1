@@ -194,7 +194,7 @@ export const checkFollowStatus = async (req, res, next) => {
 export const getProfileByUsername = async (req, res, next) => {
   const { username } = req.params;
   const user = await User.findOne({ username: username.toLowerCase().trim() })
-    .select('username role followers following isBrandSafeVerified');
+    .select('username role followers following isBrandSafeVerified verificationRequestStatus');
 
   if (!user) {
     throw new AppError('User not found', 404);
