@@ -281,3 +281,41 @@ export const reportComment = async (req, res, next) => {
     next(err);
   }
 };
+
+export const updateComment = async (req, res, next) => {
+  const { id } = req.params;
+  const { text } = req.body;
+  const userId = req.user._id;
+
+  try {
+    if (!text || !text.trim()) {
+      throw new AppError('Comment content cannot be empty.', 400);
+    }
+
+    const comment = await Comment.findById(id);
+    if (!comment) {
+      throw new AppError('Comment not found', 404);
+    }
+
+    // Auth check: Only the owner/author can update the comment
+    if (comment.userId.toString() !== userId.toString()) {
+      throw new AppError('You do not have permission to edit this comment.', 403);
+    }
+
+    comment.text = text.trim();
+    await comment.save();
+
+    // Populate user details for returning
+    const populated = await Comment.findById(comment._id).populate('userId', 'username role');
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Comment updated successfully.',
+      data: {
+        comment: populated
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

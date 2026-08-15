@@ -386,6 +386,60 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
     );
   };
 
+  const handleEditComment = (commentId: string, currentText: string, parentId: string | null = null) => {
+    if (!isAuthenticated || !firebaseUser) return;
+
+    showPrompt(
+      'Edit Comment',
+      'Update your comment:',
+      async (newText) => {
+        if (!newText || !newText.trim()) {
+          showAlert('Validation Error', 'Comment content cannot be empty.');
+          return;
+        }
+
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/comments/${commentId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ text: newText.trim() })
+          });
+
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            const updatedComment = data.data.comment;
+
+            if (parentId) {
+              setComments(prev => prev.map(c => {
+                if (String(c._id) === String(parentId)) {
+                  return {
+                    ...c,
+                    replies: (c.replies || []).map(r => String(r._id) === String(commentId) ? { ...r, text: updatedComment.text } : r)
+                  };
+                }
+                return c;
+              }));
+            } else {
+              setComments(prev => prev.map(c => String(c._id) === String(commentId) ? { ...c, text: updatedComment.text } : c));
+            }
+            showAlert('Success', 'Comment updated successfully.');
+          } else {
+            showAlert('Error', data.message || 'Failed to update comment.');
+          }
+        } catch (err: any) {
+          console.error('[Edit Comment] Request failed:', err);
+          showAlert('Error', err.message || 'An error occurred while updating the comment.');
+        }
+      },
+      'Edit your comment...',
+      currentText
+    );
+  };
+
   // 5) Handle comment reporting
   const handleReportComment = (commentId: string) => {
     if (!isAuthenticated || !firebaseUser) {
@@ -607,6 +661,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               >
                 Report
               </button>
+              {isReplyOwner && (
+                <button
+                  onClick={() => handleEditComment(node._id, node.text, parentCommentId)}
+                  className="text-[8px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+                >
+                  Edit
+                </button>
+              )}
               {(isReplyOwner || isReplyMod) && (
                 <button
                   onClick={() => handleDeleteComment(node._id, parentCommentId)}
@@ -763,6 +825,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                       >
                         Report
                       </button>
+                      {isOwner && (
+                        <button
+                          onClick={() => handleEditComment(comment._id, comment.text, null)}
+                          className="text-[10px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+                        >
+                          Edit
+                        </button>
+                      )}
                         {(isOwner || isMod) && (
                           <button
                             onClick={() => handleDeleteComment(comment._id, null)}
