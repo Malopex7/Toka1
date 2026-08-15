@@ -1,9 +1,11 @@
 "use client";
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 
 interface ProfileVideo {
   _id: string;
@@ -24,6 +26,7 @@ interface TargetUser {
   _id: string;
   username: string;
   role: string;
+  avatarUrl?: string;
   followers?: string[];
   following?: string[];
   isBrandSafeVerified?: boolean;
@@ -45,6 +48,10 @@ function ProfileContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+
+  // Avatar upload state
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Verification request state
   const [verificationLoading, setVerificationLoading] = useState(false);
@@ -298,12 +305,16 @@ function ProfileContent() {
 
   // 7) Update Tagging Permission Handler
   const handleUpdateTaggingPermission = async (newPermission: string) => {
-    if (!firebaseUser) return;
-    setTaggingPermission(newPermission);
+    if (!targetUser || targetUser.taggingPermission === newPermission || isUpdatingSettings) return;
+
     setIsUpdatingSettings(true);
+    // Optimistic UI update
+    setTargetUser(prev => prev ? { ...prev, taggingPermission: newPermission } : null);
 
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await firebaseUser?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/settings`, {
         method: 'PATCH',
         headers: {
@@ -315,16 +326,110 @@ function ProfileContent() {
 
       const data = await res.json();
       if (!res.ok || data.status !== 'success') {
-        showAlert('Error', data.message || 'Failed to update tagging settings.');
-      } else {
-        refreshProfile?.();
+        throw new Error(data.message || 'Failed to update tagging privacy setting.');
       }
     } catch (err: any) {
-      console.error('[Update Settings Error]:', err);
-      showAlert('Error', err.message || 'An error occurred.');
+      console.error('[Tagging Setting Error]:', err);
+      showAlert('Update Failed', err.message || 'Could not save tagging privacy settings.');
+      // Revert
+      if (mongooseUser) {
+        setTargetUser(prev => prev ? { ...prev, taggingPermission: (mongooseUser as any).taggingPermission || 'allow_all' } : null);
+      }
     } finally {
       setIsUpdatingSettings(false);
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showAlert('Invalid File', 'Please select an image file (JPEG, PNG, or WebP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showAlert('File Too Large', 'Please select an image smaller than 5MB.');
+      return;
+    }
+
+    if (!firebaseUser) {
+      showAlert('Sign In Required', 'Please sign in to update your avatar.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const storageRef = ref(storage, `avatars/${firebaseUser.uid}-${Date.now()}.${fileExt}`);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/avatar`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ avatarUrl: downloadUrl })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setTargetUser(prev => prev ? { ...prev, avatarUrl: downloadUrl } : null);
+        await refreshProfile();
+        showAlert('Avatar Updated', 'Your profile picture has been updated successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to update avatar.');
+      }
+    } catch (err: any) {
+      console.error('[Avatar Upload Error]:', err);
+      showAlert('Upload Failed', err.message || 'Failed to upload profile picture.');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    if (!firebaseUser) return;
+
+    showConfirm(
+      'Remove Photo',
+      'Are you sure you want to remove your profile picture and revert to your initial icon?',
+      async () => {
+        setUploadingAvatar(true);
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/avatar`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ avatarUrl: '' })
+          });
+
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            setTargetUser(prev => prev ? { ...prev, avatarUrl: '' } : null);
+            await refreshProfile();
+            showAlert('Avatar Removed', 'Profile picture removed successfully.');
+          } else {
+            throw new Error(data.message || 'Failed to remove avatar.');
+          }
+        } catch (err: any) {
+          console.error('[Avatar Remove Error]:', err);
+          showAlert('Remove Failed', err.message || 'Failed to remove profile picture.');
+        } finally {
+          setUploadingAvatar(false);
+        }
+      }
+    );
   };
 
   if (isLoading || fetchingProfile) {
@@ -390,9 +495,52 @@ function ProfileContent() {
       <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
         {/* Profile Card */}
         <div className="bg-shaded-canopy border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 text-center shadow-xl">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-lg text-3xl font-black text-cloud-white select-none">
-            {targetUser.username.charAt(0).toUpperCase()}
+          <div className="relative group">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-lg text-3xl font-black text-cloud-white select-none overflow-hidden border-2 border-white/10">
+              {targetUser.avatarUrl ? (
+                <img src={targetUser.avatarUrl} alt={targetUser.username} className="w-full h-full object-cover" />
+              ) : (
+                targetUser.username.charAt(0).toUpperCase()
+              )}
+            </div>
+
+            {/* In-place Avatar Upload Button (Own Profile) */}
+            {isOwnProfile && (
+              <>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-toka-flare hover:bg-toka-flare/90 text-cloud-white flex items-center justify-center shadow-lg border-2 border-midnight-boma transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  title="Change Profile Photo"
+                >
+                  {uploadingAvatar ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+                  )}
+                </button>
+                <input
+                  type="file"
+                  ref={avatarInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                />
+              </>
+            )}
           </div>
+
+          {isOwnProfile && targetUser.avatarUrl && (
+            <button
+              onClick={handleRemoveAvatar}
+              disabled={uploadingAvatar}
+              className="text-[11px] font-bold text-red-400 hover:text-red-300 hover:underline -mt-2 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">delete</span>
+              Remove Photo
+            </button>
+          )}
+
           <div>
             <div className="flex items-center justify-center gap-1.5">
               <h2 className="text-xl font-black tracking-tight text-cloud-white">@{targetUser.username}</h2>

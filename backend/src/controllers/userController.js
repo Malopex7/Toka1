@@ -323,7 +323,7 @@ export const searchUsers = async (req, res, next) => {
   }
 
   const matchingUsers = await User.find(baseFilter)
-    .select('username role isBrandSafeVerified')
+    .select('username role isBrandSafeVerified avatarUrl')
     .limit(20)
     .lean();
 
@@ -379,7 +379,7 @@ export const getMutualFollowers = async (req, res, next) => {
   }
 
   const mutualUsers = await User.find(filter)
-    .select('username role isBrandSafeVerified')
+    .select('username role isBrandSafeVerified avatarUrl')
     .limit(15)
     .lean();
 
@@ -412,6 +412,34 @@ export const updateSettings = async (req, res, next) => {
       status: 'success',
       message: 'Settings updated successfully.',
       data: { user }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PATCH /api/users/avatar
+ * Update or remove profile avatar image URL.
+ */
+export const updateAvatar = async (req, res, next) => {
+  const { avatarUrl } = req.body;
+
+  try {
+    if (avatarUrl !== undefined && typeof avatarUrl !== 'string') {
+      throw new AppError('Invalid avatarUrl format. Expected a string URL.', 400);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatarUrl: avatarUrl ? avatarUrl.trim() : '' },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Avatar updated successfully.',
+      data: { user: updatedUser }
     });
   } catch (err) {
     next(err);

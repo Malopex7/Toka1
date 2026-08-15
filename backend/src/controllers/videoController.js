@@ -194,8 +194,8 @@ export const getFeed = async (req, res, next) => {
   // 3) Execute queries (getting documents and total counts for metadata)
   const [videos, totalVideos] = await Promise.all([
     Video.find(query)
-      .populate('creatorId', 'username role isBrandSafeVerified')
-      .populate('coAuthors.user', 'username role isBrandSafeVerified')
+      .populate('creatorId', 'username role isBrandSafeVerified avatarUrl')
+      .populate('coAuthors.user', 'username role isBrandSafeVerified avatarUrl')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -773,8 +773,8 @@ export const getCoAuthorInvites = async (req, res, next) => {
         }
       }
     })
-      .populate('creatorId', 'username role isBrandSafeVerified')
-      .populate('coAuthors.user', 'username role isBrandSafeVerified')
+      .populate('creatorId', 'username role isBrandSafeVerified avatarUrl')
+      .populate('coAuthors.user', 'username role isBrandSafeVerified avatarUrl')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -888,7 +888,7 @@ export const getTagRequests = async (req, res, next) => {
         }
       }
     })
-      .populate('creatorId', 'username role isBrandSafeVerified')
+      .populate('creatorId', 'username role isBrandSafeVerified avatarUrl')
       .select('title videoUrl createdAt creatorId taggedUsers tier')
       .sort({ createdAt: -1 });
 

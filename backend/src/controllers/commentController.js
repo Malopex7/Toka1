@@ -16,7 +16,7 @@ export const getVideoComments = async (req, res, next) => {
     const creatorIdStr = video ? video.creatorId.toString() : null;
 
     const allComments = await Comment.find({ videoId })
-      .populate('userId', 'username role isBrandSafeVerified')
+      .populate('userId', 'username role isBrandSafeVerified avatarUrl')
       .sort({ createdAt: 1 });
 
     const formattedComments = allComments.map(c => {
@@ -113,7 +113,7 @@ export const addComment = async (req, res, next) => {
     });
 
     // Populate user info for immediate rendering
-    await comment.populate('userId', 'username role isBrandSafeVerified');
+    await comment.populate('userId', 'username role isBrandSafeVerified avatarUrl');
 
     // Notify mentioned users (excluding creator/parent if already notified)
     for (const mentionedUser of mentionedUsers) {
@@ -327,7 +327,7 @@ export const updateComment = async (req, res, next) => {
     await comment.save();
 
     // Populate user details for returning
-    const populated = await Comment.findById(comment._id).populate('userId', 'username role isBrandSafeVerified');
+    const populated = await Comment.findById(comment._id).populate('userId', 'username role isBrandSafeVerified avatarUrl');
 
     res.status(200).json({
       status: 'success',

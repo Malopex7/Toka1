@@ -25,6 +25,7 @@ export interface MongooseUser {
   isBrandSafeVerified: boolean;
   verificationRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
   strikeCount: number;
+  avatarUrl?: string;
   followers?: string[];
   following?: string[];
 }

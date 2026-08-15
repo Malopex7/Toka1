@@ -682,10 +682,14 @@ export default function VideoFeed() {
                     className="cursor-pointer hover:opacity-90 transition-opacity select-none"
                     title={`@${mongooseUser?.username} Profile`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-md text-lg font-black text-cloud-white relative">
-                      {mongooseUser?.username ? mongooseUser.username.charAt(0).toUpperCase() : ''}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-md text-lg font-black text-cloud-white relative overflow-hidden border border-white/10">
+                      {mongooseUser?.avatarUrl ? (
+                        <img src={mongooseUser.avatarUrl} alt={mongooseUser.username} className="w-full h-full object-cover" />
+                      ) : (
+                        mongooseUser?.username ? mongooseUser.username.charAt(0).toUpperCase() : ''
+                      )}
                       {mongooseUser?.isBrandSafeVerified && (
-                        <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                        <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center z-10">
                           <span 
                             className="material-symbols-outlined text-fintech-mint block select-none" 
                             style={{ fontSize: '13px', width: '13px', height: '13px', lineHeight: '1' }}

@@ -10,6 +10,7 @@ interface CommentUser {
   _id: string;
   username: string;
   role: string;
+  avatarUrl?: string;
   isBrandSafeVerified?: boolean;
 }
 
@@ -612,10 +613,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               : ''
           }`}
         >
-          {/* User Initial Avatar with Verified Badge */}
+          {/* User Avatar with Verified Badge */}
           <div className="relative shrink-0">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white select-none shadow-sm">
-              {node.userId?.username?.charAt(0).toUpperCase()}
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white select-none shadow-sm overflow-hidden border border-white/5">
+              {node.userId?.avatarUrl ? (
+                <img src={node.userId.avatarUrl} alt={node.userId.username} className="w-full h-full object-cover" />
+              ) : (
+                node.userId?.username?.charAt(0).toUpperCase()
+              )}
             </div>
             {node.userId?.isBrandSafeVerified && (
               <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-0.2 shadow-sm flex items-center justify-center">
@@ -786,10 +791,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                         : ''
                     }`}
                   >
-                    {/* User Initial Avatar with Verified Badge */}
+                    {/* User Avatar with Verified Badge */}
                     <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white select-none shadow-md">
-                        {comment.userId?.username?.charAt(0).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white select-none shadow-md overflow-hidden border border-white/5">
+                        {comment.userId?.avatarUrl ? (
+                          <img src={comment.userId.avatarUrl} alt={comment.userId.username} className="w-full h-full object-cover" />
+                        ) : (
+                          comment.userId?.username?.charAt(0).toUpperCase()
+                        )}
                       </div>
                       {comment.userId?.isBrandSafeVerified && (
                         <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-0.5 shadow-sm flex items-center justify-center">

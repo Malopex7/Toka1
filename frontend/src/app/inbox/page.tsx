@@ -31,6 +31,7 @@ interface CoAuthorInvite {
     _id: string;
     username: string;
     role: string;
+    avatarUrl?: string;
     isBrandSafeVerified?: boolean;
   };
   coAuthors?: Array<{
@@ -50,6 +51,7 @@ interface TagRequest {
     _id: string;
     username: string;
     role: string;
+    avatarUrl?: string;
     isBrandSafeVerified?: boolean;
   };
 }
@@ -300,10 +302,14 @@ export default function InboxPage() {
                       <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
-                              {invite.creatorId?.username?.charAt(0).toUpperCase()}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative overflow-hidden border border-white/10">
+                              {invite.creatorId?.avatarUrl ? (
+                                <img src={invite.creatorId.avatarUrl} alt={invite.creatorId.username} className="w-full h-full object-cover" />
+                              ) : (
+                                invite.creatorId?.username?.charAt(0).toUpperCase()
+                              )}
                               {invite.creatorId?.isBrandSafeVerified && (
-                                <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                                <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center z-10">
                                   <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
                                 </div>
                               )}
@@ -362,10 +368,14 @@ export default function InboxPage() {
                     <div key={request._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
-                            {request.creatorId?.username?.charAt(0).toUpperCase()}
+                          <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative overflow-hidden">
+                            {request.creatorId?.avatarUrl ? (
+                              <img src={request.creatorId.avatarUrl} alt={request.creatorId.username} className="w-full h-full object-cover" />
+                            ) : (
+                              request.creatorId?.username?.charAt(0).toUpperCase()
+                            )}
                             {request.creatorId?.isBrandSafeVerified && (
-                              <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                              <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center z-10">
                                 <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
                               </div>
                             )}

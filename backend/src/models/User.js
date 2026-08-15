@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['allow_all', 'require_approval', 'disabled'],
     default: 'allow_all'
+  },
+  avatarUrl: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true,
