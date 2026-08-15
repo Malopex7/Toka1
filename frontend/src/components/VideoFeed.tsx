@@ -881,6 +881,35 @@ export default function VideoFeed() {
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
+                              requireAuth(async () => {
+                                try {
+                                  const wasReposted = video.isReposted;
+                                  await useFeedStore.getState().toggleRepost(video.id);
+                                  showAlert(
+                                    wasReposted ? 'Repost Removed' : 'Video Reposted! 🔁',
+                                    wasReposted
+                                      ? 'This video was removed from your profile reposts.'
+                                      : 'Video reposted! It now appears on your profile Reposts tab.'
+                                  );
+                                } catch (err) {
+                                  showAlert('Error', 'Failed to update repost.');
+                                }
+                              });
+                              setActiveOptionsVideoId(null);
+                            }}
+                            className={`flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold transition-colors cursor-pointer ${
+                              video.isReposted ? 'text-amber-400 hover:text-amber-300' : 'text-cloud-white/90 hover:text-cloud-white'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              {video.isReposted ? 'repeat_on' : 'repeat'}
+                            </span>
+                            <span>{video.isReposted ? 'Remove Repost' : 'Repost Video'}</span>
+                          </button>
+
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               try {
                                 await navigator.clipboard.writeText(video.videoUrl);
                                 showAlert('Link Copied', 'Video stream URL copied to clipboard!');
@@ -889,7 +918,7 @@ export default function VideoFeed() {
                               }
                               setActiveOptionsVideoId(null);
                             }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/90 hover:text-cloud-white transition-colors"
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/90 hover:text-cloud-white transition-colors cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px]">content_copy</span>
                             Copy Link
@@ -901,7 +930,7 @@ export default function VideoFeed() {
                               showAlert('Report Submitted', 'Thank you! This video has been flagged and queued for moderation review.');
                               setActiveOptionsVideoId(null);
                             }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-red-500 hover:text-red-400 transition-colors"
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px] text-red-500">flag</span>
                             Report Video
@@ -913,7 +942,7 @@ export default function VideoFeed() {
                               showAlert('Creator Blocked', `Creator blocked. You will no longer see content from @${video.creatorName}.`);
                               setActiveOptionsVideoId(null);
                             }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/60 hover:text-cloud-white transition-colors"
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/60 hover:text-cloud-white transition-colors cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px]">block</span>
                             Block Creator
@@ -950,6 +979,14 @@ export default function VideoFeed() {
                         <Volume2 className="w-4.5 h-4.5 text-white animate-pulse" />
                       )}
                     </button>
+
+                    {/* Repost Badge */}
+                    {video.isReposted && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit backdrop-blur-md shadow-sm animate-fade-in">
+                        <span className="material-symbols-outlined text-amber-400 text-[13px]">repeat</span>
+                        <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-amber-300">You Reposted</span>
+                      </div>
+                    )}
 
                     {/* Brand Safe Badge */}
                     {video.vettingStatus === 'approved' && (

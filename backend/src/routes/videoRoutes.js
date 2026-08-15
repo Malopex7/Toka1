@@ -15,7 +15,9 @@ import {
   respondToCoAuthorInvite,
   removeCoAuthor,
   getTagRequests,
-  respondToTagRequest
+  respondToTagRequest,
+  toggleRepost,
+  getUserReposts
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -62,6 +64,8 @@ router.get('/videos/stream/:filename', streamGridFSVideo);
 router.post('/webhooks/ai-vetting', processAiVetting);
 router.patch('/videos/:id/vetting-status', protect, requireModerator, updateVettingStatus);
 router.post('/videos/:id/like', protect, toggleLikeVideo);
+router.post('/videos/:id/repost', protect, toggleRepost);
+router.get('/videos/user/:username/reposts', optionalProtect, getUserReposts);
 router.post('/videos/:id/share', recordShare);
 router.delete('/videos/:id', protect, deleteVideo);
 router.patch('/videos/:id', protect, updateVideo);

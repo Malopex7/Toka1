@@ -57,6 +57,15 @@ const videoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  repostsCount: {
+    type: Number,
+    default: 0
+  },
+  repostedBy: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: []
+  },
   visibility: {
     type: String,
     enum: ['public', 'private'],

@@ -204,15 +204,19 @@ export const getFeed = async (req, res, next) => {
 
   const totalPages = Math.ceil(totalVideos / limit);
 
-  // 4) Map videos to include isLiked flag, commentsCount, and strip likedBy for safety
+  // 4) Map videos to include isLiked, isReposted flag, commentsCount, and strip sensitive arrays
   const formattedVideos = await Promise.all(videos.map(async video => {
     const videoObj = video.toObject();
     const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
+    const isReposted = req.user ? (video.repostedBy && video.repostedBy.some(id => id.toString() === req.user._id.toString())) : false;
     delete videoObj.likedBy;
+    delete videoObj.repostedBy;
     const commentsCount = await Comment.countDocuments({ videoId: video._id });
     return {
       ...videoObj,
       isLiked,
+      isReposted,
+      repostsCount: video.repostsCount || 0,
       commentsCount
     };
   }));
@@ -955,6 +959,129 @@ export const respondToTagRequest = async (req, res, next) => {
       status: 'success',
       message: `Tag request successfully ${action === 'approve' ? 'approved' : 'declined'}.`,
       data: { video }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/videos/:id/repost
+ * Toggle repost for the authenticated user.
+ */
+export const toggleRepost = async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const video = await Video.findById(id).populate('creatorId', 'username');
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    if (!video.repostedBy) {
+      video.repostedBy = [];
+    }
+
+    const isReposted = video.repostedBy.some(uid => uid.toString() === userId.toString());
+    let nowReposted = false;
+
+    if (isReposted) {
+      video.repostedBy = video.repostedBy.filter(uid => uid.toString() !== userId.toString());
+      video.repostsCount = Math.max(0, (video.repostsCount || 0) - 1);
+      nowReposted = false;
+    } else {
+      video.repostedBy.push(userId);
+      video.repostsCount = (video.repostsCount || 0) + 1;
+      nowReposted = true;
+    }
+
+    await video.save();
+
+    // If newly reposted and not own video, notify creator
+    if (nowReposted && video.creatorId?._id?.toString() !== userId.toString()) {
+      // In-app notification
+      const NotificationModel = (await import('../models/Notification.js')).default;
+      await NotificationModel.create({
+        userId: video.creatorId._id || video.creatorId,
+        title: 'Video Reposted! 🔁',
+        body: `@${req.user.username} reposted your video "${video.title || ''}"`,
+        type: 'repost',
+        metadata: {
+          videoId: video._id.toString(),
+          repostedByUsername: req.user.username
+        }
+      }).catch(err => console.error('[Notification Create Failed]', err));
+
+      // FCM push notification
+      sendFcmNotification(
+        video.creatorId._id || video.creatorId,
+        'Video Reposted! 🔁',
+        `@${req.user.username} reposted your video "${video.title || ''}"`,
+        {
+          type: 'video_repost',
+          videoId: video._id.toString(),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Video Repost Failed]', err));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        isReposted: nowReposted,
+        repostsCount: video.repostsCount
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/videos/user/:username/reposts
+ * Fetch approved videos that the given user has reposted.
+ */
+export const getUserReposts = async (req, res, next) => {
+  const { username } = req.params;
+
+  try {
+    const user = await User.findOne({ username: username.toLowerCase().trim() });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const videos = await Video.find({
+      repostedBy: user._id,
+      vettingStatus: 'approved'
+    })
+      .populate('creatorId', 'username role isBrandSafeVerified avatarUrl')
+      .populate('coAuthors.user', 'username role isBrandSafeVerified avatarUrl')
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    const formattedVideos = await Promise.all(videos.map(async video => {
+      const videoObj = video.toObject();
+      const isLiked = req.user ? (video.likedBy && video.likedBy.some(id => id.toString() === req.user._id.toString())) : false;
+      const isReposted = req.user ? (video.repostedBy && video.repostedBy.some(id => id.toString() === req.user._id.toString())) : false;
+      delete videoObj.likedBy;
+      delete videoObj.repostedBy;
+      const commentsCount = await Comment.countDocuments({ videoId: video._id });
+      return {
+        ...videoObj,
+        isLiked,
+        isReposted,
+        repostsCount: video.repostsCount || 0,
+        commentsCount
+      };
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      results: formattedVideos.length,
+      data: {
+        videos: formattedVideos
+      }
     });
   } catch (err) {
     next(err);

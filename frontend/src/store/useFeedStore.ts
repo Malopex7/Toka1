@@ -29,6 +29,8 @@ export interface Video {
   riskFlags: string[];
   isVerified: boolean;
   isLiked?: boolean;
+  isReposted?: boolean;
+  repostsCount?: number;
   audioName?: string;
   audioArt?: string;
   poster?: string;
@@ -62,6 +64,7 @@ interface FeedStore {
   optimisticTip: (videoId: string, amount: number) => void;
   updateVideoVetting: (videoId: string, status: Video['vettingStatus']) => void;
   toggleLikeVideo: (videoId: string) => Promise<void>;
+  toggleRepost: (videoId: string) => Promise<void>;
   fetchNextPage: () => Promise<void>;
   resetFeed: () => void;
   incrementShareCount: (videoId: string) => Promise<void>;
@@ -186,6 +189,60 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     }
   },
 
+  toggleRepost: async (videoId) => {
+    const { videos } = get();
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+
+    // 1) Optimistic updates
+    set({
+      videos: videos.map((vid) => {
+        if (vid.id === videoId) {
+          const isCurrentlyReposted = vid.isReposted || false;
+          return {
+            ...vid,
+            isReposted: !isCurrentlyReposted,
+            repostsCount: isCurrentlyReposted ? Math.max(0, (vid.repostsCount || 0) - 1) : (vid.repostsCount || 0) + 1
+          };
+        }
+        return vid;
+      })
+    });
+
+    try {
+      // 2) Backend API call
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/repost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to toggle repost on server');
+      }
+    } catch (err) {
+      console.error('[Store] toggleRepost failed, rolling back:', err);
+      // Rollback optimistic updates
+      set({
+        videos: videos.map((vid) => {
+          if (vid.id === videoId) {
+            const originalReposted = vid.isReposted || false;
+            return {
+              ...vid,
+              isReposted: originalReposted,
+              repostsCount: vid.repostsCount || 0
+            };
+          }
+          return vid;
+        })
+      });
+      throw err;
+    }
+  },
+
   fetchNextPage: async () => {
     const { currentPage, videos, isLoading, hasNextPage, feedType, creatorFilter } = get();
     if (isLoading || !hasNextPage) return;
@@ -235,6 +292,8 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           riskFlags: video.riskFlags || [],
           isVerified: video.creatorId?.isBrandSafeVerified || false,
           isLiked: video.isLiked || false,
+          isReposted: video.isReposted || false,
+          repostsCount: video.repostsCount || 0,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
           audioArt: video.audioArt || '/images/audio-album.jpg',
           poster: video.thumbnailUrl || '',

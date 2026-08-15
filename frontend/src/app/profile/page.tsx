@@ -60,6 +60,11 @@ function ProfileContent() {
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
 
+  // Video tab & reposts state
+  const [repostVideos, setRepostVideos] = useState<ProfileVideo[]>([]);
+  const [fetchingReposts, setFetchingReposts] = useState(true);
+  const [activeVideoTab, setActiveVideoTab] = useState<'uploads' | 'reposts'>('uploads');
+
   // Privacy setting states
   const [taggingPermission, setTaggingPermission] = useState<string>('allow_all');
   const [followListPrivacy, setFollowListPrivacy] = useState<string>('everyone');
@@ -853,106 +858,190 @@ function ProfileContent() {
           </div>
         )}
 
-        {/* Videos Grid */}
+        {/* Videos and Reposts Grid Section */}
         <div>
-          <h3 className="text-sm font-bold text-cloud-white/60 uppercase tracking-wider mb-4">
-            {isOwnProfile ? 'My Videos' : 'Uploaded Videos'}
-          </h3>
-          {fetchingVideos ? (
-            <div className="grid grid-cols-2 gap-3 animate-pulse">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl"></div>
-              ))}
-            </div>
-          ) : videos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
-              <span className="material-symbols-outlined text-cloud-white/20 text-[48px]">videocam_off</span>
-              <p className="text-xs text-cloud-white/40">No videos uploaded yet.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {videos.map((video) => {
-                const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
-                const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
-                const creatorHandle = targetUser?.username || mongooseUser?.username || 'creator';
+          {/* Tab Switcher */}
+          <div className="flex items-center gap-3 border-b border-white/10 mb-4 pb-2">
+            <button
+              onClick={() => setActiveVideoTab('uploads')}
+              className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeVideoTab === 'uploads'
+                  ? 'text-cloud-white border-b-2 border-toka-flare font-black'
+                  : 'text-cloud-white/40 hover:text-cloud-white/70'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">videocam</span>
+              <span>{isOwnProfile ? 'My Videos' : 'Videos'}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeVideoTab === 'uploads' ? 'bg-toka-flare/20 text-toka-flare' : 'bg-white/10 text-cloud-white/50'
+              }`}>
+                {videos.length}
+              </span>
+            </button>
 
-                return (
-                  <div 
-                    key={video._id} 
-                    onClick={() => router.push(`/?creator=${encodeURIComponent(creatorHandle)}&videoId=${video._id}`)}
-                    className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
-                  >
-                    {/* Collab Indicator */}
-                    {isCollab && (
-                      <div className="absolute top-2.5 left-2.5 z-10 bg-black/60 backdrop-blur-md border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                        <span className="text-[10px]">🤝</span>
-                        <span className="text-[9px] font-black tracking-wider uppercase text-cloud-white">Collab</span>
-                      </div>
-                    )}
-
-                    {isOwnProfile && (
-                      <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
-                        {isPrimaryCreator ? (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditCaption(video);
-                              }}
-                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
-                              title="Edit Caption"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">edit</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteVideo(video._id);
-                              }}
-                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
-                              title="Delete Video"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLeaveCollab(video._id);
-                            }}
-                            className="w-8 h-8 rounded-full bg-black/40 hover:bg-amber-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
-                            title="Leave Collaboration"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">logout</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  <video
-                    src={video.videoUrl}
-                    className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
-                    muted
-                    playsInline
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
-                    <p className="text-xs font-bold text-cloud-white line-clamp-2">{video.title}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-full border ${
-                        video.vettingStatus === 'approved'
-                          ? 'bg-fintech-mint/20 text-fintech-mint border-fintech-mint/30'
-                          : video.vettingStatus === 'rejected'
-                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                      }`}>
-                        {video.vettingStatus.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            <button
+              onClick={() => setActiveVideoTab('reposts')}
+              className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeVideoTab === 'reposts'
+                  ? 'text-cloud-white border-b-2 border-amber-400 font-black'
+                  : 'text-cloud-white/40 hover:text-cloud-white/70'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px] text-amber-400">repeat</span>
+              <span>Reposts</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeVideoTab === 'reposts' ? 'bg-amber-400/20 text-amber-400' : 'bg-white/10 text-cloud-white/50'
+              }`}>
+                {repostVideos.length}
+              </span>
+            </button>
           </div>
+
+          {activeVideoTab === 'uploads' ? (
+            fetchingVideos ? (
+              <div className="grid grid-cols-2 gap-3 animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl"></div>
+                ))}
+              </div>
+            ) : videos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
+                <span className="material-symbols-outlined text-cloud-white/20 text-[48px]">videocam_off</span>
+                <p className="text-xs text-cloud-white/40">No videos uploaded yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {videos.map((video) => {
+                  const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
+                  const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
+                  const creatorHandle = targetUser?.username || mongooseUser?.username || 'creator';
+
+                  return (
+                    <div 
+                      key={video._id} 
+                      onClick={() => router.push(`/?creator=${encodeURIComponent(creatorHandle)}&videoId=${video._id}`)}
+                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
+                    >
+                      {/* Collab Indicator */}
+                      {isCollab && (
+                        <div className="absolute top-2.5 left-2.5 z-10 bg-black/60 backdrop-blur-md border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="text-[10px]">🤝</span>
+                          <span className="text-[9px] font-black tracking-wider uppercase text-cloud-white">Collab</span>
+                        </div>
+                      )}
+
+                      {isOwnProfile && (
+                        <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
+                          {isPrimaryCreator ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditCaption(video);
+                                }}
+                                className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                                title="Edit Caption"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteVideo(video._id);
+                                }}
+                                className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                                title="Delete Video"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLeaveCollab(video._id);
+                              }}
+                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-amber-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                              title="Leave Collaboration"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">logout</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <video
+                        src={video.videoUrl}
+                        className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
+                        <p className="text-xs font-bold text-cloud-white line-clamp-2">{video.title}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-full border ${
+                            video.vettingStatus === 'approved'
+                              ? 'bg-fintech-mint/20 text-fintech-mint border-fintech-mint/30'
+                              : video.vettingStatus === 'rejected'
+                              ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                              : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                          }`}>
+                            {video.vettingStatus.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            fetchingReposts ? (
+              <div className="grid grid-cols-2 gap-3 animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl"></div>
+                ))}
+              </div>
+            ) : repostVideos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
+                <span className="material-symbols-outlined text-cloud-white/20 text-[48px]">repeat</span>
+                <p className="text-xs text-cloud-white/40">No reposted videos yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {repostVideos.map((video) => {
+                  const originalCreator = (video.creatorId as any)?.username || 'creator';
+
+                  return (
+                    <div 
+                      key={video._id} 
+                      onClick={() => router.push(`/?creator=${encodeURIComponent(originalCreator)}&videoId=${video._id}`)}
+                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
+                    >
+                      {/* Repost Indicator */}
+                      <div className="absolute top-2.5 left-2.5 z-10 bg-amber-500/30 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <span className="material-symbols-outlined text-amber-400 text-[12px]">repeat</span>
+                        <span className="text-[9px] font-black tracking-wider uppercase text-amber-300">Repost</span>
+                      </div>
+
+                      <video
+                        src={video.videoUrl}
+                        className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
+                        <p className="text-xs font-bold text-cloud-white line-clamp-2">{video.title}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-[9px] font-bold text-cloud-white/60">
+                            @{originalCreator}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
 
