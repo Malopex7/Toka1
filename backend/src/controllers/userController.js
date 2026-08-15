@@ -419,6 +419,37 @@ export const updateSettings = async (req, res, next) => {
 };
 
 /**
+ * POST /api/users/avatar/upload
+ * Handle multipart avatar image upload and store in profile.
+ */
+export const uploadAvatarFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new AppError('Please provide an image file.', 400);
+    }
+
+    const base64Data = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatarUrl: base64Data },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Avatar uploaded successfully.',
+      data: { 
+        user: updatedUser,
+        avatarUrl: updatedUser.avatarUrl
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * PATCH /api/users/avatar
  * Update or remove profile avatar image URL.
  */

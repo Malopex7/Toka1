@@ -4,8 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
 
 interface ProfileVideo {
   _id: string;
@@ -361,24 +359,22 @@ function ProfileContent() {
 
     setUploadingAvatar(true);
     try {
-      const fileExt = file.name.split('.').pop() || 'jpg';
-      const storageRef = ref(storage, `avatars/${firebaseUser.uid}-${Date.now()}.${fileExt}`);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
+      const formData = new FormData();
+      formData.append('avatar', file);
 
       const token = await firebaseUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/avatar`, {
-        method: 'PATCH',
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/avatar/upload`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ avatarUrl: downloadUrl })
+        body: formData
       });
 
       const data = await res.json();
       if (res.ok && data.status === 'success') {
-        setTargetUser(prev => prev ? { ...prev, avatarUrl: downloadUrl } : null);
+        const newAvatarUrl = data.data?.avatarUrl || data.data?.user?.avatarUrl;
+        setTargetUser(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
         await refreshProfile();
         showAlert('Avatar Updated', 'Your profile picture has been updated successfully!');
       } else {
