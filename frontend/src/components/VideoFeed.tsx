@@ -41,6 +41,91 @@ function formatNotificationTime(isoString?: string): string {
   }
 }
 
+interface SwipeableRepostBadgeProps {
+  videoId: string;
+  onDismiss: (videoId: string) => void;
+}
+
+function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps) {
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDismissing, setIsDismissing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+
+  const handleStart = (clientX: number, clientY: number) => {
+    touchStartXRef.current = clientX;
+    touchStartYRef.current = clientY;
+    setIsDragging(true);
+  };
+
+  const handleMove = (clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const diffX = clientX - touchStartXRef.current;
+    const diffY = clientY - touchStartYRef.current;
+
+    // Favor horizontal drag
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      setDragOffset(diffX);
+    }
+  };
+
+  const handleEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    if (Math.abs(dragOffset) > 35) {
+      setIsDismissing(true);
+      setTimeout(() => {
+        onDismiss(videoId);
+      }, 220);
+    } else {
+      setDragOffset(0);
+    }
+  };
+
+  const opacity = isDismissing ? 0 : Math.max(0, 1 - Math.abs(dragOffset) / 80);
+  const transform = isDismissing
+    ? `translateX(${dragOffset >= 0 ? '120%' : '-120%'})`
+    : `translateX(${dragOffset}px)`;
+
+  return (
+    <div
+      onTouchStart={(e) => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchEnd={handleEnd}
+      onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
+      onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+      style={{
+        transform,
+        opacity,
+        transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
+        touchAction: 'pan-y'
+      }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit backdrop-blur-md shadow-sm select-none cursor-grab active:cursor-grabbing group hover:bg-amber-500/30 transition-colors animate-fade-in"
+      title="Swipe left or right to dismiss"
+    >
+      <span className="material-symbols-outlined text-amber-400 text-[13px] pointer-events-none">repeat</span>
+      <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-amber-300 pointer-events-none">
+        You Reposted
+      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsDismissing(true);
+          setTimeout(() => onDismiss(videoId), 200);
+        }}
+        className="opacity-40 group-hover:opacity-100 hover:text-amber-200 ml-0.5 p-0.5 rounded-full transition-opacity cursor-pointer flex items-center justify-center"
+        title="Dismiss"
+      >
+        <span className="material-symbols-outlined text-[11px] text-amber-400">close</span>
+      </button>
+    </div>
+  );
+}
+
 export default function VideoFeed() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,6 +149,15 @@ export default function VideoFeed() {
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
   const [activeOptionsVideoId, setActiveOptionsVideoId] = useState<string | null>(null);
+  const [dismissedRepostBadges, setDismissedRepostBadges] = useState<Set<string>>(new Set());
+
+  const handleDismissRepostBadge = (videoId: string) => {
+    setDismissedRepostBadges((prev) => {
+      const next = new Set(prev);
+      next.add(videoId);
+      return next;
+    });
+  };
 
   // Sync creator filter from URL params
   useEffect(() => {
@@ -980,12 +1074,12 @@ export default function VideoFeed() {
                       )}
                     </button>
 
-                    {/* Repost Badge */}
-                    {video.isReposted && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit backdrop-blur-md shadow-sm animate-fade-in">
-                        <span className="material-symbols-outlined text-amber-400 text-[13px]">repeat</span>
-                        <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-amber-300">You Reposted</span>
-                      </div>
+                    {/* Repost Badge with Swipe-to-Dismiss */}
+                    {video.isReposted && !dismissedRepostBadges.has(video.id) && (
+                      <SwipeableRepostBadge
+                        videoId={video.id}
+                        onDismiss={handleDismissRepostBadge}
+                      />
                     )}
 
                     {/* Brand Safe Badge */}
