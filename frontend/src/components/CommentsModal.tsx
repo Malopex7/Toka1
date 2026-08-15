@@ -632,14 +632,9 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               <Link
                 href={`/profile?username=${node.userId?.username}`}
                 onClick={onClose}
-                className="text-[10px] font-bold text-cloud-white hover:underline flex items-center gap-1"
+                className="text-[10px] font-bold text-cloud-white hover:underline"
               >
                 @{node.userId?.username || 'user'}
-                {node.userId?.isBrandSafeVerified && (
-                  <span className="material-symbols-outlined text-toka-flare text-[12px] shrink-0" title="Verified">
-                    verified
-                  </span>
-                )}
               </Link>
               {String(node.userId?._id) === String(creatorId) && (
                 <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
@@ -810,14 +805,9 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                         <Link
                           href={`/profile?username=${comment.userId?.username}`}
                           onClick={onClose}
-                          className="text-xs font-bold text-cloud-white hover:underline flex items-center gap-1"
+                          className="text-xs font-bold text-cloud-white hover:underline"
                         >
                           @{comment.userId?.username || 'user'}
-                          {comment.userId?.isBrandSafeVerified && (
-                            <span className="material-symbols-outlined text-toka-flare text-[14px] shrink-0" title="Verified">
-                              verified
-                            </span>
-                          )}
                         </Link>
                         {String(comment.userId?._id) === String(creatorId) && (
                           <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1.5 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
