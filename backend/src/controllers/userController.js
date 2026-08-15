@@ -389,3 +389,31 @@ export const getMutualFollowers = async (req, res, next) => {
     data: { users: mutualUsers }
   });
 };
+
+/**
+ * PATCH /api/users/settings
+ * Update user preferences such as tagging permissions.
+ */
+export const updateSettings = async (req, res, next) => {
+  const { taggingPermission } = req.body;
+  const validPermissions = ['allow_all', 'require_approval', 'disabled'];
+
+  try {
+    if (taggingPermission && !validPermissions.includes(taggingPermission)) {
+      throw new AppError('Invalid tagging permission setting. Use allow_all, require_approval, or disabled.', 400);
+    }
+
+    const updates = {};
+    if (taggingPermission) updates.taggingPermission = taggingPermission;
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Settings updated successfully.',
+      data: { user }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

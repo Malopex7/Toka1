@@ -13,7 +13,9 @@ import {
   updateVideo,
   getCoAuthorInvites,
   respondToCoAuthorInvite,
-  removeCoAuthor
+  removeCoAuthor,
+  getTagRequests,
+  respondToTagRequest
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -52,6 +54,8 @@ router.get('/feed', optionalProtect, getFeed);
 router.get('/videos/coauthor/invites', protect, getCoAuthorInvites);
 router.post('/videos/:id/coauthor/respond', protect, respondToCoAuthorInvite);
 router.delete('/videos/:id/coauthor', protect, removeCoAuthor);
+router.get('/videos/tags/pending', protect, getTagRequests);
+router.post('/videos/:id/tags/respond', protect, respondToTagRequest);
 router.post('/videos', protect, restrictTo('creator', 'brand'), uploadVideo);
 router.post('/videos/upload', protect, restrictTo('creator', 'brand'), upload.single('video'), multerErrorHandler, uploadGridFSVideo);
 router.get('/videos/stream/:filename', streamGridFSVideo);

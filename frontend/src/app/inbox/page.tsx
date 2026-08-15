@@ -40,6 +40,20 @@ interface CoAuthorInvite {
   }>;
 }
 
+interface TagRequest {
+  _id: string;
+  title: string;
+  videoUrl: string;
+  tier: string;
+  createdAt: string;
+  creatorId: {
+    _id: string;
+    username: string;
+    role: string;
+    isBrandSafeVerified?: boolean;
+  };
+}
+
 interface InboxData {
   received: Transaction[];
   sent: Transaction[];
@@ -57,6 +71,7 @@ export default function InboxPage() {
   const [activeTab, setActiveTab] = useState<Tab>('received');
   const [data, setData] = useState<InboxData | null>(null);
   const [collabInvites, setCollabInvites] = useState<CoAuthorInvite[]>([]);
+  const [tagRequests, setTagRequests] = useState<TagRequest[]>([]);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,13 +91,15 @@ export default function InboxPage() {
         const token = await firebaseUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [txRes, invitesRes] = await Promise.all([
+        const [txRes, invitesRes, tagReqRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions/my`, { headers }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/coauthor/invites`, { headers })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/coauthor/invites`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/tags/pending`, { headers })
         ]);
 
         const txJson = await txRes.json();
         const invitesJson = await invitesRes.json();
+        const tagReqJson = await tagReqRes.json();
 
         if (txJson.status === 'success') {
           setData(txJson.data);
@@ -92,6 +109,10 @@ export default function InboxPage() {
 
         if (invitesJson.status === 'success') {
           setCollabInvites(invitesJson.data.invites || []);
+        }
+
+        if (tagReqJson.status === 'success') {
+          setTagRequests(tagReqJson.data.requests || []);
         }
       } catch (e) {
         setError('Network error. Could not fetch transactions.');
@@ -127,6 +148,30 @@ export default function InboxPage() {
     }
   };
 
+  const handleRespondTag = async (videoId: string, action: 'approve' | 'decline') => {
+    if (!firebaseUser) return;
+    setRespondingId(videoId);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}/tags/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ action })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        setTagRequests(prev => prev.filter(req => req._id !== videoId));
+      }
+    } catch (err) {
+      console.error('Failed to respond to tag request:', err);
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-midnight-boma text-cloud-white font-sans">
@@ -150,9 +195,9 @@ export default function InboxPage() {
 
   const tabs: { id: Tab; label: string; emoji: string; count: number }[] = [
     { id: 'received', label: 'Received', emoji: '📥', count: data?.totalReceived ?? 0 },
-    { id: 'sent',     label: 'Sent',     emoji: '📤', count: data?.totalSent     ?? 0 },
-    { id: 'deposits', label: 'Top-Ups',  emoji: '💳', count: data?.totalDeposits ?? 0 },
-    { id: 'collabs',  label: 'Collabs',  emoji: '🤝', count: collabInvites.length },
+    { id: 'sent', label: 'Sent', emoji: '📤', count: data?.totalSent ?? 0 },
+    { id: 'deposits', label: 'Deposits', emoji: '💳', count: data?.totalDeposits ?? 0 },
+    { id: 'collabs', label: 'Collabs & Tags', emoji: '🤝', count: collabInvites.length + tagRequests.length },
   ];
 
   const activeList: Transaction[] =
@@ -232,72 +277,138 @@ export default function InboxPage() {
             <p className="text-sm text-cloud-white/60">{error}</p>
           </div>
         ) : activeTab === 'collabs' ? (
-          /* ---- Collab Invites Tab ---- */
-          collabInvites.length === 0 ? (
+          /* ---- Collab & Tag Requests Tab ---- */
+          collabInvites.length === 0 && tagRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
               <span className="material-symbols-outlined text-cloud-white/20 text-[56px]">handshake</span>
-              <h3 className="text-base font-bold text-cloud-white">No Pending Collaboration Invites</h3>
+              <h3 className="text-base font-bold text-cloud-white">No Pending Requests</h3>
               <p className="text-xs text-cloud-white/40 max-w-xs">
-                When creators invite you to co-author videos, they will appear here for your review and approval.
+                When creators invite you to co-author videos or request tag approvals, they will appear here for review.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {collabInvites.map((invite) => {
-                const splitPct = invite.coAuthors?.[0]?.splitPercentage || 50;
-                return (
-                  <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
-                          {invite.creatorId?.username?.charAt(0).toUpperCase()}
-                          {invite.creatorId?.isBrandSafeVerified && (
-                            <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
-                              <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+            <div className="flex flex-col gap-4">
+              {/* Co-Author Invites */}
+              {collabInvites.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <span className="text-[11px] font-bold text-cloud-white/60 uppercase tracking-wider">
+                    🤝 Co-Author Invitations ({collabInvites.length})
+                  </span>
+                  {collabInvites.map((invite) => {
+                    const splitPct = invite.coAuthors?.[0]?.splitPercentage || 50;
+                    return (
+                      <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
+                              {invite.creatorId?.username?.charAt(0).toUpperCase()}
+                              {invite.creatorId?.isBrandSafeVerified && (
+                                <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                                  <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Link href={`/profile?username=${invite.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
-                              @{invite.creatorId?.username}
-                            </Link>
-                            <span className="text-[9px] bg-toka-flare/20 text-toka-flare px-1.5 py-0.2 rounded font-bold uppercase">
-                              Co-Author Invite
-                            </span>
-                            <span className="text-[9px] bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-1.5 py-0.2 rounded font-mono font-bold">
-                              💰 {100 - splitPct}/{splitPct} Split
-                            </span>
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Link href={`/profile?username=${invite.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
+                                  @{invite.creatorId?.username}
+                                </Link>
+                                <span className="text-[9px] bg-toka-flare/20 text-toka-flare px-1.5 py-0.2 rounded font-bold uppercase">
+                                  Co-Author Invite
+                                </span>
+                                <span className="text-[9px] bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                                  💰 {100 - splitPct}/{splitPct} Split
+                                </span>
+                              </div>
+                              <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
+                                &quot;{invite.title}&quot;
+                              </p>
+                              <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
+                                {formatDate(invite.createdAt)}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
-                            &quot;{invite.title}&quot;
-                          </p>
-                          <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
-                            {formatDate(invite.createdAt)}
-                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                          <button
+                            disabled={respondingId === invite._id}
+                            onClick={() => handleRespondCollab(invite._id, 'accept')}
+                            className="flex-1 py-2 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            {respondingId === invite._id ? 'Processing...' : 'Accept Collaboration'}
+                          </button>
+                          <button
+                            disabled={respondingId === invite._id}
+                            onClick={() => handleRespondCollab(invite._id, 'decline')}
+                            className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                      <button
-                        disabled={respondingId === invite._id}
-                        onClick={() => handleRespondCollab(invite._id, 'accept')}
-                        className="flex-1 py-2 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        {respondingId === invite._id ? 'Processing...' : 'Accept Collaboration'}
-                      </button>
-                      <button
-                        disabled={respondingId === invite._id}
-                        onClick={() => handleRespondCollab(invite._id, 'decline')}
-                        className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        Decline
-                      </button>
+              {/* Tag Approval Requests */}
+              {tagRequests.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <span className="text-[11px] font-bold text-cloud-white/60 uppercase tracking-wider">
+                    🏷️ Tag Requests ({tagRequests.length})
+                  </span>
+                  {tagRequests.map((request) => (
+                    <div key={request._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
+                            {request.creatorId?.username?.charAt(0).toUpperCase()}
+                            {request.creatorId?.isBrandSafeVerified && (
+                              <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                                <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Link href={`/profile?username=${request.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
+                                @{request.creatorId?.username}
+                              </Link>
+                              <span className="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-400/30 px-1.5 py-0.2 rounded font-bold uppercase">
+                                Tagged You
+                              </span>
+                            </div>
+                            <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
+                              &quot;{request.title}&quot;
+                            </p>
+                            <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
+                              {formatDate(request.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                        <button
+                          disabled={respondingId === request._id}
+                          onClick={() => handleRespondTag(request._id, 'approve')}
+                          className="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/40 text-blue-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {respondingId === request._id ? 'Processing...' : 'Approve Tag'}
+                        </button>
+                        <button
+                          disabled={respondingId === request._id}
+                          onClick={() => handleRespondTag(request._id, 'decline')}
+                          className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          Decline
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              )}
             </div>
           )
         ) : activeList.length === 0 ? (

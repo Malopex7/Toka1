@@ -28,6 +28,7 @@ interface TargetUser {
   following?: string[];
   isBrandSafeVerified?: boolean;
   verificationRequestStatus?: string;
+  taggingPermission?: string;
 }
 
 function ProfileContent() {
@@ -49,6 +50,10 @@ function ProfileContent() {
 
   // Verification request state
   const [verificationLoading, setVerificationLoading] = useState(false);
+
+  // Tagging permission setting state
+  const [taggingPermission, setTaggingPermission] = useState<string>('allow_all');
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
   const isOwnProfile = !targetUsername || (mongooseUser && targetUsername.toLowerCase() === mongooseUser.username.toLowerCase());
 
@@ -75,14 +80,16 @@ function ProfileContent() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/${queryUsername}`);
         const data = await res.json();
-        if (data.status === 'success' && data.data.user) {
-          const user = data.data.user;
-          setTargetUser(user);
-          setFollowerCount(user.followers?.length || 0);
+        if (res.ok && data.status === 'success' && data.data?.user) {
+          setTargetUser(data.data.user);
+          setFollowerCount(data.data.user.followers?.length || 0);
+          if (data.data.user.taggingPermission) {
+            setTaggingPermission(data.data.user.taggingPermission);
+          }
           
           // Check if currently following
           if (mongooseUser) {
-            setIsFollowing(mongooseUser.following?.includes(user._id) || false);
+            setIsFollowing(mongooseUser.following?.includes(data.data.user._id) || false);
           }
         } else {
           setErrorMsg(data.message || `User "@${queryUsername}" not found.`);
@@ -291,6 +298,37 @@ function ProfileContent() {
     }
   };
 
+  // 7) Update Tagging Permission Handler
+  const handleUpdateTaggingPermission = async (newPermission: string) => {
+    if (!firebaseUser) return;
+    setTaggingPermission(newPermission);
+    setIsUpdatingSettings(true);
+
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/settings`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ taggingPermission: newPermission })
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        showAlert('Error', data.message || 'Failed to update tagging settings.');
+      } else {
+        refreshProfile?.();
+      }
+    } catch (err: any) {
+      console.error('[Update Settings Error]:', err);
+      showAlert('Error', err.message || 'An error occurred.');
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
   if (isLoading || fetchingProfile) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-midnight-boma text-cloud-white font-sans">
@@ -444,6 +482,65 @@ function ProfileContent() {
                 Manage Sponsorships
               </Link>
             )}
+          </div>
+        )}
+
+        {/* Tagging & Privacy Settings */}
+        {isOwnProfile && targetUser && (
+          <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-toka-flare text-[22px]">sell</span>
+                <div>
+                  <h4 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions Privacy</h4>
+                  <p className="text-[10px] text-cloud-white/50 mt-0.5">
+                    Control how other creators can tag you in videos.
+                  </p>
+                </div>
+              </div>
+              {isUpdatingSettings && (
+                <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+              {[
+                {
+                  id: 'allow_all',
+                  label: 'Allow Tags',
+                  desc: 'Tags are active immediately (Default)'
+                },
+                {
+                  id: 'require_approval',
+                  label: 'Review Tags',
+                  desc: 'Require manual approval in Inbox'
+                },
+                {
+                  id: 'disabled',
+                  label: 'Turn Tags Off',
+                  desc: 'No one can tag you in videos'
+                }
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleUpdateTaggingPermission(opt.id)}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all ${
+                    taggingPermission === opt.id
+                      ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
+                      : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs font-bold">{opt.label}</span>
+                    {taggingPermission === opt.id && (
+                      <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

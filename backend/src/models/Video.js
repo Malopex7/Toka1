@@ -74,6 +74,22 @@ const videoSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  taggedUsers: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['active', 'pending', 'declined'],
+      default: 'active'
+    },
+    taggedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   coAuthors: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,

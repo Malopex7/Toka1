@@ -8,7 +8,7 @@ import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
 
-// Helper: Extract @usernames from text and find matching user IDs
+// Helper: Extract @usernames from text and find matching user IDs respecting tagging permissions
 export const extractMentions = async (text, currentUserId) => {
   if (!text) return [];
   const mentionMatches = text.match(/@([a-zA-Z0-9_]+)/g);
@@ -18,9 +18,10 @@ export const extractMentions = async (text, currentUserId) => {
   const users = await User.find({
     username: { $in: usernames.map(u => new RegExp(`^${u}$`, 'i')) },
     _id: { $ne: currentUserId }
-  }).select('_id username');
+  }).select('_id username taggingPermission');
 
-  return users;
+  // Filter out creators who have opted to disable tagging entirely
+  return users.filter(u => u.taggingPermission !== 'disabled');
 };
 
 /**
@@ -56,6 +57,11 @@ export const uploadVideo = async (req, res, next) => {
   }
 
   const mentionedUsers = await extractMentions(title, req.user._id);
+  const taggedUsersData = mentionedUsers.map(u => ({
+    user: u._id,
+    status: u.taggingPermission === 'require_approval' ? 'pending' : 'active',
+    taggedAt: new Date()
+  }));
 
   // Create the video document (starts as 'processing')
   const video = await Video.create({
@@ -63,10 +69,12 @@ export const uploadVideo = async (req, res, next) => {
     videoUrl,
     title,
     tier: resolvedTier,
-    vettingStatus: 'processing',
-    aiPipelineStatus: 'pending',
     mentions: mentionedUsers.map(u => u._id),
-    coAuthors: initialCoAuthors
+    taggedUsers: taggedUsersData,
+    coAuthors: initialCoAuthors,
+    aiPipelineStatus: 'queued',
+    vettingStatus: 'processing',
+    aiConfidenceScore: 0
   });
 
   // Fire AI pipeline asynchronously — do NOT await (non-blocking)
@@ -87,19 +95,33 @@ export const uploadVideo = async (req, res, next) => {
     ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
   }
 
-  // Send notifications to mentioned users
-  for (const mentionedUser of mentionedUsers) {
-    sendFcmNotification(
-      mentionedUser._id,
-      'You were tagged in a video!',
-      `@${req.user.username} mentioned you: "${title}"`,
-      {
-        type: 'video_mention',
-        videoId: video._id.toString(),
-        creatorName: req.user.username
-      }
-    ).catch(err => console.error('[FCM Video Mention Notification Failed]', err));
-  }
+  // Notify mentioned / tagged creators according to their approval preference
+  mentionedUsers.forEach(user => {
+    const isPending = user.taggingPermission === 'require_approval';
+    if (isPending) {
+      sendFcmNotification(
+        user._id,
+        'Tag Request! 🏷️',
+        `@${req.user.username} tagged you in a video: "${title}". Tap to review and approve.`,
+        {
+          type: 'tag_approval_requested',
+          videoId: video._id.toString(),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Tag Request Failed]', err));
+    } else {
+      sendFcmNotification(
+        user._id,
+        'You were mentioned in a video! 👀',
+        `@${req.user.username} mentioned you in: "${title}"`,
+        {
+          type: 'video_mention',
+          videoId: video._id.toString(),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Mention Notification Failed]', err));
+    }
+  });
 
   res.status(201).json({
     status: 'success',
@@ -377,17 +399,25 @@ export const uploadGridFSVideo = async (req, res, next) => {
 
   try {
     const mentionedUsers = await extractMentions(title, req.user._id);
+    const taggedUsersData = mentionedUsers.map(u => ({
+      user: u._id,
+      status: u.taggingPermission === 'require_approval' ? 'pending' : 'active',
+      taggedAt: new Date()
+    }));
 
+    // Create the video record
     const videoData = {
       creatorId: req.user._id,
       videoUrl,
       title,
       tier: resolvedTier,
-      vettingStatus: 'processing',
-      aiPipelineStatus: 'pending',
-      visibility: hasSponsorship ? 'private' : 'public',
       mentions: mentionedUsers.map(u => u._id),
-      coAuthors: initialCoAuthors
+      taggedUsers: taggedUsersData,
+      coAuthors: initialCoAuthors,
+      visibility: hasSponsorship ? 'private' : 'public',
+      aiPipelineStatus: 'queued',
+      vettingStatus: 'processing',
+      aiConfidenceScore: 0
     };
 
     if (hasSponsorship) {
@@ -432,18 +462,32 @@ export const uploadGridFSVideo = async (req, res, next) => {
       ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
     }
 
-    // Send notifications to mentioned users
+    // Send notifications to mentioned / tagged users
     for (const mentionedUser of mentionedUsers) {
-      sendFcmNotification(
-        mentionedUser._id,
-        'You were tagged in a video!',
-        `@${req.user.username} mentioned you: "${title}"`,
-        {
-          type: 'video_mention',
-          videoId: video[0]._id.toString(),
-          creatorName: req.user.username
-        }
-      ).catch(err => console.error('[FCM Video Mention Notification Failed]', err));
+      const isPending = mentionedUser.taggingPermission === 'require_approval';
+      if (isPending) {
+        sendFcmNotification(
+          mentionedUser._id,
+          'Tag Request! 🏷️',
+          `@${req.user.username} tagged you in a video: "${title}". Tap to review and approve.`,
+          {
+            type: 'tag_approval_requested',
+            videoId: video[0]._id.toString(),
+            creatorName: req.user.username
+          }
+        ).catch(err => console.error('[FCM Tag Request Failed]', err));
+      } else {
+        sendFcmNotification(
+          mentionedUser._id,
+          'You were tagged in a video!',
+          `@${req.user.username} mentioned you: "${title}"`,
+          {
+            type: 'video_mention',
+            videoId: video[0]._id.toString(),
+            creatorName: req.user.username
+          }
+        ).catch(err => console.error('[FCM Video Mention Notification Failed]', err));
+      }
     }
 
     if (hasSponsorship) {
@@ -803,6 +847,93 @@ export const removeCoAuthor = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       message: 'You have removed yourself from this collaboration.',
+      data: { video }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/videos/tags/pending
+ * Lists videos where the authenticated user has a pending tag request.
+ */
+export const getTagRequests = async (req, res, next) => {
+  try {
+    const requests = await Video.find({
+      'taggedUsers': {
+        $elemMatch: {
+          user: req.user._id,
+          status: 'pending'
+        }
+      }
+    })
+      .populate('creatorId', 'username role isBrandSafeVerified')
+      .select('title videoUrl createdAt creatorId taggedUsers tier')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: requests.length,
+      data: { requests }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/videos/:id/tags/respond
+ * Approve or decline a pending tag on a video.
+ */
+export const respondToTagRequest = async (req, res, next) => {
+  const { id } = req.params;
+  const { action } = req.body; // 'approve' | 'decline'
+
+  try {
+    if (!['approve', 'decline'].includes(action)) {
+      throw new AppError('Invalid response action. Choose approve or decline.', 400);
+    }
+
+    const video = await Video.findById(id).populate('creatorId', 'username');
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    const tagEntry = video.taggedUsers?.find(
+      t => t.user.toString() === req.user._id.toString() && t.status === 'pending'
+    );
+
+    if (!tagEntry) {
+      throw new AppError('No pending tag request found for this video.', 404);
+    }
+
+    tagEntry.status = action === 'approve' ? 'active' : 'declined';
+    
+    // If declined, also remove from raw mentions array
+    if (action === 'decline') {
+      video.mentions = (video.mentions || []).filter(
+        uid => uid.toString() !== req.user._id.toString()
+      );
+    }
+
+    await video.save();
+
+    // Notify video creator
+    sendFcmNotification(
+      video.creatorId._id || video.creatorId,
+      action === 'approve' ? 'Tag Approved! 🏷️' : 'Tag Declined',
+      `@${req.user.username} has ${action === 'approve' ? 'approved' : 'declined'} their tag on "${video.title}"`,
+      {
+        type: action === 'approve' ? 'tag_approved' : 'tag_declined',
+        videoId: video._id.toString(),
+        creatorName: req.user.username
+      }
+    ).catch(err => console.error('[FCM Tag Response Failed]', err));
+
+    res.status(200).json({
+      status: 'success',
+      message: `Tag request successfully ${action === 'approve' ? 'approved' : 'declined'}.`,
       data: { video }
     });
   } catch (err) {

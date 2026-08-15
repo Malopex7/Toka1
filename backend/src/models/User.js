@@ -62,6 +62,11 @@ const userSchema = new mongoose.Schema({
   followers: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: []
+  },
+  taggingPermission: {
+    type: String,
+    enum: ['allow_all', 'require_approval', 'disabled'],
+    default: 'allow_all'
   }
 }, {
   timestamps: true,

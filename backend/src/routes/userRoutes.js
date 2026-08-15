@@ -12,7 +12,8 @@ import {
   getVerifiedBrands,
   getUserDirectory,
   searchUsers,
-  getMutualFollowers
+  getMutualFollowers,
+  updateSettings
 } from '../controllers/userController.js';
 import { protect, requireModerator } from '../middlewares/auth.js';
 
@@ -20,6 +21,7 @@ const router = express.Router();
 
 router.get('/users/search', protect, searchUsers);
 router.get('/users/mutual-followers', protect, getMutualFollowers);
+router.patch('/users/settings', protect, updateSettings);
 router.post('/users/sync', syncUser);
 router.get('/users/me', protect, getMe);
 router.post('/users/fcm-token', protect, saveFcmToken);
