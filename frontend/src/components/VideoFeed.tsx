@@ -670,12 +670,12 @@ export default function VideoFeed() {
                   ))}
 
                   {/* Right Action Sidebar Overlay */}
-                  <aside className="absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto">
+                  <aside className="video-actions-sidebar absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto">
 
                     {/* Creator Avatar & Follow Button */}
                     <div className="relative mb-3 group select-none">
                       <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform">
+                        <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform">
                           <img
                             src={video.creatorAvatar}
                             alt={video.creatorName}
@@ -701,7 +701,7 @@ export default function VideoFeed() {
                       onClick={(e) => handleLikeToggle(video.id, e)}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
-                      <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
+                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
                         <span
                           className={`material-symbols-outlined text-[24px] transition-all duration-200 ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
                             }`}
@@ -720,7 +720,7 @@ export default function VideoFeed() {
                       onClick={() => setActiveCommentsVideoId(video.id)}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
-                      <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
+                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
                         <span className="material-symbols-outlined text-cloud-white text-[24px]">forum</span>
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
@@ -733,7 +733,7 @@ export default function VideoFeed() {
                       onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
-                      <div className="w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
+                      <div className="sidebar-tip-btn w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
                         <span className="material-symbols-outlined text-cloud-white text-[28px]">payments</span>
                       </div>
                       <span className="font-mono text-[10px] font-bold text-toka-flare drop-shadow-md uppercase tracking-wider">Tip ZAR</span>
@@ -744,7 +744,7 @@ export default function VideoFeed() {
                       onClick={() => handleShare(video)}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
-                      <div className="w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
+                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
                         <span className="material-symbols-outlined text-cloud-white text-[24px]">share</span>
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">{video.shares}</span>

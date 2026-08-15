@@ -200,3 +200,34 @@
 .animate-coin-fall {
   animation: coin-fall 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* Height-responsive overrides to prevent sidebar overlaps with the top header on shorter screens */
+@media (max-height: 720px) {
+  .video-actions-sidebar {
+    gap: 0.65rem !important;
+    bottom: 4.5rem !important;
+  }
+
+  .video-actions-sidebar .sidebar-creator-avatar {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+  }
+
+  .video-actions-sidebar .sidebar-action-btn {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+  }
+
+  .video-actions-sidebar .sidebar-action-btn span {
+    font-size: 20px !important;
+  }
+
+  .video-actions-sidebar .sidebar-tip-btn {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  .video-actions-sidebar .sidebar-tip-btn span {
+    font-size: 22px !important;
+  }
+}
