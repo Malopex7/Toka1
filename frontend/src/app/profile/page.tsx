@@ -21,10 +21,12 @@ interface TargetUser {
   role: string;
   followers?: string[];
   following?: string[];
+  isBrandSafeVerified?: boolean;
+  verificationRequestStatus?: string;
 }
 
 function ProfileContent() {
-  const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout } = useAuth();
+  const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout, refreshProfile } = useAuth();
   const { showAlert, showConfirm, showPrompt } = useModalStore();
   const searchParams = useSearchParams();
   const targetUsername = searchParams?.get('username') || '';
@@ -39,6 +41,9 @@ function ProfileContent() {
 
   // Video playback overlay modal
   const [selectedVideo, setSelectedVideo] = useState<ProfileVideo | null>(null);
+
+  // Verification request state
+  const [verificationLoading, setVerificationLoading] = useState(false);
 
   const isOwnProfile = !targetUsername || (mongooseUser && targetUsername.toLowerCase() === mongooseUser.username.toLowerCase());
 
@@ -59,7 +64,9 @@ function ProfileContent() {
           username: mongooseUser.username,
           role: mongooseUser.role,
           followers: mongooseUser.followers,
-          following: mongooseUser.following
+          following: mongooseUser.following,
+          isBrandSafeVerified: mongooseUser.isBrandSafeVerified,
+          verificationRequestStatus: mongooseUser.verificationRequestStatus
         };
         setTimeout(() => {
           setTargetUser(ownUser);
@@ -165,6 +172,38 @@ function ProfileContent() {
       // Revert optimistic changes on failure
       setIsFollowing(!newFollowingState);
       setFollowerCount(prev => !newFollowingState ? prev + 1 : Math.max(0, prev - 1));
+    }
+  };
+
+  const handleRequestVerification = async () => {
+    if (!firebaseUser) return;
+    setVerificationLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/request-verification`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showAlert('Verification Requested', 'Your verification request was submitted successfully and is pending moderator approval.');
+        if (targetUser) {
+          setTargetUser({
+            ...targetUser,
+            verificationRequestStatus: 'pending'
+          });
+        }
+        await refreshProfile();
+      } else {
+        showAlert('Verification Request Failed', data.message || 'Verification request failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('Error', 'An error occurred while submitting your verification request.');
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -306,7 +345,12 @@ function ProfileContent() {
             {targetUser.username.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight text-cloud-white">@{targetUser.username}</h2>
+            <div className="flex items-center justify-center gap-1.5">
+              <h2 className="text-xl font-black tracking-tight text-cloud-white">@{targetUser.username}</h2>
+              {targetUser.isBrandSafeVerified && (
+                <span className="material-symbols-outlined text-fintech-mint text-[20px] select-none" title="Brand-Safe Verified Profile">verified</span>
+              )}
+            </div>
             {isOwnProfile && mongooseUser && (
               <p className="text-xs text-cloud-white/50 mt-0.5">{mongooseUser.email}</p>
             )}
@@ -330,6 +374,55 @@ function ProfileContent() {
             </button>
           )}
         </div>
+
+        {/* Brand Safety Verification Banner */}
+        {isOwnProfile && targetUser && (mongooseUser?.role === 'creator' || mongooseUser?.role === 'brand') && (
+          <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg select-none">
+            <div className="flex items-center gap-3">
+              <span className={`material-symbols-outlined text-[28px] ${
+                targetUser.isBrandSafeVerified 
+                  ? 'text-fintech-mint' 
+                  : targetUser.verificationRequestStatus === 'pending'
+                    ? 'text-yellow-400 animate-pulse'
+                    : targetUser.verificationRequestStatus === 'rejected'
+                      ? 'text-red-400'
+                      : 'text-cloud-white/40'
+              }`}>
+                {targetUser.isBrandSafeVerified 
+                  ? 'verified' 
+                  : targetUser.verificationRequestStatus === 'pending'
+                    ? 'schedule'
+                    : targetUser.verificationRequestStatus === 'rejected'
+                      ? 'error'
+                      : 'shield'
+              }
+              </span>
+              <div className="text-left">
+                <h4 className="text-xs font-bold text-cloud-white">Brand Safety Status</h4>
+                <p className="text-[10px] text-cloud-white/50 mt-0.5 leading-relaxed">
+                  {targetUser.isBrandSafeVerified 
+                    ? 'Your profile is brand-safe verified. You can now request & fund sponsorships.'
+                    : targetUser.verificationRequestStatus === 'pending'
+                      ? 'Safety review request is pending moderator approval.'
+                      : targetUser.verificationRequestStatus === 'rejected'
+                        ? 'Your request was declined. You can resubmit for review.'
+                        : 'Request verification to unlock direct sponsorships.'
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {!targetUser.isBrandSafeVerified && targetUser.verificationRequestStatus !== 'pending' && (
+              <button
+                disabled={verificationLoading}
+                onClick={handleRequestVerification}
+                className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/15 text-cloud-white text-[11px] font-bold rounded-xl active:scale-95 transition-all disabled:opacity-50 shrink-0"
+              >
+                {verificationLoading ? 'Submitting...' : 'Request Verify'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3">

@@ -23,6 +23,7 @@ export interface MongooseUser {
   role: 'creator' | 'brand' | 'moderator' | 'fan';
   walletBalance: number;
   isBrandSafeVerified: boolean;
+  verificationRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
   strikeCount: number;
   followers?: string[];
   following?: string[];
