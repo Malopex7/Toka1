@@ -8,7 +8,8 @@ import {
   uploadGridFSVideo, 
   streamGridFSVideo,
   toggleLikeVideo,
-  recordShare
+  recordShare,
+  deleteVideo
 } from '../controllers/videoController.js';
 import { optionalProtect, protect, requireModerator, restrictTo } from '../middlewares/auth.js';
 
@@ -37,5 +38,6 @@ router.post('/webhooks/ai-vetting', processAiVetting);
 router.patch('/videos/:id/vetting-status', protect, requireModerator, updateVettingStatus);
 router.post('/videos/:id/like', protect, toggleLikeVideo);
 router.post('/videos/:id/share', recordShare);
+router.delete('/videos/:id', protect, deleteVideo);
 
 export default router;

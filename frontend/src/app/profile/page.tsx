@@ -25,7 +25,7 @@ interface TargetUser {
 
 function ProfileContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout } = useAuth();
-  const { showAlert } = useModalStore();
+  const { showAlert, showConfirm } = useModalStore();
   const searchParams = useSearchParams();
   const targetUsername = searchParams?.get('username') || '';
 
@@ -166,6 +166,37 @@ function ProfileContent() {
       setIsFollowing(!newFollowingState);
       setFollowerCount(prev => !newFollowingState ? prev + 1 : Math.max(0, prev - 1));
     }
+  };
+
+  const handleDeleteVideo = (videoId: string) => {
+    if (!firebaseUser) return;
+
+    showConfirm(
+      'Delete Video',
+      'Are you sure you want to permanently delete this video? This action cannot be undone.',
+      async () => {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/${videoId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            setVideos(prev => prev.filter(v => v._id !== videoId));
+            showAlert('Success', 'Video deleted successfully.');
+          } else {
+            showAlert('Error', data.message || 'Failed to delete video.');
+          }
+        } catch (err: any) {
+          console.error('[Delete Video] Request failed:', err);
+          showAlert('Error', err.message || 'An error occurred while deleting the video.');
+        }
+      }
+    );
   };
 
   if (isLoading || fetchingProfile) {
@@ -331,6 +362,18 @@ function ProfileContent() {
                   onClick={() => setSelectedVideo(video)}
                   className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
                 >
+                  {isOwnProfile && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteVideo(video._id);
+                      }}
+                      className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10"
+                      title="Delete Video"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  )}
                   <video
                     src={video.videoUrl}
                     className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
@@ -362,6 +405,19 @@ function ProfileContent() {
       {selectedVideo && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
           <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+             {/* Delete Button for own video */}
+            {isOwnProfile && (
+              <button
+                onClick={() => {
+                  handleDeleteVideo(selectedVideo._id);
+                  setSelectedVideo(null);
+                }}
+                className="absolute top-4 left-4 z-50 w-8 h-8 rounded-full bg-black/50 hover:bg-red-500/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
+                title="Delete Video"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            )}
             {/* Close Button */}
             <button
               onClick={() => setSelectedVideo(null)}

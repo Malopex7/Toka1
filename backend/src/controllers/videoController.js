@@ -397,3 +397,50 @@ export const recordShare = async (req, res, next) => {
     }
   });
 };
+
+export const deleteVideo = async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const video = await Video.findById(id);
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    // Auth check: Must be the creator of the video OR a moderator/admin
+    if (video.creatorId.toString() !== userId.toString() && req.user.role !== 'moderator') {
+      throw new AppError('You do not have permission to delete this video.', 403);
+    }
+
+    // Cleanup GridFS if it's stored there
+    if (video.videoUrl && video.videoUrl.includes('/api/videos/stream/')) {
+      try {
+        const parts = video.videoUrl.split('/api/videos/stream/');
+        const filename = parts[parts.length - 1];
+        if (filename) {
+          const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
+          const files = await bucket.find({ filename }).toArray();
+          if (files && files.length > 0) {
+            await bucket.delete(files[0]._id);
+          }
+        }
+      } catch (err) {
+        console.error('[Delete Video] GridFS cleanup failed:', err);
+      }
+    }
+
+    // Delete comments on this video
+    await Comment.deleteMany({ videoId: id });
+
+    // Delete the video document
+    await Video.findByIdAndDelete(id);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Video and associated comments deleted successfully.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
