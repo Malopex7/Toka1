@@ -4,6 +4,7 @@ import { useFeedStore } from '@/store/useFeedStore';
 import { getPerformanceInstance } from '@/lib/firebase';
 import { trace } from 'firebase/performance';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
 import { Volume2, VolumeX } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
@@ -40,6 +41,7 @@ function formatNotificationTime(isoString?: string): string {
 }
 
 export default function VideoFeed() {
+  const router = useRouter();
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const { showAlert } = useModalStore();
@@ -271,6 +273,27 @@ export default function VideoFeed() {
     const videoId = notif.metadata?.videoId;
     const commentId = notif.metadata?.commentId;
     const type = notif.type;
+
+    // 1) Sponsorship-related notifications: navigate directly to /sponsorships
+    if (
+      type === 'sponsorship_requested' || 
+      type?.startsWith('sponsorship_') ||
+      notif.title?.toLowerCase().includes('sponsorship') ||
+      notif.body?.toLowerCase().includes('sponsorship')
+    ) {
+      router.push('/sponsorships');
+      return;
+    }
+
+    // 2) Verification-related notifications: navigate to /moderation (moderator) or /profile
+    if (type?.includes('verification') || notif.title?.toLowerCase().includes('verification')) {
+      if (mongooseUser?.role === 'moderator') {
+        router.push('/moderation');
+      } else {
+        router.push('/profile');
+      }
+      return;
+    }
 
     // Helper: scroll to a video in the feed by its ID
     const scrollToVideo = (targetVideoId: string): boolean => {

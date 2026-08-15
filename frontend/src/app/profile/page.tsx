@@ -404,6 +404,16 @@ function ProfileContent() {
                 {verificationLoading ? 'Submitting...' : 'Request Verify'}
               </button>
             )}
+
+            {targetUser.isBrandSafeVerified && isOwnProfile && (
+              <Link
+                href="/sponsorships"
+                className="w-full sm:w-auto px-4 py-2.5 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint text-[11px] font-bold rounded-xl active:scale-95 transition-all shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[15px]">handshake</span>
+                Manage Sponsorships
+              </Link>
+            )}
           </div>
         )}
 
