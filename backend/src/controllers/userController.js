@@ -423,11 +423,15 @@ export const updateSettings = async (req, res, next) => {
  * Update or remove profile avatar image URL.
  */
 export const updateAvatar = async (req, res, next) => {
-  const { avatarUrl } = req.body;
+  let { avatarUrl } = req.body;
 
   try {
     if (avatarUrl !== undefined && typeof avatarUrl !== 'string') {
       throw new AppError('Invalid avatarUrl format. Expected a string URL.', 400);
+    }
+
+    if (avatarUrl && avatarUrl.startsWith('http://') && !avatarUrl.includes('localhost')) {
+      avatarUrl = avatarUrl.replace('http://', 'https://');
     }
 
     const updatedUser = await User.findByIdAndUpdate(
