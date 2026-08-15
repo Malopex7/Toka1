@@ -25,11 +25,11 @@ function formatNotificationTime(isoString?: string): string {
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    
+
     return date.toLocaleDateString('en-ZA', {
       day: 'numeric',
       month: 'short'
@@ -418,10 +418,10 @@ export default function VideoFeed() {
       {/* Desktop Navigation Left Sidebar (Hidden on Mobile) */}
       <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
         <div className="mb-12 px-4 flex items-center select-none">
-          <img 
-            src="/images/logo/logo.png" 
-            alt="Toka" 
-            className="h-36 w-auto object-contain" 
+          <img
+            src="/images/logo/logo.png"
+            alt="Toka"
+            className="h-36 w-auto object-contain"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -544,7 +544,7 @@ export default function VideoFeed() {
                     >
                       <span className="material-symbols-outlined text-[18px]">notifications</span>
                     </button>
-                    
+
                     {/* Unread dot indicator */}
                     {notifications.some(n => !n.read) && !isNotificationsOpen && (
                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-toka-flare rounded-full border border-midnight-boma animate-pulse"></span>
@@ -555,7 +555,7 @@ export default function VideoFeed() {
                       <div className="fixed md:absolute top-16 md:top-10 left-4 right-4 md:left-auto md:right-0 w-auto md:w-80 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
                         <div className="flex justify-between items-center border-b border-white/5 pb-2">
                           <span className="text-xs font-bold text-cloud-white">Notifications</span>
-                          <button 
+                          <button
                             onClick={() => setIsNotificationsOpen(false)}
                             className="text-[10px] font-bold text-cloud-white/40 hover:text-cloud-white transition-colors"
                           >
@@ -573,16 +573,14 @@ export default function VideoFeed() {
                               <button
                                 key={notif.id}
                                 onClick={() => handleNotificationClick(notif)}
-                                className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${
-                                  !notif.read
+                                className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${!notif.read
                                     ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
                                     : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center justify-between gap-2 w-full">
-                                  <span className={`text-[10px] font-bold transition-colors ${
-                                    !notif.read ? 'text-cloud-white group-hover:text-toka-flare' : 'text-cloud-white/60 group-hover:text-cloud-white'
-                                  }`}>
+                                  <span className={`text-[10px] font-bold transition-colors ${!notif.read ? 'text-cloud-white group-hover:text-toka-flare' : 'text-cloud-white/60 group-hover:text-cloud-white'
+                                    }`}>
                                     {notif.title}
                                   </span>
                                   <div className="flex items-center gap-1.5 shrink-0">
@@ -592,9 +590,8 @@ export default function VideoFeed() {
                                     )}
                                   </div>
                                 </div>
-                                <p className={`text-[10px] leading-normal transition-colors ${
-                                  !notif.read ? 'text-cloud-white/90' : 'text-cloud-white/50'
-                                }`}>
+                                <p className={`text-[10px] leading-normal transition-colors ${!notif.read ? 'text-cloud-white/90' : 'text-cloud-white/50'
+                                  }`}>
                                   {notif.body}
                                 </p>
                               </button>
@@ -605,16 +602,23 @@ export default function VideoFeed() {
                     )}
                   </div>
                   <Link
-                    href="/deposit"
-                    className="flex flex-col items-end gap-0.5 max-w-[120px] cursor-pointer hover:opacity-85 transition-opacity"
+                    href="/profile"
+                    className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
                   >
-                    <div className="flex items-center gap-1 select-none max-w-full justify-end">
-                      <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
+                    <span className="text-[10px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-md text-lg font-black text-cloud-white relative">
+                      {mongooseUser?.username ? mongooseUser.username.charAt(0).toUpperCase() : ''}
                       {mongooseUser?.isBrandSafeVerified && (
-                        <span className="material-symbols-outlined text-fintech-mint text-[11px] shrink-0" title="Brand-Safe Verified Profile">verified</span>
+                        <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                          <span 
+                            className="material-symbols-outlined text-fintech-mint block select-none" 
+                            style={{ fontSize: '13px', width: '13px', height: '13px', lineHeight: '1' }}
+                          >
+                            verified
+                          </span>
+                        </div>
                       )}
                     </div>
-                    <span className="text-[9px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
                   </Link>
                 </>
               ) : (
