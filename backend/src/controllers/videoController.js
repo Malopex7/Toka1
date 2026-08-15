@@ -265,6 +265,10 @@ export const uploadGridFSVideo = async (req, res, next) => {
   const validTiers = ['fan_funded', 'brand_safe'];
   const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
 
+  if (!mongoose.connection.db) {
+    throw new AppError('Database not ready. Please try again in a moment.', 503);
+  }
+
   const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
 
   const fileExtension = req.file.originalname.split('.').pop() || 'mp4';

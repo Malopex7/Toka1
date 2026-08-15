@@ -29,11 +29,25 @@ const upload = multer({
   }
 });
 
+// Multer error handler — catches file size limit and type rejections
+const multerErrorHandler = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ status: 'fail', message: 'File too large. Maximum upload size is 50MB.' });
+    }
+    return res.status(400).json({ status: 'fail', message: `Upload error: ${err.message}` });
+  }
+  if (err && err.message === 'Only video files are allowed!') {
+    return res.status(400).json({ status: 'fail', message: err.message });
+  }
+  next(err);
+};
+
 const router = express.Router();
 
 router.get('/feed', optionalProtect, getFeed);
 router.post('/videos', protect, restrictTo('creator', 'brand'), uploadVideo);
-router.post('/videos/upload', protect, restrictTo('creator', 'brand'), upload.single('video'), uploadGridFSVideo);
+router.post('/videos/upload', protect, restrictTo('creator', 'brand'), upload.single('video'), multerErrorHandler, uploadGridFSVideo);
 router.get('/videos/stream/:filename', streamGridFSVideo);
 router.post('/webhooks/ai-vetting', processAiVetting);
 router.patch('/videos/:id/vetting-status', protect, requireModerator, updateVettingStatus);
