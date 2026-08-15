@@ -709,13 +709,39 @@ export default function VideoFeed() {
           </header>
 
           {/* Snapping Scroll Container */}
-          <div
-            ref={containerRef}
-            onScroll={handleScroll}
-            className="w-full h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar bg-black"
-            style={{ scrollBehavior: 'smooth' }}
-          >
-            {videos.map((video, index) => {
+          {videos.length === 0 && !isLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-black">
+              <span className="material-symbols-outlined text-[56px] text-cloud-white/20 mb-3">videocam_off</span>
+              <p className="text-sm font-bold text-cloud-white/80">No videos found</p>
+              <p className="text-xs text-cloud-white/40 mt-1 max-w-[240px]">
+                {creatorParam
+                  ? `@${creatorParam} hasn't posted any videos yet.`
+                  : 'No videos available on the feed.'}
+              </p>
+              {creatorParam ? (
+                <Link
+                  href={`/profile?username=${creatorParam}`}
+                  className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-cloud-white text-xs font-bold rounded-xl transition-all"
+                >
+                  Return to @{creatorParam}&apos;s Profile
+                </Link>
+              ) : (
+                <button
+                  onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
+                  className="mt-4 px-4 py-2 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white text-xs font-bold rounded-xl transition-all shadow-lg"
+                >
+                  Upload a Video
+                </button>
+              )}
+            </div>
+          ) : (
+            <div
+              ref={containerRef}
+              onScroll={handleScroll}
+              className="w-full h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar bg-black"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              {videos.map((video, index) => {
               const isActive = index === currentIndex;
               return (
                 <div
@@ -993,6 +1019,7 @@ export default function VideoFeed() {
               );
             })}
           </div>
+          )}
 
           {/* Mobile Bottom Navigation Bar */}
           <nav className="absolute bottom-0 left-0 w-full z-40 bg-midnight-boma/95 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-4">

@@ -74,51 +74,10 @@ interface FeedStore {
   fetchNotifications: () => Promise<void>;
 }
 
-const initialVideos: Video[] = [
-  {
-    id: "video1",
-    creatorId: "creator1",
-    creatorName: "@johndoe_creator",
-    creatorAvatar: "/images/creator-avatar.png",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-cooking-in-a-pot-close-up-4809-large.mp4",
-    title: "Cooking traditional Jollof rice today!",
-    description: "Cooking traditional Jollof rice today! Best recipe from West Africa. Let me know if you want the full ingredients list in the comments below! 👇🏾 #jollof #westafrica",
-    likes: 1200,
-    tips: 0,
-    shares: 245,
-    vettingStatus: "approved",
-    aiConfidenceScore: 98,
-    riskFlags: [],
-    isVerified: true,
-    audioName: "Original Sound - John Doe Afrobeat Mix",
-    audioArt: "/images/audio-album.jpg",
-    poster: "/images/jollof-cooking.png"
-  },
-  {
-    id: "video2",
-    creatorId: "creator2",
-    creatorName: "@dance_king",
-    creatorAvatar: "/images/moderator-avatar.png",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-woman-dancing-alone-in-a-room-with-neon-lights-40078-large.mp4",
-    title: "Late Night Chill",
-    description: "Just chilling here, mixing up some drinks for the weekend and dancing to this new track. Grab a drink and let's get into it! 🕺🏾 #neon #dance #chill",
-    likes: 850,
-    tips: 120,
-    shares: 98,
-    vettingStatus: "human_review",
-    aiConfidenceScore: 82,
-    riskFlags: ["Profanity (Medium)", "Alcohol (High)"],
-    isVerified: false,
-    audioName: "Original Sound - Dance King Mix",
-    audioArt: "/images/audio-album.jpg",
-    poster: "/images/dance-video.png"
-  }
-];
-
 export const useFeedStore = create<FeedStore>((set, get) => ({
-  videos: initialVideos,
+  videos: [],
   currentIndex: 0,
-  activeVideoId: initialVideos[0]?.id || '',
+  activeVideoId: '',
   isLoading: false,
   currentPage: 1,
   hasNextPage: true,
@@ -283,12 +242,11 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         }));
 
         if (mappedVideos.length === 0 && currentPage === 1) {
-          // If no videos are present in the MongoDB database, fall back to initial mock videos for UI testing
           set({
-            videos: initialVideos,
-            currentPage: 2,
+            videos: [],
+            currentPage: 1,
             hasNextPage: false,
-            activeVideoId: initialVideos[0]?.id || ''
+            activeVideoId: ''
           });
         } else {
           set({
@@ -301,13 +259,12 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
       }
     } catch (err) {
       console.error('Error fetching video feed page:', err);
-      // Fallback on total failure for first page load
       if (currentPage === 1 && videos.length === 0) {
         set({
-          videos: initialVideos,
-          currentPage: 2,
+          videos: [],
+          currentPage: 1,
           hasNextPage: false,
-          activeVideoId: initialVideos[0]?.id || ''
+          activeVideoId: ''
         });
       }
     } finally {
