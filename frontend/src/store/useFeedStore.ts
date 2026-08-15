@@ -236,7 +236,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           isVerified: video.creatorId?.isBrandSafeVerified || false,
           isLiked: video.isLiked || false,
           audioName: `Original Sound - ${video.creatorId?.username || 'Creator'}`,
-          audioArt: '',
+          audioArt: video.audioArt || '/images/audio-album.jpg',
           poster: video.thumbnailUrl || '',
           coAuthors: video.coAuthors || []
         }));

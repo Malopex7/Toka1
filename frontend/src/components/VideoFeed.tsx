@@ -919,10 +919,12 @@ export default function VideoFeed() {
                     </div>
 
                     {/* Vinyl Audio Disk */}
-                    <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg flex items-center justify-center">
-                      <div className="w-full h-full rounded-full bg-midnight-boma border border-white/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-toka-flare text-[14px]">music_note</span>
-                      </div>
+                    <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg">
+                      <img
+                        src={video.audioArt || '/images/audio-album.jpg'}
+                        alt="Audio art"
+                        className="w-full h-full rounded-full object-cover"
+                      />
                     </div>
                   </aside>
 
