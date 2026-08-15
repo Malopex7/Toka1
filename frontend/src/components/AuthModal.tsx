@@ -24,7 +24,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [role, setRole] = useState<'creator' | 'brand' | 'moderator' | 'fan'>('fan');
+  const [role, setRole] = useState<'creator' | 'brand' | 'moderator' | 'fan'>('creator');
   
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -137,7 +137,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               ? 'Complete your profile setup to join the Toka community.' 
               : activeTab === 'login' 
                 ? 'Sign in to tip your favorite creators and view personalized feeds.' 
-                : 'Join Toka as a creator, advertiser brand, moderator, or fan.'}
+                : 'Join Toka as a creator or advertiser brand.'}
           </p>
         </div>
 
@@ -205,8 +205,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-cloud-white/60 tracking-wider uppercase">Select Your Role</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['fan', 'creator', 'brand'] as const).map((r) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['creator', 'brand'] as const).map((r) => (
                     <button
                       key={r}
                       type="button"
@@ -218,7 +218,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       }`}
                     >
                       <span className="material-symbols-outlined text-[18px]">
-                        {r === 'fan' ? 'favorite' : r === 'creator' ? 'videocam' : 'storefront'}
+                        {r === 'creator' ? 'videocam' : 'storefront'}
                       </span>
                       {r}
                     </button>
@@ -285,8 +285,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-bold text-cloud-white/60 tracking-wider uppercase">Register As</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['fan', 'creator', 'brand'] as const).map((r) => (
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['creator', 'brand'] as const).map((r) => (
                         <button
                           key={r}
                           type="button"
@@ -298,7 +298,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                           }`}
                         >
                           <span className="material-symbols-outlined text-[16px]">
-                            {r === 'fan' ? 'favorite' : r === 'creator' ? 'videocam' : 'storefront'}
+                            {r === 'creator' ? 'videocam' : 'storefront'}
                           </span>
                           {r}
                         </button>
