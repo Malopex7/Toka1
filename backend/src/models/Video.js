@@ -91,6 +91,12 @@ const videoSchema = new mongoose.Schema({
     },
     respondedAt: {
       type: Date
+    },
+    splitPercentage: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 50
     }
   }]
 }, {

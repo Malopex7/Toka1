@@ -430,30 +430,105 @@ export const resolveSponsorship = async (req, res, next) => {
     if (action === 'release') {
       const payoutAmount = request.amount * 0.9; // 10% fee
 
-      // Credit Creator wallet
-      await User.findByIdAndUpdate(
-        request.creatorId,
-        { $inc: { walletBalance: payoutAmount } },
-        { session }
-      );
+      const video = await Video.findById(request.videoId);
+      const acceptedCoAuthor = video?.coAuthors?.find(ca => ca.status === 'accepted');
+      const isSplit = Boolean(acceptedCoAuthor && acceptedCoAuthor.user);
+      const coAuthorPct = isSplit ? (acceptedCoAuthor.splitPercentage || 50) : 0;
+      const authorPct = 100 - coAuthorPct;
 
-      // Update Transaction log to success
-      await Transaction.findOneAndUpdate(
-        { reference: `sponsorship:${request._id}` },
-        { status: 'success' },
-        { session }
-      );
+      if (isSplit) {
+        const coAuthorUserId = acceptedCoAuthor.user;
+        const coAuthorShare = Math.round(payoutAmount * (coAuthorPct / 100) * 100) / 100;
+        const primaryShare = Math.round((payoutAmount - coAuthorShare) * 100) / 100;
+        const splitRatioStr = `${authorPct}/${coAuthorPct}`;
+
+        // Credit primary author
+        await User.findByIdAndUpdate(
+          request.creatorId,
+          { $inc: { walletBalance: primaryShare } },
+          { session }
+        );
+
+        // Credit co-author
+        await User.findByIdAndUpdate(
+          coAuthorUserId,
+          { $inc: { walletBalance: coAuthorShare } },
+          { session }
+        );
+
+        // Update primary author transaction
+        await Transaction.findOneAndUpdate(
+          { reference: `sponsorship:${request._id}` },
+          {
+            status: 'success',
+            amount: primaryShare,
+            splitDetails: {
+              isSplit: true,
+              role: 'primary_author',
+              splitRatio: splitRatioStr,
+              partnerId: coAuthorUserId
+            }
+          },
+          { session }
+        );
+
+        // Create co-author transaction
+        await Transaction.create([{
+          senderId: request.brandId,
+          receiverId: coAuthorUserId,
+          videoId: request.videoId,
+          amount: coAuthorShare,
+          currency: 'ZAR',
+          status: 'success',
+          type: 'brand_sponsorship',
+          reference: `sponsorship:${request._id}:coauthor`,
+          splitDetails: {
+            isSplit: true,
+            role: 'co_author',
+            splitRatio: splitRatioStr,
+            partnerId: request.creatorId
+          }
+        }], { session });
+
+        sendFcmNotification(
+          request.creatorId,
+          'Dispute Resolved: Payout Released 🤝',
+          `Dispute resolved in your favor. R ${primaryShare.toFixed(2)} (${authorPct}% collab share) credited to your wallet.`,
+          { type: 'dispute_resolved_release', sponsorshipId: request._id.toString() }
+        ).catch(err => console.error('[FCM Release Alert Failed]', err));
+
+        sendFcmNotification(
+          coAuthorUserId,
+          'Dispute Resolved: Collab Payout Released 🤝',
+          `Dispute resolved. R ${coAuthorShare.toFixed(2)} (${coAuthorPct}% collab share) credited to your wallet.`,
+          { type: 'dispute_resolved_release', sponsorshipId: request._id.toString() }
+        ).catch(err => console.error('[FCM Release CoAuthor Alert Failed]', err));
+      } else {
+        // Credit Creator wallet
+        await User.findByIdAndUpdate(
+          request.creatorId,
+          { $inc: { walletBalance: payoutAmount } },
+          { session }
+        );
+
+        // Update Transaction log to success
+        await Transaction.findOneAndUpdate(
+          { reference: `sponsorship:${request._id}` },
+          { status: 'success' },
+          { session }
+        );
+
+        sendFcmNotification(
+          request.creatorId,
+          'Dispute Resolved: Payout Released',
+          `Moderators resolved the dispute in your favor. R ${payoutAmount.toFixed(2)} credited to wallet.`,
+          { type: 'dispute_resolved_release', sponsorshipId: request._id.toString() }
+        ).catch(err => console.error('[FCM Release Alert Failed]', err));
+      }
 
       request.status = 'completed';
       request.escrowStatus = 'released';
       await request.save({ session });
-
-      sendFcmNotification(
-        request.creatorId,
-        'Dispute Resolved: Payout Released',
-        `Moderators resolved the dispute in your favor. R ${payoutAmount.toFixed(2)} credited to wallet.`,
-        { type: 'dispute_resolved_release', sponsorshipId: request._id.toString() }
-      ).catch(err => console.error('[FCM Release Alert Failed]', err));
 
     } else if (action === 'refund') {
       // Refund Brand wallet
@@ -538,37 +613,118 @@ export const processEscrows = async (req, res, next) => {
     try {
       const payoutAmount = request.amount * 0.9; // 10% fee
 
-      // 1) Credit Creator wallet
-      await User.findByIdAndUpdate(
-        request.creatorId,
-        { $inc: { walletBalance: payoutAmount } },
-        { session }
-      );
+      const video = await Video.findById(request.videoId);
+      const acceptedCoAuthor = video?.coAuthors?.find(ca => ca.status === 'accepted');
+      const isSplit = Boolean(acceptedCoAuthor && acceptedCoAuthor.user);
+      const coAuthorPct = isSplit ? (acceptedCoAuthor.splitPercentage || 50) : 0;
+      const authorPct = 100 - coAuthorPct;
 
-      // 2) Update Transaction log to success
-      await Transaction.findOneAndUpdate(
-        { reference: `sponsorship:${request._id}` },
-        { status: 'success' },
-        { session }
-      );
+      if (isSplit) {
+        const coAuthorUserId = acceptedCoAuthor.user;
+        const coAuthorShare = Math.round(payoutAmount * (coAuthorPct / 100) * 100) / 100;
+        const primaryShare = Math.round((payoutAmount - coAuthorShare) * 100) / 100;
+        const splitRatioStr = `${authorPct}/${coAuthorPct}`;
+
+        // Credit primary author
+        await User.findByIdAndUpdate(
+          request.creatorId,
+          { $inc: { walletBalance: primaryShare } },
+          { session }
+        );
+
+        // Credit co-author
+        await User.findByIdAndUpdate(
+          coAuthorUserId,
+          { $inc: { walletBalance: coAuthorShare } },
+          { session }
+        );
+
+        // Update primary author transaction
+        await Transaction.findOneAndUpdate(
+          { reference: `sponsorship:${request._id}` },
+          {
+            status: 'success',
+            amount: primaryShare,
+            splitDetails: {
+              isSplit: true,
+              role: 'primary_author',
+              splitRatio: splitRatioStr,
+              partnerId: coAuthorUserId
+            }
+          },
+          { session }
+        );
+
+        // Create co-author transaction
+        await Transaction.create([{
+          senderId: request.brandId,
+          receiverId: coAuthorUserId,
+          videoId: request.videoId,
+          amount: coAuthorShare,
+          currency: 'ZAR',
+          status: 'success',
+          type: 'brand_sponsorship',
+          reference: `sponsorship:${request._id}:coauthor`,
+          splitDetails: {
+            isSplit: true,
+            role: 'co_author',
+            splitRatio: splitRatioStr,
+            partnerId: request.creatorId
+          }
+        }], { session });
+
+        sendFcmNotification(
+          request.creatorId,
+          'Sponsorship Escrow Released! 🤝',
+          `Sponsorship funds of R ${primaryShare.toFixed(2)} (${authorPct}% collab share) released to your wallet!`,
+          {
+            type: 'escrow_released',
+            sponsorshipId: request._id.toString(),
+            amount: String(primaryShare)
+          }
+        ).catch(err => console.error('[FCM Escrow Release Alert Failed]', err));
+
+        sendFcmNotification(
+          coAuthorUserId,
+          'Collab Sponsorship Escrow Released! 🤝',
+          `Co-Author sponsorship funds of R ${coAuthorShare.toFixed(2)} (${coAuthorPct}% collab share) released to your wallet!`,
+          {
+            type: 'escrow_released',
+            sponsorshipId: request._id.toString(),
+            amount: String(coAuthorShare)
+          }
+        ).catch(err => console.error('[FCM Escrow Release CoAuthor Failed]', err));
+      } else {
+        // 1) Credit Creator wallet
+        await User.findByIdAndUpdate(
+          request.creatorId,
+          { $inc: { walletBalance: payoutAmount } },
+          { session }
+        );
+
+        // 2) Update Transaction log to success
+        await Transaction.findOneAndUpdate(
+          { reference: `sponsorship:${request._id}` },
+          { status: 'success' },
+          { session }
+        );
+
+        sendFcmNotification(
+          request.creatorId,
+          'Sponsorship Escrow Released!',
+          `Sponsorship funds of R ${payoutAmount.toFixed(2)} (minus platform fee) have been released to your wallet!`,
+          {
+            type: 'escrow_released',
+            sponsorshipId: request._id.toString(),
+            amount: String(payoutAmount)
+          }
+        ).catch(err => console.error('[FCM Escrow Release Alert Failed]', err));
+      }
 
       // 3) Update request statuses
       request.status = 'completed';
       request.escrowStatus = 'released';
       await request.save({ session });
-
-      await session.commitTransaction();
-
-      sendFcmNotification(
-        request.creatorId,
-        'Sponsorship Escrow Released!',
-        `Sponsorship funds of R ${payoutAmount.toFixed(2)} (minus platform fee) have been released to your wallet!`,
-        {
-          type: 'escrow_released',
-          sponsorshipId: request._id.toString(),
-          amount: String(payoutAmount)
-        }
-      ).catch(err => console.error('[FCM Escrow Release Alert Failed]', err));
 
       processedCount++;
     } catch (err) {

@@ -44,6 +44,23 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
+  },
+  splitDetails: {
+    isSplit: {
+      type: Boolean,
+      default: false
+    },
+    role: {
+      type: String,
+      enum: ['primary_author', 'co_author']
+    },
+    splitRatio: {
+      type: String
+    },
+    partnerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
   }
 }, {
   timestamps: true

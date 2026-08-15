@@ -13,6 +13,12 @@ interface Transaction {
   senderId?: { username: string };
   receiverId?: { username: string };
   videoId?: { title: string };
+  splitDetails?: {
+    isSplit: boolean;
+    role: 'primary_author' | 'co_author';
+    splitRatio: string;
+    partnerId?: { username: string };
+  };
 }
 
 interface CoAuthorInvite {
@@ -27,6 +33,11 @@ interface CoAuthorInvite {
     role: string;
     isBrandSafeVerified?: boolean;
   };
+  coAuthors?: Array<{
+    user: any;
+    status: string;
+    splitPercentage?: number;
+  }>;
 }
 
 interface InboxData {
@@ -232,55 +243,61 @@ export default function InboxPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {collabInvites.map((invite) => (
-                <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
-                        {invite.creatorId?.username?.charAt(0).toUpperCase()}
-                        {invite.creatorId?.isBrandSafeVerified && (
-                          <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
-                            <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+              {collabInvites.map((invite) => {
+                const splitPct = invite.coAuthors?.[0]?.splitPercentage || 50;
+                return (
+                  <div key={invite._id} className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-white/20 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 relative">
+                          {invite.creatorId?.username?.charAt(0).toUpperCase()}
+                          {invite.creatorId?.isBrandSafeVerified && (
+                            <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-[1px] flex items-center justify-center">
+                              <span className="material-symbols-outlined text-fintech-mint text-[11px]">verified</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link href={`/profile?username=${invite.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
+                              @{invite.creatorId?.username}
+                            </Link>
+                            <span className="text-[9px] bg-toka-flare/20 text-toka-flare px-1.5 py-0.2 rounded font-bold uppercase">
+                              Co-Author Invite
+                            </span>
+                            <span className="text-[9px] bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                              💰 {100 - splitPct}/{splitPct} Split
+                            </span>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          <Link href={`/profile?username=${invite.creatorId?.username}`} className="text-sm font-bold text-cloud-white hover:underline">
-                            @{invite.creatorId?.username}
-                          </Link>
-                          <span className="text-[9px] bg-toka-flare/20 text-toka-flare px-1.5 py-0.2 rounded font-bold uppercase">
-                            Co-Author Invite
+                          <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
+                            &quot;{invite.title}&quot;
+                          </p>
+                          <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
+                            {formatDate(invite.createdAt)}
                           </span>
                         </div>
-                        <p className="text-xs text-cloud-white/80 mt-0.5 font-medium line-clamp-1">
-                          &quot;{invite.title}&quot;
-                        </p>
-                        <span className="text-[10px] text-cloud-white/30 font-mono mt-0.5">
-                          {formatDate(invite.createdAt)}
-                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                    <button
-                      disabled={respondingId === invite._id}
-                      onClick={() => handleRespondCollab(invite._id, 'accept')}
-                      className="flex-1 py-2 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      {respondingId === invite._id ? 'Processing...' : 'Accept Collaboration'}
-                    </button>
-                    <button
-                      disabled={respondingId === invite._id}
-                      onClick={() => handleRespondCollab(invite._id, 'decline')}
-                      className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      Decline
-                    </button>
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                      <button
+                        disabled={respondingId === invite._id}
+                        onClick={() => handleRespondCollab(invite._id, 'accept')}
+                        className="flex-1 py-2 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {respondingId === invite._id ? 'Processing...' : 'Accept Collaboration'}
+                      </button>
+                      <button
+                        disabled={respondingId === invite._id}
+                        onClick={() => handleRespondCollab(invite._id, 'decline')}
+                        className="px-4 py-2 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        Decline
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         ) : activeList.length === 0 ? (
@@ -335,9 +352,16 @@ export default function InboxPage() {
                     <span className={`material-symbols-outlined text-[20px] ${iconColor}`}>{icon}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-cloud-white truncate">
-                      {isReceived ? `@${counterparty} tipped you` : `Tip to @${counterparty}`}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-cloud-white truncate">
+                        {isReceived ? `@${counterparty} tipped you` : `Tip to @${counterparty}`}
+                      </p>
+                      {tx.splitDetails?.isSplit && (
+                        <span className="text-[9px] font-mono bg-toka-flare/15 text-toka-flare border border-toka-flare/30 px-1.5 py-0.2 rounded font-bold">
+                          🤝 Collab ({tx.splitDetails.splitRatio})
+                        </span>
+                      )}
+                    </div>
                     {tx.videoId?.title && (
                       <p className="text-xs text-cloud-white/50 truncate mt-0.5">on &quot;{tx.videoId.title}&quot;</p>
                     )}

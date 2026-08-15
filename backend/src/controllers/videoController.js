@@ -28,7 +28,7 @@ export const extractMentions = async (text, currentUserId) => {
  * Creates the Video document and immediately fires the AI pipeline in background.
  */
 export const uploadVideo = async (req, res, next) => {
-  const { videoUrl, title, tier, coAuthorId } = req.body;
+  const { videoUrl, title, tier, coAuthorId, coAuthorSplitPercentage } = req.body;
 
   if (!videoUrl || !title) {
     throw new AppError('Please provide videoUrl and title.', 400);
@@ -38,6 +38,7 @@ export const uploadVideo = async (req, res, next) => {
   const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
 
   let initialCoAuthors = [];
+  let splitPct = 50;
   if (coAuthorId) {
     const isMutual = (req.user.following || []).some(id => id.toString() === coAuthorId.toString());
     const targetUser = await User.findById(coAuthorId);
@@ -45,9 +46,11 @@ export const uploadVideo = async (req, res, next) => {
     if (!isMutual || !targetFollowsMe) {
       throw new AppError('You can only invite mutual followers as co-authors.', 400);
     }
+    splitPct = Math.min(Math.max(parseInt(coAuthorSplitPercentage || 50, 10), 1), 99);
     initialCoAuthors.push({
       user: coAuthorId,
       status: 'pending',
+      splitPercentage: splitPct,
       invitedAt: new Date()
     });
   }
@@ -74,11 +77,12 @@ export const uploadVideo = async (req, res, next) => {
     sendFcmNotification(
       coAuthorId,
       'Co-Author Invitation! 🤝',
-      `@${req.user.username} invited you to be a co-author on their video: "${title}"`,
+      `@${req.user.username} invited you to be a co-author (${100 - splitPct}/${splitPct} split) on: "${title}"`,
       {
         type: 'coauthor_invite',
         videoId: video._id.toString(),
-        creatorName: req.user.username
+        creatorName: req.user.username,
+        splitPercentage: String(splitPct)
       }
     ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
   }
@@ -295,7 +299,7 @@ export const updateVettingStatus = async (req, res, next) => {
  * creator/brand upload a new video directly to MongoDB GridFS.
  */
 export const uploadGridFSVideo = async (req, res, next) => {
-  const { title, tier, brandId, sponsorshipAmount, sponsorshipTerms, coAuthorId } = req.body;
+  const { title, tier, brandId, sponsorshipAmount, sponsorshipTerms, coAuthorId, coAuthorSplitPercentage } = req.body;
 
   if (!req.file) {
     throw new AppError('Please upload a video file.', 400);
@@ -305,6 +309,7 @@ export const uploadGridFSVideo = async (req, res, next) => {
   }
 
   let initialCoAuthors = [];
+  let splitPct = 50;
   if (coAuthorId) {
     const isMutual = (req.user.following || []).some(id => id.toString() === coAuthorId.toString());
     const targetUser = await User.findById(coAuthorId);
@@ -312,9 +317,11 @@ export const uploadGridFSVideo = async (req, res, next) => {
     if (!isMutual || !targetFollowsMe) {
       throw new AppError('You can only invite mutual followers as co-authors.', 400);
     }
+    splitPct = Math.min(Math.max(parseInt(coAuthorSplitPercentage || 50, 10), 1), 99);
     initialCoAuthors.push({
       user: coAuthorId,
       status: 'pending',
+      splitPercentage: splitPct,
       invitedAt: new Date()
     });
   }
@@ -415,11 +422,12 @@ export const uploadGridFSVideo = async (req, res, next) => {
       sendFcmNotification(
         coAuthorId,
         'Co-Author Invitation! 🤝',
-        `@${req.user.username} invited you to be a co-author on their video: "${title}"`,
+        `@${req.user.username} invited you to be a co-author (${100 - splitPct}/${splitPct} split) on: "${title}"`,
         {
           type: 'coauthor_invite',
           videoId: video[0]._id.toString(),
-          creatorName: req.user.username
+          creatorName: req.user.username,
+          splitPercentage: String(splitPct)
         }
       ).catch(err => console.error('[FCM Coauthor Invite Failed]', err));
     }

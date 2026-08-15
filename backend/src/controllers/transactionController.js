@@ -110,50 +110,142 @@ export const tipCreator = async (req, res, next) => {
       throw new AppError('Insufficient wallet balance to perform this tip.', 400);
     }
 
-    // Credit to receiver's wallet
-    const receiver = await User.findByIdAndUpdate(
-      receiverId,
-      { $inc: { walletBalance: tipAmount } },
-      { session, new: true }
-    );
+    const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted');
+    const isSplit = Boolean(acceptedCoAuthor && acceptedCoAuthor.user);
+    const coAuthorPct = isSplit ? (acceptedCoAuthor.splitPercentage || 50) : 0;
+    const authorPct = 100 - coAuthorPct;
 
-    if (!receiver) {
-      throw new AppError('Receiver user not found.', 404);
-    }
+    let createdTransactions = [];
 
-    // 4) Record transaction log
-    const transaction = await Transaction.create([{
-      senderId: req.user._id,
-      receiverId,
-      videoId,
-      amount: tipAmount,
-      currency: 'ZAR',
-      status: 'success',
-      type: 'tip'
-    }], { session });
+    if (isSplit) {
+      const coAuthorUserId = acceptedCoAuthor.user;
+      const coAuthorShare = Math.round(tipAmount * (coAuthorPct / 100) * 100) / 100;
+      const primaryShare = Math.round((tipAmount - coAuthorShare) * 100) / 100;
+      const splitRatioStr = `${authorPct}/${coAuthorPct}`;
 
-    // Commit Mongoose transaction
-    await session.commitTransaction();
+      // Credit primary author
+      await User.findByIdAndUpdate(
+        video.creatorId,
+        { $inc: { walletBalance: primaryShare } },
+        { session }
+      );
 
-    // Trigger FCM Notification asynchronously (non-blocking)
-    sendFcmNotification(
-      receiverId,
-      `R ${tipAmount.toFixed(2)} Tip Received!`,
-      `@${req.user.username} tipped you R ${tipAmount.toFixed(2)} on your video "${video.title}"!`,
-      {
-        type: 'tip_received',
-        videoId: videoId.toString(),
-        amount: String(tipAmount),
-        senderName: req.user.username,
-        videoTitle: video.title
+      // Credit co-author
+      await User.findByIdAndUpdate(
+        coAuthorUserId,
+        { $inc: { walletBalance: coAuthorShare } },
+        { session }
+      );
+
+      // Create dual transaction records
+      const txs = await Transaction.create([
+        {
+          senderId: req.user._id,
+          receiverId: video.creatorId,
+          videoId,
+          amount: primaryShare,
+          currency: 'ZAR',
+          status: 'success',
+          type: 'tip',
+          splitDetails: {
+            isSplit: true,
+            role: 'primary_author',
+            splitRatio: splitRatioStr,
+            partnerId: coAuthorUserId
+          }
+        },
+        {
+          senderId: req.user._id,
+          receiverId: coAuthorUserId,
+          videoId,
+          amount: coAuthorShare,
+          currency: 'ZAR',
+          status: 'success',
+          type: 'tip',
+          splitDetails: {
+            isSplit: true,
+            role: 'co_author',
+            splitRatio: splitRatioStr,
+            partnerId: video.creatorId
+          }
+        }
+      ], { session });
+
+      createdTransactions = txs;
+
+      await session.commitTransaction();
+
+      // Send notifications to both
+      sendFcmNotification(
+        video.creatorId,
+        `R ${primaryShare.toFixed(2)} Tip Received! 🤝`,
+        `@${req.user.username} tipped R ${tipAmount.toFixed(2)} on your collaborative video "${video.title}" (Your share: R ${primaryShare.toFixed(2)})!`,
+        {
+          type: 'tip_received',
+          videoId: videoId.toString(),
+          amount: String(primaryShare),
+          senderName: req.user.username,
+          videoTitle: video.title
+        }
+      ).catch(err => console.error('[FCM Tip Primary Author Failed]', err));
+
+      sendFcmNotification(
+        coAuthorUserId,
+        `R ${coAuthorShare.toFixed(2)} Collab Tip Received! 🤝`,
+        `@${req.user.username} tipped R ${tipAmount.toFixed(2)} on collaborative video "${video.title}" (Your share: R ${coAuthorShare.toFixed(2)})!`,
+        {
+          type: 'tip_received',
+          videoId: videoId.toString(),
+          amount: String(coAuthorShare),
+          senderName: req.user.username,
+          videoTitle: video.title
+        }
+      ).catch(err => console.error('[FCM Tip Co-Author Failed]', err));
+    } else {
+      // Standard single creator payout
+      const receiver = await User.findByIdAndUpdate(
+        receiverId,
+        { $inc: { walletBalance: tipAmount } },
+        { session, new: true }
+      );
+
+      if (!receiver) {
+        throw new AppError('Receiver user not found.', 404);
       }
-    ).catch(err => console.error('[FCM Tip Trigger Failed]', err));
+
+      const tx = await Transaction.create([{
+        senderId: req.user._id,
+        receiverId,
+        videoId,
+        amount: tipAmount,
+        currency: 'ZAR',
+        status: 'success',
+        type: 'tip'
+      }], { session });
+
+      createdTransactions = tx;
+
+      await session.commitTransaction();
+
+      sendFcmNotification(
+        receiverId,
+        `R ${tipAmount.toFixed(2)} Tip Received!`,
+        `@${req.user.username} tipped you R ${tipAmount.toFixed(2)} on your video "${video.title}"!`,
+        {
+          type: 'tip_received',
+          videoId: videoId.toString(),
+          amount: String(tipAmount),
+          senderName: req.user.username,
+          videoTitle: video.title
+        }
+      ).catch(err => console.error('[FCM Tip Trigger Failed]', err));
+    }
 
     res.status(201).json({
       status: 'success',
       message: 'Creator tipped successfully.',
       data: {
-        transaction: transaction[0]
+        transaction: createdTransactions[0]
       }
     });
 
@@ -182,6 +274,7 @@ export const getMyTransactions = async (req, res, next) => {
     Transaction.find({ senderId: req.user._id, ...tipFilter })
       .populate('receiverId', 'username')
       .populate('videoId', 'title')
+      .populate('splitDetails.partnerId', 'username')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -191,6 +284,7 @@ export const getMyTransactions = async (req, res, next) => {
     })
       .populate('senderId', 'username')
       .populate('videoId', 'title')
+      .populate('splitDetails.partnerId', 'username')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),

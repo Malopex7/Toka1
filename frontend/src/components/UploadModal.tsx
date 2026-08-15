@@ -28,6 +28,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [isCoAuthorEnabled, setIsCoAuthorEnabled] = useState(false);
   const [selectedCoAuthor, setSelectedCoAuthor] = useState<{ _id: string; username: string; isBrandSafeVerified?: boolean } | null>(null);
   const [coAuthorQuery, setCoAuthorQuery] = useState('');
+  const [coAuthorSplitPercentage, setCoAuthorSplitPercentage] = useState<number>(50);
   const [mutualFollowers, setMutualFollowers] = useState<{ _id: string; username: string; role: string; isBrandSafeVerified: boolean }[]>([]);
   const [isSearchingMutual, setIsSearchingMutual] = useState(false);
 
@@ -179,6 +180,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
       if (isCoAuthorEnabled && selectedCoAuthor) {
         formData.append('coAuthorId', selectedCoAuthor._id);
+        formData.append('coAuthorSplitPercentage', String(coAuthorSplitPercentage));
       }
 
       const token = await firebaseUser.getIdToken();
@@ -490,25 +492,59 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                     </p>
 
                     {selectedCoAuthor ? (
-                      <div className="flex items-center justify-between bg-toka-flare/10 border border-toka-flare/30 rounded-xl p-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white">
-                            {selectedCoAuthor.username.charAt(0).toUpperCase()}
+                      <div className="flex flex-col gap-2.5">
+                        <div className="flex items-center justify-between bg-toka-flare/10 border border-toka-flare/30 rounded-xl p-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white">
+                              {selectedCoAuthor.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-bold text-cloud-white">@{selectedCoAuthor.username}</span>
+                              {selectedCoAuthor.isBrandSafeVerified && (
+                                <span className="material-symbols-outlined text-fintech-mint text-[14px]">verified</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs font-bold text-cloud-white">@{selectedCoAuthor.username}</span>
-                            {selectedCoAuthor.isBrandSafeVerified && (
-                              <span className="material-symbols-outlined text-fintech-mint text-[14px]">verified</span>
-                            )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCoAuthor(null)}
+                            className="text-[10px] font-bold text-cloud-white/40 hover:text-red-400 px-2 py-1 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        {/* Revenue Split Ratio Selector */}
+                        <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-cloud-white/70 uppercase tracking-wider">Revenue &amp; Tip Split</span>
+                            <span className="text-xs font-mono font-black text-fintech-mint">
+                              You: {100 - coAuthorSplitPercentage}% / @{selectedCoAuthor.username}: {coAuthorSplitPercentage}%
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-1.5 mt-1">
+                            {[
+                              { label: '50/50', pct: 50 },
+                              { label: '60/40', pct: 40 },
+                              { label: '70/30', pct: 30 },
+                              { label: '80/20', pct: 20 }
+                            ].map((preset) => (
+                              <button
+                                key={preset.pct}
+                                type="button"
+                                onClick={() => setCoAuthorSplitPercentage(preset.pct)}
+                                className={`py-1.5 rounded-lg text-[10px] font-bold font-mono transition-all ${
+                                  coAuthorSplitPercentage === preset.pct
+                                    ? 'bg-toka-flare text-cloud-white shadow-sm'
+                                    : 'bg-white/5 hover:bg-white/10 text-cloud-white/60'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCoAuthor(null)}
-                          className="text-[10px] font-bold text-cloud-white/40 hover:text-red-400 px-2 py-1 transition-colors"
-                        >
-                          Remove
-                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
