@@ -306,3 +306,53 @@ export const getUserDirectory = async (req, res, next) => {
     data: { users }
   });
 };
+
+/**
+ * Search users for mentions autocomplete with smart ranking:
+ * 1. Followed creators first
+ * 2. Brand-safe verified creators & brands next
+ * 3. Other matching users
+ */
+export const searchUsers = async (req, res, next) => {
+  const q = (req.query.q || '').trim();
+
+  // Exclude requester from results
+  const baseFilter = req.user ? { _id: { $ne: req.user._id } } : {};
+  if (q) {
+    baseFilter.username = { $regex: q.replace(/^@/, ''), $options: 'i' };
+  }
+
+  const matchingUsers = await User.find(baseFilter)
+    .select('username role isBrandSafeVerified')
+    .limit(20)
+    .lean();
+
+  const followingSet = new Set((req.user?.following || []).map(id => id.toString()));
+  const cleanQ = q.replace(/^@/, '').toLowerCase();
+
+  // Smart ranking score:
+  // - Following: +100
+  // - Verified: +50
+  // - Username starts with query: +25
+  const rankedUsers = matchingUsers.sort((a, b) => {
+    let scoreA = 0;
+    let scoreB = 0;
+
+    if (followingSet.has(a._id.toString())) scoreA += 100;
+    if (followingSet.has(b._id.toString())) scoreB += 100;
+
+    if (a.isBrandSafeVerified) scoreA += 50;
+    if (b.isBrandSafeVerified) scoreB += 50;
+
+    if (cleanQ && a.username.toLowerCase().startsWith(cleanQ)) scoreA += 25;
+    if (cleanQ && b.username.toLowerCase().startsWith(cleanQ)) scoreB += 25;
+
+    return scoreB - scoreA;
+  }).slice(0, 10);
+
+  res.status(200).json({
+    status: 'success',
+    results: rankedUsers.length,
+    data: { users: rankedUsers }
+  });
+};

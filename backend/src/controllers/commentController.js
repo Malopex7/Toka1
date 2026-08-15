@@ -2,6 +2,7 @@ import Comment from '../models/Comment.js';
 import Video from '../models/Video.js';
 import { AppError } from '../middlewares/error.js';
 import { sendFcmNotification } from '../services/notificationService.js';
+import { extractMentions } from './videoController.js';
 
 /**
  * Fetch all comments for a specific video (structured as parent comments with populated replies)
@@ -101,15 +102,35 @@ export const addComment = async (req, res, next) => {
       }
     }
 
+    const mentionedUsers = await extractMentions(text, userId);
+
     const comment = await Comment.create({
       videoId,
       userId,
       text: text.trim(),
-      parentId: parentId || null
+      parentId: parentId || null,
+      mentions: mentionedUsers.map(u => u._id)
     });
 
     // Populate user info for immediate rendering
     await comment.populate('userId', 'username role');
+
+    // Notify mentioned users (excluding creator/parent if already notified)
+    for (const mentionedUser of mentionedUsers) {
+      if (mentionedUser._id.toString() !== video.creatorId.toString()) {
+        sendFcmNotification(
+          mentionedUser._id,
+          'You were mentioned in a comment!',
+          `@${req.user.username} mentioned you: "${text.substring(0, 40)}${text.length > 40 ? '...' : ''}"`,
+          {
+            type: 'comment_mention',
+            videoId: videoId.toString(),
+            commentId: comment._id.toString(),
+            creatorName: req.user.username
+          }
+        ).catch(err => console.error('[FCM Comment Mention Failed]', err));
+      }
+    }
 
     // Notify the video creator (if it's not the creator themselves commenting)
     if (video.creatorId.toString() !== userId.toString()) {

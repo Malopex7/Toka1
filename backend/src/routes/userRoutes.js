@@ -10,12 +10,14 @@ import {
   getVerificationRequests,
   updateVerificationStatus,
   getVerifiedBrands,
-  getUserDirectory
+  getUserDirectory,
+  searchUsers
 } from '../controllers/userController.js';
 import { protect, requireModerator } from '../middlewares/auth.js';
 
 const router = express.Router();
 
+router.get('/users/search', protect, searchUsers);
 router.post('/users/sync', syncUser);
 router.get('/users/me', protect, getMe);
 router.post('/users/fcm-token', protect, saveFcmToken);

@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
 import { useModalStore } from '@/store/useModalStore';
 import Link from 'next/link';
+import MentionInput from './MentionInput';
 
 interface CommentUser {
   _id: string;
@@ -562,15 +563,18 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
         className="flex items-center gap-2 bg-black/25 border border-toka-flare/30 rounded-xl p-1.5 mt-1.5 focus-within:border-toka-flare transition-all"
         onClick={(e) => e.stopPropagation()}
       >
-        <input
-          type="text"
-          autoFocus
-          placeholder={`Reply to @${targetUsername}...`}
-          value={inlineInputText}
-          onChange={(e) => setInlineInputText(e.target.value)}
-          maxLength={500}
-          className="flex-1 bg-transparent px-2 py-1.5 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/30"
-        />
+        <div className="flex-1">
+          <MentionInput
+            as="input"
+            autoFocus
+            placeholder={`Reply to @${targetUsername}...`}
+            value={inlineInputText}
+            onChange={(val) => setInlineInputText(val)}
+            maxLength={500}
+            className="w-full bg-transparent px-2 py-1.5 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/30"
+            popoverPlacement="top"
+          />
+        </div>
         <button
           type="button"
           onClick={handleCancelReply}
@@ -894,14 +898,17 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
         <footer className="p-4 bg-shaded-canopy/60 border-t border-white/5">
           {isAuthenticated ? (
             <form onSubmit={handleSubmitComment} className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-2xl p-1.5 focus-within:border-toka-flare transition-all">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                maxLength={500}
-                className="flex-1 bg-transparent px-3 py-2 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/40"
-              />
+              <div className="flex-1">
+                <MentionInput
+                  as="input"
+                  placeholder="Add a comment... (type @ to tag users)"
+                  value={inputText}
+                  onChange={(val) => setInputText(val)}
+                  maxLength={500}
+                  className="w-full bg-transparent px-3 py-2 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/40"
+                  popoverPlacement="top"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={submitting || !inputText.trim()}

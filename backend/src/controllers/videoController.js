@@ -8,6 +8,21 @@ import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
 
+// Helper: Extract @usernames from text and find matching user IDs
+export const extractMentions = async (text, currentUserId) => {
+  if (!text) return [];
+  const mentionMatches = text.match(/@([a-zA-Z0-9_]+)/g);
+  if (!mentionMatches || mentionMatches.length === 0) return [];
+
+  const usernames = Array.from(new Set(mentionMatches.map(m => m.slice(1).toLowerCase())));
+  const users = await User.find({
+    username: { $in: usernames.map(u => new RegExp(`^${u}$`, 'i')) },
+    _id: { $ne: currentUserId }
+  }).select('_id username');
+
+  return users;
+};
+
 /**
  * POST /api/videos — Creator/Brand upload a new video.
  * Creates the Video document and immediately fires the AI pipeline in background.
@@ -22,6 +37,8 @@ export const uploadVideo = async (req, res, next) => {
   const validTiers = ['fan_funded', 'brand_safe'];
   const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
 
+  const mentionedUsers = await extractMentions(title, req.user._id);
+
   // Create the video document (starts as 'processing')
   const video = await Video.create({
     creatorId: req.user._id,
@@ -29,11 +46,26 @@ export const uploadVideo = async (req, res, next) => {
     title,
     tier: resolvedTier,
     vettingStatus: 'processing',
-    aiPipelineStatus: 'pending'
+    aiPipelineStatus: 'pending',
+    mentions: mentionedUsers.map(u => u._id)
   });
 
   // Fire AI pipeline asynchronously — do NOT await (non-blocking)
   runAiPipeline(video._id.toString(), videoUrl);
+
+  // Send notifications to mentioned users
+  for (const mentionedUser of mentionedUsers) {
+    sendFcmNotification(
+      mentionedUser._id,
+      'You were tagged in a video!',
+      `@${req.user.username} mentioned you: "${title}"`,
+      {
+        type: 'video_mention',
+        videoId: video._id.toString(),
+        creatorName: req.user.username
+      }
+    ).catch(err => console.error('[FCM Video Mention Notification Failed]', err));
+  }
 
   res.status(201).json({
     status: 'success',
@@ -291,6 +323,8 @@ export const uploadGridFSVideo = async (req, res, next) => {
   session.startTransaction();
 
   try {
+    const mentionedUsers = await extractMentions(title, req.user._id);
+
     const videoData = {
       creatorId: req.user._id,
       videoUrl,
@@ -298,7 +332,8 @@ export const uploadGridFSVideo = async (req, res, next) => {
       tier: resolvedTier,
       vettingStatus: 'processing',
       aiPipelineStatus: 'pending',
-      visibility: hasSponsorship ? 'private' : 'public'
+      visibility: hasSponsorship ? 'private' : 'public',
+      mentions: mentionedUsers.map(u => u._id)
     };
 
     if (hasSponsorship) {
@@ -327,6 +362,20 @@ export const uploadGridFSVideo = async (req, res, next) => {
     await session.commitTransaction();
 
     runAiPipeline(video[0]._id.toString(), videoUrl);
+
+    // Send notifications to mentioned users
+    for (const mentionedUser of mentionedUsers) {
+      sendFcmNotification(
+        mentionedUser._id,
+        'You were tagged in a video!',
+        `@${req.user.username} mentioned you: "${title}"`,
+        {
+          type: 'video_mention',
+          videoId: video[0]._id.toString(),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Video Mention Notification Failed]', err));
+    }
 
     if (hasSponsorship) {
       sendFcmNotification(

@@ -12,6 +12,7 @@ import TipModal from './TipModal';
 import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
 import CommentsModal from './CommentsModal';
+import MentionText from './MentionText';
 import { useAuth } from '@/context/AuthContext';
 
 function generateHeartId(prefix = 'heart'): string {
@@ -323,7 +324,7 @@ export default function VideoFeed() {
     const foundInFeed = scrollToVideo(videoId);
 
     // For comment-related types, open the comments modal
-    if (type === 'new_comment' || type === 'comment_reply' || type === 'comment_like') {
+    if (type === 'new_comment' || type === 'comment_reply' || type === 'comment_like' || type === 'comment_mention') {
       openComments(videoId, commentId);
     }
     // For video_like, tip_received, vetting_update — scrolling to the video is sufficient
@@ -887,7 +888,7 @@ export default function VideoFeed() {
 
                     {/* Description Caption */}
                     <p className="text-sm text-cloud-white/90 drop-shadow-md leading-snug line-clamp-2">
-                      {video.description}
+                      <MentionText text={video.description} />
                     </p>
 
                     {/* Audio track info with marquee effect */}

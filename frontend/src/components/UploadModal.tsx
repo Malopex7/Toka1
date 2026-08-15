@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
+import MentionInput from './MentionInput';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -316,14 +317,17 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
               {/* Input Title */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-cloud-white/40 uppercase">Video Title</label>
-                <input 
-                  type="text" 
-                  required
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-cloud-white/40 uppercase">Video Title & Description</label>
+                  <span className="text-[9px] text-cloud-white/30 font-mono">Type @ to tag creators</span>
+                </div>
+                <MentionInput 
+                  as="input"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Give your video a descriptive title" 
-                  className="bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                  onChange={(val) => setTitle(val)}
+                  placeholder="Give your video a title or tag creators with @..." 
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                  popoverPlacement="bottom"
                 />
               </div>
 
