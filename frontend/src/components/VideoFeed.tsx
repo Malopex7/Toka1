@@ -606,9 +606,14 @@ export default function VideoFeed() {
                   </div>
                   <Link
                     href="/deposit"
-                    className="flex flex-col items-end gap-0.5 max-w-[80px] cursor-pointer hover:opacity-85 transition-opacity"
+                    className="flex flex-col items-end gap-0.5 max-w-[120px] cursor-pointer hover:opacity-85 transition-opacity"
                   >
-                    <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
+                    <div className="flex items-center gap-1 select-none max-w-full justify-end">
+                      <span className="text-[10px] font-black text-cloud-white truncate">@{mongooseUser?.username}</span>
+                      {mongooseUser?.isBrandSafeVerified && (
+                        <span className="material-symbols-outlined text-fintech-mint text-[11px] shrink-0" title="Brand-Safe Verified Profile">verified</span>
+                      )}
+                    </div>
                     <span className="text-[9px] font-mono text-fintech-mint font-bold hover:underline">Z{mongooseUser?.walletBalance}</span>
                   </Link>
                 </>
