@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verificationRequestStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none'
+  },
   strikeCount: {
     type: Number,
     default: 0

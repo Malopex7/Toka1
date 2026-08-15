@@ -440,6 +440,12 @@ export default function VideoFeed() {
             Inbox
             {hasUnreadInbox && <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>}
           </Link>
+          {isAuthenticated && mongooseUser?.isBrandSafeVerified && (
+            <Link href="/sponsorships" className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left">
+              <span className="material-symbols-outlined text-[20px]">handshake</span>
+              Sponsorships
+            </Link>
+          )}
           {isAuthenticated ? (
             <div className="flex flex-col gap-1.5 px-4 py-3 bg-black/25 border border-white/10 rounded-xl mt-2 select-none">
               <div className="flex items-center gap-2.5">

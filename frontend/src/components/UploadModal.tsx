@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
 
@@ -14,7 +14,36 @@ function generateUniqueFilename(originalName: string): string {
 }
 
 export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, mongooseUser } = useAuth();
+  
+  // Sponsorship state fields
+  const [isSponsorshipRequested, setIsSponsorshipRequested] = useState(false);
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [sponsorshipAmount, setSponsorshipAmount] = useState('');
+  const [sponsorshipTerms, setSponsorshipTerms] = useState('');
+  const [verifiedBrands, setVerifiedBrands] = useState<{ _id: string; username: string }[]>([]);
+
+  // Fetch verified brands when verified creator enables dashboard
+  useEffect(() => {
+    if (!isOpen || !firebaseUser || !mongooseUser?.isBrandSafeVerified) return;
+
+    const fetchBrands = async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/verified-brands`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          setVerifiedBrands(json.data.brands);
+        }
+      } catch (err) {
+        console.error('Failed to fetch verified brands:', err);
+      }
+    };
+
+    fetchBrands();
+  }, [isOpen, firebaseUser, mongooseUser]);
   
   const [title, setTitle] = useState('');
   const [tier, setTier] = useState<'fan_funded' | 'brand_safe'>('fan_funded');
@@ -105,6 +134,12 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       formData.append('title', title);
       formData.append('tier', tier);
 
+      if (isSponsorshipRequested && selectedBrandId && sponsorshipAmount) {
+        formData.append('brandId', selectedBrandId);
+        formData.append('sponsorshipAmount', sponsorshipAmount);
+        formData.append('sponsorshipTerms', sponsorshipTerms);
+      }
+
       const token = await firebaseUser.getIdToken();
 
       // We use XMLHttpRequest so we can track upload progress in React
@@ -175,6 +210,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setCompressionRatio(null);
     setSuccessMessage(null);
     setErrorMessage(null);
+    setIsSponsorshipRequested(false);
+    setSelectedBrandId('');
+    setSponsorshipAmount('');
+    setSponsorshipTerms('');
     onClose();
   };
 
@@ -319,6 +358,67 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                 </div>
               </div>
 
+              {/* Brand Sponsorship Tagging (Only for verified creators) */}
+              {mongooseUser?.isBrandSafeVerified && (
+                <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={isSponsorshipRequested}
+                        onChange={(e) => setIsSponsorshipRequested(e.target.checked)}
+                        className="rounded border-white/20 bg-black/40 text-toka-flare focus:ring-toka-flare accent-toka-flare w-4 h-4 cursor-pointer"
+                      />
+                      Request Brand Sponsorship
+                    </label>
+                    <span className="bg-fintech-mint/10 text-fintech-mint text-[9px] font-black px-2 py-0.5 rounded-full border border-fintech-mint/20">Verified Creator Only</span>
+                  </div>
+
+                  {isSponsorshipRequested && (
+                    <div className="flex flex-col gap-3 mt-1.5 border-t border-white/5 pt-3 animate-scale-up">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Select Target Brand</label>
+                        <select
+                          required
+                          value={selectedBrandId}
+                          onChange={(e) => setSelectedBrandId(e.target.value)}
+                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                        >
+                          <option value="">-- Choose a Brand --</option>
+                          {verifiedBrands.map(b => (
+                            <option key={b._id} value={b._id}>@{b.username}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Requested Sponsorship Budget (ZAR)</label>
+                        <input 
+                          type="number" 
+                          required
+                          min="1"
+                          value={sponsorshipAmount}
+                          onChange={(e) => setSponsorshipAmount(e.target.value)}
+                          placeholder="e.g. 500" 
+                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Pitch & Sponsorship Terms</label>
+                        <textarea
+                          value={sponsorshipTerms}
+                          onChange={(e) => setSponsorshipTerms(e.target.value)}
+                          placeholder="Provide details about deliverables, integrations, or your pitch..." 
+                          rows={2}
+                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors resize-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Upload progress indicator */}
               {isUploading && (
                 <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-2">
@@ -326,7 +426,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                     <span className="text-fintech-mint flex items-center gap-1.5">
                       <span className="w-3 h-3 border border-fintech-mint border-t-transparent rounded-full animate-spin"></span>
                       Uploading directly to Cloud Storage...
-                    </span>
+                     </span>
                     <span className="font-mono">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
@@ -338,7 +438,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
               {/* Action Button */}
               <button
                 type="submit"
-                disabled={isUploading || isCompressing || !selectedFile || !title}
+                disabled={isUploading || isCompressing || !selectedFile || !title || (isSponsorshipRequested && (!selectedBrandId || !sponsorshipAmount))}
                 className="w-full bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-3.5 rounded-xl font-bold transition-all text-xs active:scale-95 shadow-[0_4px_15px_rgba(255,79,0,0.25)] flex justify-center items-center gap-2 mt-2"
               >
                 <span className="material-symbols-outlined text-[18px]">publish</span>

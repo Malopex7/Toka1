@@ -205,3 +205,104 @@ export const getProfileByUsername = async (req, res, next) => {
     data: { user }
   });
 };
+
+/**
+ * Request moderator verification for brand safety/sponsorships.
+ */
+export const requestVerification = async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { verificationRequestStatus: 'pending' },
+    { new: true }
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Verification request submitted successfully.',
+    data: { user }
+  });
+};
+
+/**
+ * List pending verification requests (Moderator restricted).
+ */
+export const getVerificationRequests = async (req, res, next) => {
+  const users = await User.find({ verificationRequestStatus: 'pending' })
+    .select('username email role isBrandSafeVerified verificationRequestStatus createdAt');
+
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: { users }
+  });
+};
+
+/**
+ * Update verification status of a user (Moderator restricted).
+ */
+export const updateVerificationStatus = async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'approved' | 'rejected'
+
+  if (!['approved', 'rejected'].includes(status)) {
+    throw new AppError('Invalid verification status choice.', 400);
+  }
+
+  const isApproved = status === 'approved';
+  
+  const user = await User.findByIdAndUpdate(
+    id,
+    {
+      verificationRequestStatus: status,
+      isBrandSafeVerified: isApproved
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new AppError('User not found.', 404);
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: `User verification successfully ${status}.`,
+    data: { user }
+  });
+};
+
+/**
+ * Fetch verified brand accounts.
+ */
+export const getVerifiedBrands = async (req, res, next) => {
+  const brands = await User.find({
+    role: 'brand',
+    isBrandSafeVerified: true
+  }).select('username email');
+
+  res.status(200).json({
+    status: 'success',
+    results: brands.length,
+    data: { brands }
+  });
+};
+
+/**
+ * Directory lookup for verified users (e.g. Creators list for Brands, Brands list for Creators).
+ */
+export const getUserDirectory = async (req, res, next) => {
+  const { role } = req.user;
+  
+  // If user is brand, return verified creators. If user is creator/fan/other, return verified brands.
+  const targetRole = role === 'brand' ? 'creator' : 'brand';
+
+  const users = await User.find({
+    role: targetRole,
+    isBrandSafeVerified: true
+  }).select('username role email followers following');
+
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: { users }
+  });
+};

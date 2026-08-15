@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { GridFSBucket } from 'mongodb';
 import Video from '../models/Video.js';
 import Comment from '../models/Comment.js';
+import User from '../models/User.js';
+import SponsorshipRequest from '../models/SponsorshipRequest.js';
 import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
@@ -48,6 +50,21 @@ export const getFeed = async (req, res, next) => {
 
   // 2) Build dynamic query filter based on the user's role
   const query = {};
+
+  // Visibility checks
+  if (req.user) {
+    if (req.user.role !== 'moderator') {
+      // Normal users: can see public videos OR private videos where they are the creator or target brand
+      query.$or = [
+        { visibility: { $ne: 'private' } },
+        { creatorId: req.user._id },
+        { brandId: req.user._id }
+      ];
+    }
+  } else {
+    // Guest users: can only see public videos
+    query.visibility = { $ne: 'private' };
+  }
 
   if (req.user) {
     if (req.user.role === 'brand') {
@@ -215,13 +232,34 @@ export const updateVettingStatus = async (req, res, next) => {
  * creator/brand upload a new video directly to MongoDB GridFS.
  */
 export const uploadGridFSVideo = async (req, res, next) => {
-  const { title, tier } = req.body;
+  const { title, tier, brandId, sponsorshipAmount, sponsorshipTerms } = req.body;
 
   if (!req.file) {
     throw new AppError('Please upload a video file.', 400);
   }
   if (!title) {
     throw new AppError('Please provide a title.', 400);
+  }
+
+  // If sponsorship parameters are provided, perform validation
+  let hasSponsorship = false;
+  let requestedAmount = 0;
+  if (brandId && sponsorshipAmount) {
+    hasSponsorship = true;
+    requestedAmount = parseFloat(sponsorshipAmount);
+    if (isNaN(requestedAmount) || requestedAmount <= 0) {
+      throw new AppError('Sponsorship amount must be a positive number.', 400);
+    }
+    if (!req.user.isBrandSafeVerified) {
+      throw new AppError('Only verified creators can request brand sponsorships.', 403);
+    }
+    const brand = await User.findById(brandId);
+    if (!brand || brand.role !== 'brand' || !brand.isBrandSafeVerified) {
+      throw new AppError('Target brand user must be a verified brand.', 400);
+    }
+    if (brandId.toString() === req.user._id.toString()) {
+      throw new AppError('You cannot request sponsorship from yourself.', 400);
+    }
   }
 
   const validTiers = ['fan_funded', 'brand_safe'];
@@ -245,22 +283,79 @@ export const uploadGridFSVideo = async (req, res, next) => {
 
   const videoUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
 
-  const video = await Video.create({
-    creatorId: req.user._id,
-    videoUrl,
-    title,
-    tier: resolvedTier,
-    vettingStatus: 'processing',
-    aiPipelineStatus: 'pending'
-  });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  runAiPipeline(video._id.toString(), videoUrl);
+  try {
+    const videoData = {
+      creatorId: req.user._id,
+      videoUrl,
+      title,
+      tier: resolvedTier,
+      vettingStatus: 'processing',
+      aiPipelineStatus: 'pending',
+      visibility: hasSponsorship ? 'private' : 'public'
+    };
 
-  res.status(201).json({
-    status: 'success',
-    message: 'Video uploaded and registered in GridFS. AI vetting pipeline started.',
-    data: { video }
-  });
+    if (hasSponsorship) {
+      videoData.brandId = brandId;
+    }
+
+    const video = await Video.create([videoData], { session });
+
+    let sponsorshipRequest = null;
+    if (hasSponsorship) {
+      const request = await SponsorshipRequest.create([{
+        videoId: video[0]._id,
+        creatorId: req.user._id,
+        brandId,
+        amount: requestedAmount,
+        terms: sponsorshipTerms || '',
+        status: 'pending',
+        escrowStatus: 'none'
+      }], { session });
+
+      sponsorshipRequest = request[0];
+      video[0].sponsorshipId = sponsorshipRequest._id;
+      await video[0].save({ session });
+    }
+
+    await session.commitTransaction();
+
+    runAiPipeline(video[0]._id.toString(), videoUrl);
+
+    if (hasSponsorship) {
+      sendFcmNotification(
+        brandId,
+        'New Sponsorship Request Received!',
+        `@${req.user.username} requested sponsorship of R ${requestedAmount.toFixed(2)} for video: "${title}"`,
+        {
+          type: 'sponsorship_requested',
+          sponsorshipId: sponsorshipRequest._id.toString(),
+          videoId: video[0]._id.toString(),
+          amount: String(requestedAmount),
+          creatorName: req.user.username
+        }
+      ).catch(err => console.error('[FCM Sponsor Request Failed]', err));
+    }
+
+    res.status(201).json({
+      status: 'success',
+      message: hasSponsorship
+        ? 'Video uploaded, request created, and set to private. AI vetting pipeline started.'
+        : 'Video uploaded and registered in GridFS. AI vetting pipeline started.',
+      data: {
+        video: video[0],
+        sponsorshipRequest
+      }
+    });
+
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
 };
 
 /**

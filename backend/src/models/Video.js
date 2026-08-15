@@ -56,6 +56,19 @@ const videoSchema = new mongoose.Schema({
   sharesCount: {
     type: Number,
     default: 0
+  },
+  visibility: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public'
+  },
+  sponsorshipId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SponsorshipRequest'
+  },
+  brandId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

@@ -19,6 +19,7 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import sponsorshipRoutes from './routes/sponsorshipRoutes.js';
 const app = express();
 
 app.use(helmet({
@@ -58,6 +59,7 @@ app.use('/api', transactionRoutes);
 app.use('/api', userRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', notificationRoutes);
+app.use('/api', sponsorshipRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {
