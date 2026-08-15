@@ -10,6 +10,7 @@ interface CommentUser {
   _id: string;
   username: string;
   role: string;
+  isBrandSafeVerified?: boolean;
 }
 
 interface Comment {
@@ -611,9 +612,18 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               : ''
           }`}
         >
-          {/* User Initial Avatar */}
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white shrink-0 select-none shadow-sm">
-            {node.userId?.username?.charAt(0).toUpperCase()}
+          {/* User Initial Avatar with Verified Badge */}
+          <div className="relative shrink-0">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white select-none shadow-sm">
+              {node.userId?.username?.charAt(0).toUpperCase()}
+            </div>
+            {node.userId?.isBrandSafeVerified && (
+              <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-0.2 shadow-sm flex items-center justify-center">
+                <span className="material-symbols-outlined text-toka-flare text-[9px] block leading-none" style={{ fontSize: '9px', width: '9px', height: '9px' }}>
+                  verified
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Reply Details */}
@@ -622,9 +632,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               <Link
                 href={`/profile?username=${node.userId?.username}`}
                 onClick={onClose}
-                className="text-[10px] font-bold text-cloud-white hover:underline"
+                className="text-[10px] font-bold text-cloud-white hover:underline flex items-center gap-1"
               >
                 @{node.userId?.username || 'user'}
+                {node.userId?.isBrandSafeVerified && (
+                  <span className="material-symbols-outlined text-toka-flare text-[12px] shrink-0" title="Verified">
+                    verified
+                  </span>
+                )}
               </Link>
               {String(node.userId?._id) === String(creatorId) && (
                 <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
@@ -770,24 +785,39 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                   {/* Top-Level Parent Comment */}
                   <div 
                     data-comment-id={comment._id}
-                    className={`flex items-start gap-3 group p-2 rounded-xl transition-all duration-500 ${
+                    className={`flex items-start gap-3 group/comment p-2 rounded-2xl transition-all duration-500 ${
                       isHighlighted 
                         ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse' 
                         : ''
                     }`}
                   >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white shrink-0 select-none shadow-sm">
-                      {comment.userId?.username?.charAt(0).toUpperCase()}
+                    {/* User Initial Avatar with Verified Badge */}
+                    <div className="relative shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white select-none shadow-md">
+                        {comment.userId?.username?.charAt(0).toUpperCase()}
+                      </div>
+                      {comment.userId?.isBrandSafeVerified && (
+                        <div className="absolute -bottom-0.5 -right-0.5 bg-midnight-boma rounded-full p-0.5 shadow-sm flex items-center justify-center">
+                          <span className="material-symbols-outlined text-toka-flare text-[10px] block leading-none" style={{ fontSize: '10px', width: '10px', height: '10px' }}>
+                            verified
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 flex flex-col">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <Link
                           href={`/profile?username=${comment.userId?.username}`}
                           onClick={onClose}
-                          className="text-xs font-bold text-cloud-white hover:underline"
+                          className="text-xs font-bold text-cloud-white hover:underline flex items-center gap-1"
                         >
                           @{comment.userId?.username || 'user'}
+                          {comment.userId?.isBrandSafeVerified && (
+                            <span className="material-symbols-outlined text-toka-flare text-[14px] shrink-0" title="Verified">
+                              verified
+                            </span>
+                          )}
                         </Link>
                         {String(comment.userId?._id) === String(creatorId) && (
                           <span className="text-[8px] font-black text-cloud-white bg-toka-flare px-1.5 py-0.5 rounded uppercase tracking-wider select-none leading-none scale-[0.9]">
