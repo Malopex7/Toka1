@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
-import ProfileVideoFeedModal from '@/components/ProfileVideoFeedModal';
 
 interface ProfileVideo {
   _id: string;
@@ -35,6 +34,7 @@ interface TargetUser {
 function ProfileContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, logout, refreshProfile } = useAuth();
   const { showAlert, showConfirm, showPrompt } = useModalStore();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const targetUsername = searchParams?.get('username') || '';
 
@@ -45,9 +45,6 @@ function ProfileContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
-
-  // Profile Video Feed Overlay Modal index
-  const [feedModalIndex, setFeedModalIndex] = useState<number | null>(null);
 
   // Verification request state
   const [verificationLoading, setVerificationLoading] = useState(false);
@@ -610,14 +607,15 @@ function ProfileContent() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {videos.map((video, index) => {
+              {videos.map((video) => {
                 const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
                 const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
+                const creatorHandle = targetUser?.username || mongooseUser?.username || 'creator';
 
                 return (
                   <div 
                     key={video._id} 
-                    onClick={() => setFeedModalIndex(index)}
+                    onClick={() => router.push(`/?creator=${encodeURIComponent(creatorHandle)}&videoId=${video._id}`)}
                     className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
                   >
                     {/* Collab Indicator */}
@@ -694,16 +692,6 @@ function ProfileContent() {
           )}
         </div>
       </main>
-
-      {/* Fullscreen Snap-Scrolling Profile Video Feed Modal */}
-      {feedModalIndex !== null && (
-        <ProfileVideoFeedModal
-          videos={videos}
-          initialIndex={feedModalIndex}
-          creatorUsername={targetUser?.username || mongooseUser?.username || 'creator'}
-          onClose={() => setFeedModalIndex(null)}
-        />
-      )}
     </div>
   );
 }

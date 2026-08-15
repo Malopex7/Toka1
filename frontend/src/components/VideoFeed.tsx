@@ -4,7 +4,7 @@ import { useFeedStore } from '@/store/useFeedStore';
 import { getPerformanceInstance } from '@/lib/firebase';
 import { trace } from 'firebase/performance';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
 import { Volume2, VolumeX } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
@@ -43,7 +43,11 @@ function formatNotificationTime(isoString?: string): string {
 
 export default function VideoFeed() {
   const router = useRouter();
-  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
+  const searchParams = useSearchParams();
+  const creatorParam = searchParams?.get('creator');
+  const videoIdParam = searchParams?.get('videoId');
+
+  const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, setCreatorFilter, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
   const { showAlert } = useModalStore();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
@@ -60,6 +64,31 @@ export default function VideoFeed() {
   const [hearts, setHearts] = useState<{ id: string; x: number; y: number }[]>([]);
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
   const [activeOptionsVideoId, setActiveOptionsVideoId] = useState<string | null>(null);
+
+  // Sync creator filter from URL params
+  useEffect(() => {
+    if (creatorParam) {
+      setCreatorFilter(creatorParam);
+    } else {
+      setCreatorFilter(null);
+    }
+  }, [creatorParam, setCreatorFilter]);
+
+  // Auto-scroll to videoId if provided in query params
+  const hasScrolledToInitialVideoRef = useRef(false);
+  useEffect(() => {
+    if (videoIdParam && videos.length > 0 && !hasScrolledToInitialVideoRef.current) {
+      const targetIndex = videos.findIndex(v => v.id === videoIdParam);
+      if (targetIndex !== -1 && containerRef.current) {
+        hasScrolledToInitialVideoRef.current = true;
+        setCurrentIndex(targetIndex);
+        const targetElement = containerRef.current.children[targetIndex] as HTMLElement;
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
+      }
+    }
+  }, [videoIdParam, videos, setCurrentIndex]);
 
   // Load saved volume preferences on mount
   useEffect(() => {
@@ -546,25 +575,38 @@ export default function VideoFeed() {
 
           {/* Top Translucent Navigation Bar Overlay */}
           <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-6 h-16 pointer-events-none">
-            <Link href="/discover" className="pointer-events-auto flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors">
-              <span className="material-symbols-outlined text-cloud-white">search</span>
-            </Link>
-            <div className="pointer-events-auto flex gap-6 items-center">
-              <button
-                onClick={() => requireAuth(() => setFeedType('following'))}
-                className={`text-sm transition-colors ${feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
-                  }`}
+            {creatorParam ? (
+              <Link
+                href={`/profile?username=${creatorParam}`}
+                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-bold text-cloud-white hover:bg-black/80 transition-all shadow-md active:scale-95"
               >
-                Following
-              </button>
-              <button
-                onClick={() => setFeedType('foryou')}
-                className={`text-sm transition-colors ${feedType === 'foryou' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
-                  }`}
-              >
-                For You
-              </button>
-            </div>
+                <span className="material-symbols-outlined text-[16px] text-toka-flare">arrow_back</span>
+                <span>@{creatorParam}&apos;s Videos</span>
+              </Link>
+            ) : (
+              <Link href="/discover" className="pointer-events-auto flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors">
+                <span className="material-symbols-outlined text-cloud-white">search</span>
+              </Link>
+            )}
+
+            {!creatorParam && (
+              <div className="pointer-events-auto flex gap-6 items-center">
+                <button
+                  onClick={() => requireAuth(() => setFeedType('following'))}
+                  className={`text-sm transition-colors ${feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                    }`}
+                >
+                  Following
+                </button>
+                <button
+                  onClick={() => setFeedType('foryou')}
+                  className={`text-sm transition-colors ${feedType === 'foryou' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                    }`}
+                >
+                  For You
+                </button>
+              </div>
+            )}
             <div className="pointer-events-auto flex items-center gap-3 select-none relative">
               {isAuthenticated ? (
                 <>

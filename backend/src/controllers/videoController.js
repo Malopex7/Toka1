@@ -171,6 +171,26 @@ export const getFeed = async (req, res, next) => {
     }
   }
 
+  // Filter by specific creator username if requested (for profile-scoped feeds)
+  if (req.query.creator) {
+    const creatorUser = await User.findOne({ username: new RegExp(`^${req.query.creator.trim()}$`, 'i') });
+    if (creatorUser) {
+      const creatorMatch = [
+        { creatorId: creatorUser._id },
+        { coAuthors: { $elemMatch: { user: creatorUser._id, status: 'accepted' } } }
+      ];
+      if (query.$or) {
+        query.$and = [
+          { $or: query.$or },
+          { $or: creatorMatch }
+        ];
+        delete query.$or;
+      } else {
+        query.$or = creatorMatch;
+      }
+    }
+  }
+
   // 3) Execute queries (getting documents and total counts for metadata)
   const [videos, totalVideos] = await Promise.all([
     Video.find(query)

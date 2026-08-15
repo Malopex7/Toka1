@@ -54,7 +54,9 @@ interface FeedStore {
   hasNextPage: boolean;
   userWalletBalance: number;
   feedType: 'foryou' | 'following';
+  creatorFilter: string | null;
   setFeedType: (type: 'foryou' | 'following') => void;
+  setCreatorFilter: (creator: string | null) => void;
   setWalletBalance: (balance: number) => void;
   setCurrentIndex: (index: number) => void;
   optimisticTip: (videoId: string, amount: number) => void;
@@ -122,8 +124,15 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   hasNextPage: true,
   userWalletBalance: 100, // Starting balance fallback
   feedType: 'foryou',
+  creatorFilter: null,
   isMuted: true,
   notifications: [],
+
+  setCreatorFilter: (creator) => {
+    set({ creatorFilter: creator });
+    get().resetFeed();
+    get().fetchNextPage();
+  },
 
   setFeedType: (type) => {
     set({ feedType: type });
@@ -219,7 +228,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   },
 
   fetchNextPage: async () => {
-    const { currentPage, videos, isLoading, hasNextPage, feedType } = get();
+    const { currentPage, videos, isLoading, hasNextPage, feedType, creatorFilter } = get();
     if (isLoading || !hasNextPage) return;
 
     set({ isLoading: true });
@@ -232,10 +241,13 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/feed?page=${currentPage}&limit=5${feedType === 'following' ? '&following=true' : ''}`,
-        { headers }
-      );
+      const feedTypeParam = feedType === 'following' ? '&following=true' : '';
+      const creatorParam = creatorFilter ? `&creator=${encodeURIComponent(creatorFilter)}` : '';
+      const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/feed?page=${currentPage}&limit=10${feedTypeParam}${creatorParam}`;
+
+      const res = await fetch(endpoint, {
+        headers
+      });
       
       if (!res.ok) {
         throw new Error('Network response was not ok');
