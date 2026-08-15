@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModalStore } from '@/store/useModalStore';
+import ProfileVideoFeedModal from '@/components/ProfileVideoFeedModal';
 
 interface ProfileVideo {
   _id: string;
@@ -45,8 +46,8 @@ function ProfileContent() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
 
-  // Video playback overlay modal
-  const [selectedVideo, setSelectedVideo] = useState<ProfileVideo | null>(null);
+  // Profile Video Feed Overlay Modal index
+  const [feedModalIndex, setFeedModalIndex] = useState<number | null>(null);
 
   // Verification request state
   const [verificationLoading, setVerificationLoading] = useState(false);
@@ -609,14 +610,14 @@ function ProfileContent() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {videos.map((video) => {
+              {videos.map((video, index) => {
                 const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
                 const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
 
                 return (
                   <div 
                     key={video._id} 
-                    onClick={() => setSelectedVideo(video)}
+                    onClick={() => setFeedModalIndex(index)}
                     className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
                   >
                     {/* Collab Indicator */}
@@ -694,58 +695,14 @@ function ProfileContent() {
         </div>
       </main>
 
-      {/* Video Streaming Modal */}
-      {selectedVideo && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
-             {/* Edit/Delete Buttons for own video */}
-            {isOwnProfile && (
-              <div className="absolute top-4 left-4 z-50 flex gap-2">
-                <button
-                  onClick={() => {
-                    handleEditCaption(selectedVideo);
-                    setSelectedVideo(null);
-                  }}
-                  className="w-8 h-8 rounded-full bg-black/50 hover:bg-toka-flare/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
-                  title="Edit Caption"
-                >
-                  <span className="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  onClick={() => {
-                    handleDeleteVideo(selectedVideo._id);
-                    setSelectedVideo(null);
-                  }}
-                  className="w-8 h-8 rounded-full bg-black/50 hover:bg-red-500/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all cursor-pointer"
-                  title="Delete Video"
-                >
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            )}
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedVideo(null)}
-              className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center border border-white/15 text-cloud-white active:scale-90 transition-all"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-            <video
-              src={selectedVideo.videoUrl}
-              className="w-full h-full object-cover"
-              controls
-              autoPlay
-              playsInline
-            />
-            {/* Title Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent pt-12 text-cloud-white pointer-events-none select-none">
-              <h4 className="text-sm font-bold">{selectedVideo.title}</h4>
-              <p className="text-[10px] text-cloud-white/60 mt-1">
-                Uploaded: {new Date(selectedVideo.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Fullscreen Snap-Scrolling Profile Video Feed Modal */}
+      {feedModalIndex !== null && (
+        <ProfileVideoFeedModal
+          videos={videos}
+          initialIndex={feedModalIndex}
+          creatorUsername={targetUser?.username || mongooseUser?.username || 'creator'}
+          onClose={() => setFeedModalIndex(null)}
+        />
       )}
     </div>
   );
