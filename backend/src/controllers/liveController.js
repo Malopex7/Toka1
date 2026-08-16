@@ -119,13 +119,15 @@ export const getStream = async (req, res, next) => {
 // POST /api/live/:roomId/join
 export const joinStream = async (req, res, next) => {
   try {
-    const stream = await LiveStream.findById(req.params.roomId);
+    const stream = await LiveStream.findById(req.params.roomId).populate('hostId', 'username avatarUrl isBrandSafeVerified');
     if (!stream || stream.status !== 'live') return next(new AppError('Stream is not active', 404));
 
     const viewer = req.user;
 
-    const isHost = stream.hostId.toString() === viewer._id.toString();
+    const hostUserId = stream.hostId?._id?.toString() || stream.hostId?.toString();
+    const isHost = hostUserId === viewer._id.toString();
     const isCohost = stream.cohosts.some(id => id.toString() === viewer._id.toString());
+    const isInvitedCohost = stream.invitedCohosts?.some(id => id.toString() === viewer._id.toString()) && !isCohost && !isHost;
 
     // Private stream access check
     if (stream.privacy === 'private') {
@@ -159,7 +161,12 @@ export const joinStream = async (req, res, next) => {
 
     res.json({
       status: 'success',
-      data: { token, livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880', stream }
+      data: {
+        token,
+        livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880',
+        stream,
+        isInvitedCohost: Boolean(isInvitedCohost),
+      }
     });
   } catch (err) {
     next(err);
@@ -285,6 +292,12 @@ export const inviteCohost = async (req, res, next) => {
     }).select('_id username avatarUrl');
 
     if (!invitee) return next(new AppError(`User @${cleanUsername} not found`, 404));
+
+    if (!stream.invitedCohosts) stream.invitedCohosts = [];
+    if (!stream.invitedCohosts.some(id => id.toString() === invitee._id.toString())) {
+      stream.invitedCohosts.push(invitee._id);
+      await stream.save();
+    }
 
     const io = req.app.locals.io;
     if (io) {

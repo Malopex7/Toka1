@@ -9,7 +9,8 @@ router.get('/notifications', protect, async (req, res, next) => {
   try {
     const notifications = await Notification.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
 
     res.status(200).json({
       status: 'success',

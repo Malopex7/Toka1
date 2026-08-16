@@ -24,8 +24,8 @@ const notificationSchema = new mongoose.Schema({
     default: 'general'
   },
   metadata: {
-    type: Map,
-    of: String
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 }, {
   timestamps: true

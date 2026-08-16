@@ -52,6 +52,10 @@ const liveStreamSchema = new mongoose.Schema({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: []
   },
+  invitedCohosts: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
   unlockedViewers: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: []

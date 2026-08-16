@@ -95,6 +95,16 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
         if (data.data?.stream?.viewerCount !== undefined) {
           useLiveStore.getState().setViewerCount(data.data.stream.viewerCount);
         }
+        if (data.data?.isInvitedCohost && data.data?.stream?.hostId) {
+          setPendingCohostInvite({
+            host: {
+              username: data.data.stream.hostId.username || 'creator',
+              avatarUrl: data.data.stream.hostId.avatarUrl,
+            },
+            roomId: data.data.stream._id,
+            title: data.data.stream.title,
+          });
+        }
       } catch (err) {
         console.error('[StreamRoom] join error:', err);
       } finally {

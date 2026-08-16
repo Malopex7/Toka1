@@ -443,17 +443,23 @@ export default function VideoFeed() {
 
   const handleNotificationClick = (notif: any) => {
     setIsNotificationsOpen(false);
-    const videoId = notif.metadata?.videoId;
-    const commentId = notif.metadata?.commentId;
+    const type = notif.type;
+    const meta = notif.metadata || {};
+    const videoId = meta.videoId;
+    const commentId = meta.commentId;
+    const liveRoomId = meta.roomId || meta.streamId || (typeof meta.get === 'function' ? meta.get('roomId') : null);
+
     // 1) Live Co-Host invitations: navigate directly to /live/[roomId]
-    const liveRoomId = notif.metadata?.roomId || (typeof notif.metadata?.get === 'function' ? notif.metadata.get('roomId') : null);
     if (
       type === 'live_cohost_invite' ||
-      notif.title?.toLowerCase().includes('live co-host') ||
-      notif.body?.toLowerCase().includes('co-host their live')
+      notif.title?.toLowerCase().includes('co-host') ||
+      notif.body?.toLowerCase().includes('co-host')
     ) {
       if (liveRoomId) {
         router.push(`/live/${liveRoomId}`);
+        return;
+      } else {
+        router.push('/live');
         return;
       }
     }
