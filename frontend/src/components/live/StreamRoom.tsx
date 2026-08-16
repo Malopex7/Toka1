@@ -210,12 +210,23 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
             </div>
           </div>
 
-          {/* Dedicated Full-Screen Live Broadcast Stage */}
+          {/* Dedicated Full-Screen Live Broadcast Stage with Unified Controls */}
           <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
             <LiveBroadcastStage
               isHost={isHost}
               hostUsername={currentRoom?.hostId?.username}
               hostAvatarUrl={currentRoom?.hostId?.avatarUrl}
+              showCohostPanel={showCohostPanel}
+              onToggleCohostPanel={() => setShowCohostPanel((v) => !v)}
+              onShare={async () => {
+                if (currentRoom) {
+                  try {
+                    await navigator.share({ title: currentRoom.title, url: window.location.href });
+                  } catch {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }
+              }}
             />
           </div>
 
@@ -265,22 +276,9 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
             </div>
           )}
 
-          {/* Host Co-Host Controls Bottom Bar (Desktop) */}
-          {isHost && (
-            <div className="hidden md:flex absolute bottom-4 left-4 right-4 z-20 items-center justify-center gap-3">
-              <button
-                onClick={() => setShowCohostPanel((v) => !v)}
-                className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/20 text-cloud-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-white/15 transition-all cursor-pointer shadow-lg active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[16px] text-toka-flare">group_add</span>
-                Invite Co-Host
-              </button>
-            </div>
-          )}
-
           {/* Host Co-Host Invite Panel Popup */}
           {isHost && showCohostPanel && (
-            <div className="absolute bottom-16 left-4 right-4 md:left-auto md:right-8 md:w-96 z-30 animate-scale-up">
+            <div className="absolute bottom-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-30 animate-scale-up">
               <CohostInvitePanel roomId={roomId} />
             </div>
           )}
@@ -376,13 +374,19 @@ function LiveBroadcastStage({
   isHost,
   hostUsername,
   hostAvatarUrl,
+  showCohostPanel,
+  onToggleCohostPanel,
+  onShare,
 }: {
   isHost: boolean;
   hostUsername?: string;
   hostAvatarUrl?: string;
+  showCohostPanel?: boolean;
+  onToggleCohostPanel?: () => void;
+  onShare?: () => void;
 }) {
   const room = useRoomContext();
-  const { localParticipant, isCameraEnabled, isMicrophoneEnabled } = useLocalParticipant();
+  const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
   const [audioPlaybackAllowed, setAudioPlaybackAllowed] = useState(true);
 
   // Subscribe to all active camera and screen-share tracks in the room
@@ -420,6 +424,12 @@ function LiveBroadcastStage({
   const toggleMic = async () => {
     if (localParticipant) {
       await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (localParticipant) {
+      await localParticipant.setScreenShareEnabled(!isScreenShareEnabled);
     }
   };
 
@@ -470,13 +480,14 @@ function LiveBroadcastStage({
         </div>
       )}
 
-      {/* Host In-Stream Floating Controls */}
+      {/* Unified Host Floating Controls Dock */}
       {isHost && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 shadow-xl">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/75 backdrop-blur-lg px-3 py-2 rounded-2xl border border-white/15 shadow-2xl">
+          {/* Camera Toggle */}
           <button
             onClick={toggleCamera}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-              isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white'
+              isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
             }`}
             title={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
           >
@@ -484,10 +495,12 @@ function LiveBroadcastStage({
               {isCameraEnabled ? 'videocam' : 'videocam_off'}
             </span>
           </button>
+
+          {/* Mic Toggle */}
           <button
             onClick={toggleMic}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-              isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white'
+              isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
             }`}
             title={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
           >
@@ -495,6 +508,48 @@ function LiveBroadcastStage({
               {isMicrophoneEnabled ? 'mic' : 'mic_off'}
             </span>
           </button>
+
+          {/* Screen Share Toggle */}
+          <button
+            onClick={toggleScreenShare}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              isScreenShareEnabled ? 'bg-toka-flare text-white shadow-lg' : 'bg-white/10 text-cloud-white hover:bg-white/20'
+            }`}
+            title={isScreenShareEnabled ? 'Stop Screen Share' : 'Share Screen'}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isScreenShareEnabled ? 'stop_screen_share' : 'screen_share'}
+            </span>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/20 mx-1" />
+
+          {/* Invite Co-Host */}
+          {onToggleCohostPanel && (
+            <button
+              onClick={onToggleCohostPanel}
+              className={`flex items-center gap-1.5 px-3.5 h-10 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95 ${
+                showCohostPanel
+                  ? 'bg-toka-flare text-white'
+                  : 'bg-white/10 text-cloud-white hover:bg-white/20'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">group_add</span>
+              <span>Invite Co-Host</span>
+            </button>
+          )}
+
+          {/* Share Stream */}
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="w-10 h-10 rounded-xl bg-white/10 text-cloud-white hover:bg-white/20 flex items-center justify-center transition-all cursor-pointer"
+              title="Share Stream Link"
+            >
+              <span className="material-symbols-outlined text-[18px]">share</span>
+            </button>
+          )}
         </div>
       )}
     </div>
