@@ -1,57 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="100%" height="100%" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" width="100%" height="100%" fill="none">
   <defs>
     <linearGradient id="tokaOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF5C00" />
+      <stop offset="0%" stop-color="#FF5A00" />
       <stop offset="100%" stop-color="#FF3800" />
     </linearGradient>
-    <filter id="subtleGlow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#FF4F00" flood-opacity="0.3" />
-    </filter>
   </defs>
 
-  <!-- Group: Toka Orange Emblem -->
-  <g transform="translate(10, 6)">
-    <!-- Small Left Leaf -->
+  <!-- 1. Emblem: Toka Sprout & Play Circle -->
+  <g id="toka-emblem">
+    <!-- Left Small Leaf -->
     <path 
-      d="M 45 32 C 34 26 26 12 36 6 C 45 0 54 12 51 26 C 49 30 46 32 45 32 Z" 
-      fill="url(#tokaOrangeGrad)"
+      d="M 46 31 C 35 24 27 12 37 4 C 47 -4 55 9 51 25 C 49 29 47 31 46 31 Z" 
+      fill="url(#tokaOrangeGrad)" 
     />
 
-    <!-- Big Right Leaf -->
+    <!-- Right Curved Leaf -->
     <path 
-      d="M 52 30 C 58 18 70 4 84 2 C 92 1 93 12 86 22 C 77 34 62 34 52 30 Z" 
-      fill="url(#tokaOrangeGrad)"
+      d="M 52 28 C 58 15 72 1 85 0 C 93 -1 94 11 86 21 C 76 33 62 31 52 28 Z" 
+      fill="url(#tokaOrangeGrad)" 
     />
 
-    <!-- Circular Orange Body / Ring with Top-Right Opening -->
+    <!-- Main Circular Ring with Top-Right Dynamic Crescent Cut -->
     <path 
-      d="M 75 35.5 C 69 31.5 61 29 52 29 C 27 29 7 49 7 74 C 7 99 27 119 52 119 C 77 119 97 99 97 74 C 97 60 90 48 80 40 L 80 54 C 85 60 88 66 88 74 C 88 94 72 110 52 110 C 32 110 16 94 16 74 C 16 54 32 38 52 38 C 58 38 64 40 69 43.5 Z" 
-      fill="url(#tokaOrangeGrad)"
-      filter="url(#subtleGlow)"
+      d="M 76 34 C 70 30 61 27 52 27 C 28 27 8 47 8 71 C 8 95 28 115 52 115 C 76 115 96 95 96 71 C 96 58 90 47 81 39 L 81 53 C 85 58 87 64 87 71 C 87 90 71 106 52 106 C 33 106 17 90 17 71 C 17 52 33 36 52 36 C 58 36 64 38 69 41.5 Z" 
+      fill="url(#tokaOrangeGrad)" 
     />
 
-    <!-- Center Play Triangle (Pure White) -->
+    <!-- Play Button Triangle (White with rounded corners) -->
     <path 
-      d="M 43 55 C 43 53.2 44.9 52.1 46.5 53 L 68.5 67 C 70.1 67.9 70.1 70.1 68.5 71 L 46.5 85 C 44.9 85.9 43 84.8 43 83 Z" 
-      fill="#FFFFFF"
+      d="M 43 53 C 43 51 45.2 49.8 47 50.8 L 69.5 63.8 C 71.2 64.8 71.2 67.2 69.5 68.2 L 47 81.2 C 45.2 82.2 43 81 43 79 Z" 
+      fill="#FFFFFF" 
     />
   </g>
 
-  <!-- Group: Text "Tōka" in White -->
-  <g fill="#FFFFFF">
+  <!-- 2. Typography: "Tōka" (Crisp, mathematically kerned pure vector paths) -->
+  <g id="toka-wordmark" fill="#FFFFFF">
     <!-- Capital 'T' -->
-    <path d="M 125 45 L 157 45 L 157 56 L 146 56 L 146 104 L 136 104 L 136 56 L 125 56 Z" />
+    <path d="M 116 38 L 152 38 L 152 48.5 L 139.5 48.5 L 139.5 98 L 128.5 98 L 128.5 48.5 L 116 48.5 Z" />
 
-    <!-- Macron above 'o' (¯) -->
-    <rect x="165" y="47" width="28" height="6" rx="2" />
-    
+    <!-- Macron above 'ō' (¯) -->
+    <rect x="163" y="38" width="36" height="7" rx="3.5" />
+
     <!-- Lowercase 'ō' -->
-    <path d="M 179 60 C 167 60 159 70 159 82.5 C 159 95 167 105 179 105 C 191 105 199 95 199 82.5 C 199 70 191 60 179 60 Z M 179 70.5 C 185 70.5 188.5 75.5 188.5 82.5 C 188.5 89.5 185 94.5 179 94.5 C 173 94.5 169.5 89.5 169.5 82.5 C 169.5 75.5 173 70.5 179 70.5 Z" />
+    <path d="M 181 50 C 167 50 156 61.5 156 75.5 C 156 89.5 167 101 181 101 C 195 101 206 89.5 206 75.5 C 206 61.5 195 50 181 50 Z M 181 60.5 C 189 60.5 195 67 195 75.5 C 195 84 189 90.5 181 90.5 C 173 90.5 167 84 167 75.5 C 167 67 173 60.5 181 60.5 Z" />
 
     <!-- Lowercase 'k' -->
-    <path d="M 209 40 L 219.5 40 L 219.5 78.5 L 234.5 61.5 L 247.5 61.5 L 229 81.5 L 249 104 L 235.5 104 L 219.5 86 L 219.5 104 L 209 104 Z" />
+    <path d="M 218 34 L 229 34 L 229 73.5 L 246 52 L 259.5 52 L 239.5 76 L 261 98 L 247.5 98 L 229 79 L 229 98 L 218 98 Z" />
 
     <!-- Lowercase 'a' -->
-    <path d="M 271 61.5 L 281 61.5 L 281 104 L 271 104 L 271 96 C 267.5 101.5 261 105 254 105 C 243.5 105 237 97.5 237 88 C 237 77.5 245.5 72.5 258 72.5 L 271 72.5 L 271 70 C 271 65 267 62.5 261 62.5 C 255 62.5 250 64.5 246 67.5 L 242 59.5 C 248 55.5 255.5 53.5 263.5 53.5 C 273.5 53.5 279 58 279 67.5 Z M 271 80 L 260 80 C 252 80 247.5 83 247.5 88.5 C 247.5 93.5 251.5 96.5 257 96.5 C 264.5 96.5 271 91 271 84.5 Z" />
+    <path d="M 298 52 L 309 52 L 309 98 L 298.5 98 L 298.5 90 C 294.5 96 287.5 100 279 100 C 267 100 260 92 260 81.5 C 260 69.5 270 63.5 284 63.5 L 298 63.5 L 298 61 C 298 55.5 293.5 52.5 286.5 52.5 C 280 52.5 274.5 55 270.5 58.5 L 266 50.5 C 272.5 45.5 281 43 290 43 C 301.5 43 308 48 308 58 Z M 298 71.5 L 286 71.5 C 277 71.5 271.5 75 271.5 81 C 271.5 86.5 276 90.5 282.5 90.5 C 290.5 90.5 298 84.5 298 76.5 Z" />
   </g>
 </svg>
