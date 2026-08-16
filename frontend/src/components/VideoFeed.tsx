@@ -868,7 +868,7 @@ export default function VideoFeed() {
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                     >
                       <TokaHeartIcon
-                        size={32}
+                        size={44}
                         filled={video.isLiked}
                         className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${
                           video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
