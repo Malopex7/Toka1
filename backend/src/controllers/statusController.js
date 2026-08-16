@@ -53,7 +53,7 @@ export const getFollowedStatusFeed = async (req, res, next) => {
     expiresAt: { $gt: now },
     isDeleted: false
   })
-    .populate('user', '_id username email role isBrandSafeVerified avatarUrl')
+    .populate('user', '_id username role isBrandSafeVerified avatarUrl')
     .populate('viewers.user', '_id username avatarUrl')
     .populate('reactions.user', '_id username avatarUrl')
     .populate('replies.user', '_id username avatarUrl')
@@ -147,7 +147,7 @@ export const getUserActiveStatuses = async (req, res, next) => {
     expiresAt: { $gt: now },
     isDeleted: false
   })
-    .populate('user', '_id username email role isBrandSafeVerified avatarUrl')
+    .populate('user', '_id username role isBrandSafeVerified avatarUrl')
     .populate('viewers.user', '_id username avatarUrl')
     .populate('reactions.user', '_id username avatarUrl')
     .populate('replies.user', '_id username avatarUrl')
@@ -266,7 +266,7 @@ export const createStatus = async (req, res, next) => {
   });
 
   const populatedStatus = await Status.findById(status._id)
-    .populate('user', '_id username email role isBrandSafeVerified avatarUrl');
+    .populate('user', '_id username role isBrandSafeVerified avatarUrl');
 
   res.status(201).json({
     status: 'success',
@@ -423,9 +423,9 @@ export const getStatusAnalytics = async (req, res, next) => {
   const statusId = req.params.id;
 
   const status = await Status.findById(statusId)
-    .populate('viewers.user', '_id username email isBrandSafeVerified avatarUrl')
-    .populate('reactions.user', '_id username email avatarUrl')
-    .populate('replies.user', '_id username email avatarUrl');
+    .populate('viewers.user', '_id username isBrandSafeVerified avatarUrl')
+    .populate('reactions.user', '_id username avatarUrl')
+    .populate('replies.user', '_id username avatarUrl');
 
   if (!status || status.isDeleted) {
     throw new AppError('Status not found', 404);

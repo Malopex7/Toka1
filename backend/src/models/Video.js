@@ -128,5 +128,9 @@ const videoSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Indexes for high performance queries and feed pagination sorting
+videoSchema.index({ createdAt: -1 });
+videoSchema.index({ visibility: 1, creatorId: 1, vettingStatus: 1, createdAt: -1 });
+
 const Video = mongoose.model('Video', videoSchema);
 export default Video;

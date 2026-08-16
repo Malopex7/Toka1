@@ -77,7 +77,7 @@ async function run() {
     }
   ];
 
-  const concurrencyTiers = [5, 15, 30];
+  const concurrencyTiers = [50, 100, 250];
   const results = [];
 
   console.log("\nStarting benchmark tests...");

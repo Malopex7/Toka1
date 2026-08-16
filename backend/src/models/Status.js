@@ -208,6 +208,9 @@ const statusSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Compound index for status tray followed creators active stories lookup
+statusSchema.index({ user: 1, isDeleted: 1, expiresAt: 1, createdAt: 1 });
+
 // Virtual count helpers
 statusSchema.virtual('viewsCount').get(function() {
   return this.viewers ? this.viewers.length : 0;

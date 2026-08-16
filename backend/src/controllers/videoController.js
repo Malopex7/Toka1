@@ -8,6 +8,7 @@ import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
 import { supabase } from '../config/supabase.js';
+import { feedCache } from '../services/cacheService.js';
 
 // Helper: Extract @usernames from text and find matching user IDs respecting tagging permissions
 export const extractMentions = async (text, currentUserId) => {
@@ -124,6 +125,8 @@ export const uploadVideo = async (req, res, next) => {
     }
   });
 
+  feedCache.clear();
+
   res.status(201).json({
     status: 'success',
     message: 'Video registered. AI vetting pipeline has been started.',
@@ -136,6 +139,17 @@ export const getFeed = async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
   const skip = (page - 1) * limit;
+
+  // Check memory cache for unauthenticated guest requests
+  const isCacheable = !req.user && !req.query.creator && !req.query.following;
+  const cacheKey = `feed:guest:page=${page}:limit=${limit}`;
+
+  if (isCacheable) {
+    const cachedResponse = feedCache.get(cacheKey);
+    if (cachedResponse) {
+      return res.status(200).json(cachedResponse);
+    }
+  }
 
   // 2) Build dynamic query filter based on the user's role
   const query = {};
@@ -229,7 +243,7 @@ export const getFeed = async (req, res, next) => {
   }));
 
   // 5) Return paginated response
-  res.status(200).json({
+  const responseData = {
     status: 'success',
     results: formattedVideos.length,
     pagination: {
@@ -243,7 +257,13 @@ export const getFeed = async (req, res, next) => {
     data: {
       videos: formattedVideos
     }
-  });
+  };
+
+  if (isCacheable) {
+    feedCache.set(cacheKey, responseData, 30);
+  }
+
+  res.status(200).json(responseData);
 };
 
 export const processAiVetting = async (req, res, next) => {
@@ -560,6 +580,8 @@ export const uploadGridFSVideo = async (req, res, next) => {
       ).catch(err => console.error('[FCM Sponsor Request Failed]', err));
     }
 
+    feedCache.clear();
+
     res.status(201).json({
       status: 'success',
       message: hasSponsorship
@@ -763,6 +785,8 @@ export const deleteVideo = async (req, res, next) => {
     // Delete the video document
     await Video.findByIdAndDelete(id);
 
+    feedCache.clear();
+
     res.status(200).json({
       status: 'success',
       message: 'Video and associated comments deleted successfully.'
@@ -794,6 +818,8 @@ export const updateVideo = async (req, res, next) => {
 
     video.title = title.trim();
     await video.save();
+
+    feedCache.clear();
 
     res.status(200).json({
       status: 'success',
