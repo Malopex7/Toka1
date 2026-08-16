@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useRef } from 'react';
 import { useLiveStore, LiveChatMessage } from '@/store/useLiveStore';
+import { useRoomContext } from '@livekit/components-react';
+import { RoomEvent } from 'livekit-client';
 import { io as socketIO, Socket } from 'socket.io-client';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -25,11 +27,49 @@ interface LiveChatProps {
 }
 
 export default function LiveChat({ roomName, currentUser, isMobile = false }: LiveChatProps) {
+  const room = useRoomContext();
   const messages = useLiveStore((s) => s.messages);
   const addMessage = useLiveStore((s) => s.addMessage);
   const [input, setInput] = React.useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // 1. LiveKit Ultra-Low Latency Data Channel listener
+  useEffect(() => {
+    if (!room) return;
+
+    const handleDataReceived = (payload: Uint8Array) => {
+      try {
+        const decoded = new TextDecoder().decode(payload);
+        const data = JSON.parse(decoded);
+        if (data.type === 'chat') {
+          addMessage({
+            id: data.id || `${Date.now()}-${Math.random()}`,
+            user: data.user || { username: 'Anonymous' },
+            message: data.message,
+            timestamp: data.timestamp || Date.now(),
+          });
+        } else if (data.type === 'tip') {
+          addMessage({
+            id: `tip-${Date.now()}-${Math.random()}`,
+            user: data.user,
+            message: `tipped R${data.amount} 🎉`,
+            timestamp: Date.now(),
+            isTip: true,
+            tipAmount: data.amount,
+          });
+        }
+      } catch (err) {
+        console.warn('LiveKit data packet parse warning:', err);
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [room, addMessage]);
+
+  // 2. Socket.io Relay listener (Secondary fallback + global notifications)
   useEffect(() => {
     const sock = getSocket();
     if (!sock.connected) {
@@ -77,24 +117,44 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    const sock = getSocket();
-    const chatData = {
-      roomName,
-      user: currentUser,
-      message: input.trim(),
-      timestamp: Date.now(),
-    };
-    sock.emit('live_chat', chatData);
-    addMessage({
+    const text = input.trim();
+    if (!text) return;
+
+    const msg: LiveChatMessage = {
       id: `${Date.now()}-${Math.random()}`,
       user: currentUser,
-      message: input.trim(),
+      message: text,
       timestamp: Date.now(),
-    });
+    };
+
+    // Optimistically render locally
+    addMessage(msg);
     setInput('');
+
+    // Broadcast over LiveKit Data Channel (<10ms peer delivery)
+    if (room && room.localParticipant) {
+      try {
+        const payload = new TextEncoder().encode(
+          JSON.stringify({ type: 'chat', ...msg })
+        );
+        await room.localParticipant.publishData(payload, { reliable: true });
+      } catch (err) {
+        console.warn('LiveKit data publish warning:', err);
+      }
+    }
+
+    // Broadcast over Socket.io
+    try {
+      const sock = getSocket();
+      sock.emit('live_chat', {
+        roomName,
+        user: currentUser,
+        message: text,
+        timestamp: Date.now(),
+      });
+    } catch (_) {}
   };
 
   return (

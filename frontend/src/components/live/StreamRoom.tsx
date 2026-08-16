@@ -325,17 +325,34 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 }
 
 function MobileChatInput({ roomName, username, avatarUrl }: { roomName: string; username: string; avatarUrl?: string }) {
+  const room = useRoomContext();
   const [input, setInput] = useState('');
   const addMessage = useLiveStore((s) => s.addMessage);
 
-  const send = (e: React.FormEvent) => {
+  const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    const sock = getSocket();
-    const msg = { user: { username, avatarUrl }, message: input.trim(), timestamp: Date.now() };
-    sock.emit('live_chat', { roomName, ...msg });
-    addMessage({ ...msg, id: `${Date.now()}` });
+    const text = input.trim();
+    if (!text) return;
+    const msg = {
+      id: `${Date.now()}-${Math.random()}`,
+      user: { username, avatarUrl },
+      message: text,
+      timestamp: Date.now(),
+    };
+    addMessage(msg);
     setInput('');
+
+    if (room && room.localParticipant) {
+      try {
+        const payload = new TextEncoder().encode(JSON.stringify({ type: 'chat', ...msg }));
+        await room.localParticipant.publishData(payload, { reliable: true });
+      } catch (_) {}
+    }
+
+    try {
+      const sock = getSocket();
+      sock.emit('live_chat', { roomName, ...msg });
+    } catch (_) {}
   };
 
   return (
