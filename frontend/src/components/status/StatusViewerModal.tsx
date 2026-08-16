@@ -181,9 +181,9 @@ export default function StatusViewerModal() {
         />
       )}
 
-      {/* Main Story Stage Container (Mobile 9:16 aspect constraint) */}
+      {/* Main Story Stage Container (Strict 9:16 Aspect Ratio) */}
       <div 
-        className="relative w-full h-full max-w-[440px] max-h-[920px] md:h-[92vh] md:rounded-2xl overflow-hidden bg-midnight-boma flex flex-col justify-between shadow-2xl border border-white/10"
+        className="relative aspect-[9/16] h-[100dvh] max-h-[100dvh] md:h-[92vh] md:max-h-[92vh] w-auto max-w-[100vw] md:max-w-[calc(92vh*9/16)] md:rounded-3xl overflow-hidden bg-midnight-boma flex flex-col justify-between shadow-2xl md:border-4 md:border-neutral-800"
         onMouseDown={handleTouchStart}
         onMouseUp={handleTouchEnd}
         onTouchStart={handleTouchStart}

@@ -236,8 +236,8 @@ export default function StatusCreatorModal() {
           </button>
         </div>
 
-        {/* --- Live Preview Stage --- */}
-        <div className="relative w-full aspect-[9/12] max-h-[380px] bg-black overflow-hidden flex items-center justify-center border-b border-white/10">
+        {/* --- Live Preview Stage (9:16 Aspect Ratio) --- */}
+        <div className="relative w-full aspect-[9/16] max-h-[420px] bg-black overflow-hidden flex items-center justify-center border-b border-white/10 mx-auto">
           
           {mode === 'text' ? (
             <div className={`w-full h-full p-6 flex items-center justify-center bg-gradient-to-br ${selectedGradient} relative`}>
