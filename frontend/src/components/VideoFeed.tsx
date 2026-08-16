@@ -865,17 +865,15 @@ export default function VideoFeed() {
                     {/* Like Action */}
                     <button
                       onClick={(e) => handleLikeToggle(video.id, e)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
+                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                     >
-                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <TokaHeartIcon
-                          size={24}
-                          filled={video.isLiked}
-                          className={`transition-all duration-200 ${
-                            video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
-                          }`}
-                        />
-                      </div>
+                      <TokaHeartIcon
+                        size={32}
+                        filled={video.isLiked}
+                        className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${
+                          video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
+                        }`}
+                      />
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
                         {video.likes}
                       </span>
@@ -884,11 +882,12 @@ export default function VideoFeed() {
                     {/* Comment Action */}
                     <button
                       onClick={() => setActiveCommentsVideoId(video.id)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
+                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                     >
-                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <TokaCommentIcon size={24} className="text-cloud-white" />
-                      </div>
+                      <TokaCommentIcon 
+                        size={32} 
+                        className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
+                      />
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
                         {video.commentsCount || 0}
                       </span>
@@ -897,7 +896,7 @@ export default function VideoFeed() {
                     {/* Tip Action (Prominent Toka Flare) */}
                     <button
                       onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
+                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                     >
                       <div className="sidebar-tip-btn w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
                         <TokaTipIcon size={26} className="text-cloud-white" />
@@ -908,11 +907,12 @@ export default function VideoFeed() {
                     {/* Share Action */}
                     <button
                       onClick={() => handleShare(video)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
+                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                     >
-                      <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <TokaShareIcon size={20} className="text-cloud-white" />
-                      </div>
+                      <TokaShareIcon 
+                        size={26} 
+                        className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
+                      />
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">{video.shares}</span>
                     </button>
 
@@ -923,11 +923,11 @@ export default function VideoFeed() {
                           e.stopPropagation();
                           setActiveOptionsVideoId(activeOptionsVideoId === video.id ? null : video.id);
                         }}
-                        className="flex flex-col items-center gap-1 mt-1 group active:scale-90 transition-transform select-none"
+                        className="flex flex-col items-center gap-1 mt-1 group active:scale-90 transition-transform select-none cursor-pointer"
                       >
-                        <div className="w-9 h-9 rounded-full bg-shaded-canopy/60 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                          <span className="material-symbols-outlined text-cloud-white text-[20px]">more_horiz</span>
-                        </div>
+                        <span className="material-symbols-outlined text-cloud-white group-hover:text-white/80 text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                          more_horiz
+                        </span>
                       </button>
 
                       {activeOptionsVideoId === video.id && (
