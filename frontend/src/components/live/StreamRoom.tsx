@@ -221,27 +221,29 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       />
       <MediaRecorderManager stream={localStream} isRecording={isRecording} />
 
-      {/* ---- DESKTOP LAYOUT (md+) ---- */}
-      <div className="hidden md:flex h-screen bg-midnight-boma">
-        {/* Video area - 70% */}
-        <div className="flex-1 relative min-w-0">
-          {/* HUD top bar */}
-          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/70 to-transparent">
+      {/* ---- UNIFIED RESPONSIVE STREAM ROOM LAYOUT ---- */}
+      <div className="relative h-screen w-full bg-midnight-boma overflow-hidden flex flex-col md:flex-row select-none">
+        
+        {/* Main Video Area (Full viewport on mobile, flex-1 left pane on desktop) */}
+        <div className="relative flex-1 h-full min-w-0 bg-black flex flex-col">
+          
+          {/* Top Floating HUD Bar */}
+          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
+              <span className="flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
               </span>
               {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
             </div>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-cloud-white/80 text-xs bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
-                <span className="material-symbols-outlined text-[14px]">visibility</span>
+              <span className="flex items-center gap-1 text-cloud-white/90 text-xs bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm font-mono">
+                <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
                 {viewerCount}
               </span>
               {isHost && (
                 <button
                   onClick={handleEndStream}
-                  className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
+                  className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer"
                 >
                   End Stream
                 </button>
@@ -249,50 +251,101 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
             </div>
           </div>
 
-          <VideoConference className="h-full" />
+          {/* SINGLE VideoConference Instance */}
+          <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
+            <VideoConference className="h-full w-full" />
+          </div>
 
-          {/* Host controls bottom bar */}
+          {/* Mobile Floating Action Sidebar (Right side) */}
+          <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-5">
+            {currentRoom && (
+              <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
+            )}
+            <button
+              onClick={async () => {
+                if (currentRoom) {
+                  try {
+                    await navigator.share({ title: currentRoom.title, url: window.location.href });
+                  } catch {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }
+              }}
+              className="flex flex-col items-center gap-1 cursor-pointer select-none"
+            >
+              <span className="material-symbols-outlined text-cloud-white text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                share
+              </span>
+              <span className="text-[10px] text-cloud-white/80 font-bold drop-shadow">Share</span>
+            </button>
+          </div>
+
+          {/* Mobile Floating Chat Overlay */}
+          <div className="md:hidden pointer-events-none">
+            {mongooseUser && currentRoom && (
+              <LiveChat
+                roomName={currentRoom.livekitRoomName}
+                currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
+                isMobile
+              />
+            )}
+          </div>
+
+          {/* Mobile Chat Input Bar */}
+          {mongooseUser && currentRoom && (
+            <div className="md:hidden absolute bottom-4 left-4 right-20 z-30">
+              <MobileChatInput
+                roomName={currentRoom.livekitRoomName}
+                username={mongooseUser.username}
+                avatarUrl={mongooseUser.avatarUrl}
+              />
+            </div>
+          )}
+
+          {/* Host Co-Host Controls Bottom Bar (Desktop) */}
           {isHost && (
-            <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-center gap-3">
+            <div className="hidden md:flex absolute bottom-4 left-4 right-4 z-20 items-center justify-center gap-3">
               <button
                 onClick={() => setShowCohostPanel((v) => !v)}
-                className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm border border-white/10 text-cloud-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-white/10 transition-all"
+                className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/20 text-cloud-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-white/15 transition-all cursor-pointer shadow-lg active:scale-95"
               >
-                <span className="material-symbols-outlined text-[16px]">group_add</span>
+                <span className="material-symbols-outlined text-[16px] text-toka-flare">group_add</span>
                 Invite Co-Host
               </button>
             </div>
           )}
 
+          {/* Host Co-Host Invite Panel Popup */}
           {isHost && showCohostPanel && (
-            <div className="absolute bottom-16 left-4 right-4 z-20">
+            <div className="absolute bottom-16 left-4 right-4 md:left-auto md:right-8 md:w-96 z-30 animate-scale-up">
               <CohostInvitePanel roomId={roomId} />
             </div>
           )}
         </div>
 
-        {/* Chat panel - 30% */}
-        <div className="w-80 flex flex-col shrink-0">
+        {/* Desktop Sidebar (Chat + Host Metadata) */}
+        <div className="hidden md:flex w-80 flex-col shrink-0 bg-shaded-canopy/95 backdrop-blur-md border-l border-white/10 h-full">
           <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full overflow-hidden bg-toka-flare/30 border border-toka-flare/30">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center shrink-0">
                 {currentRoom?.hostId?.avatarUrl ? (
                   <img src={currentRoom.hostId.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-toka-flare text-xs font-bold">
+                  <span className="text-toka-flare text-xs font-bold">
                     {currentRoom?.hostId?.username?.[0]?.toUpperCase()}
-                  </div>
+                  </span>
                 )}
               </div>
-              <div>
-                <p className="text-cloud-white font-bold text-xs">@{currentRoom?.hostId?.username}</p>
-                <p className="text-cloud-white/50 text-[10px] truncate max-w-[140px]">{currentRoom?.title}</p>
+              <div className="min-w-0">
+                <p className="text-cloud-white font-bold text-xs truncate">@{currentRoom?.hostId?.username}</p>
+                <p className="text-cloud-white/50 text-[11px] truncate max-w-[130px]">{currentRoom?.title}</p>
               </div>
             </div>
             {currentRoom && (
               <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
             )}
           </div>
+
           <div className="flex-1 min-h-0">
             {mongooseUser && currentRoom && (
               <LiveChat
@@ -301,77 +354,8 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
               />
             )}
           </div>
-          {/* Mobile chat send (desktop uses LiveChat's built-in input) */}
-        </div>
-      </div>
-
-      {/* ---- MOBILE LAYOUT (< md) ---- */}
-      <div className="md:hidden relative h-screen bg-black overflow-hidden">
-        <div className="absolute inset-0">
-          <VideoConference className="h-full" />
         </div>
 
-        {/* Mobile HUD top */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pb-3 bg-gradient-to-b from-black/70 to-transparent">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-            </span>
-            {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-cloud-white/80 text-xs bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
-              <span className="material-symbols-outlined text-[14px]">visibility</span>
-              {viewerCount}
-            </span>
-            {isHost && (
-              <button
-                onClick={handleEndStream}
-                className="bg-red-700 text-white text-[11px] font-bold px-3 py-1 rounded-full"
-              >
-                End
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile right action sidebar */}
-        <div className="absolute right-3 bottom-28 z-10 flex flex-col items-center gap-5">
-          {currentRoom && (
-            <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
-          )}
-          <button
-            onClick={async () => {
-              if (currentRoom) {
-                try {
-                  await navigator.share({ title: currentRoom.title, url: window.location.href });
-                } catch { navigator.clipboard.writeText(window.location.href); }
-              }
-            }}
-            className="flex flex-col items-center gap-1"
-          >
-            <span className="material-symbols-outlined text-cloud-white text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-              share
-            </span>
-            <span className="text-[10px] text-cloud-white/60">Share</span>
-          </button>
-        </div>
-
-        {/* Floating chat overlay */}
-        {mongooseUser && currentRoom && (
-          <LiveChat
-            roomName={currentRoom.livekitRoomName}
-            currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
-            isMobile
-          />
-        )}
-
-        {/* Mobile chat input */}
-        {mongooseUser && currentRoom && (
-          <div className="absolute bottom-4 left-4 right-20 z-20">
-            <MobileChatInput roomName={currentRoom.livekitRoomName} username={mongooseUser.username} avatarUrl={mongooseUser.avatarUrl} />
-          </div>
-        )}
       </div>
     </LiveKitRoom>
   );
