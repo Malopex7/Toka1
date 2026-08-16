@@ -529,6 +529,58 @@ function ProfileContent() {
     }
   };
 
+  const compressAvatar = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 150;
+          const MAX_HEIGHT = 150;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            0.7
+          );
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -550,8 +602,16 @@ function ProfileContent() {
 
     setUploadingAvatar(true);
     try {
+      // Compress the avatar on the client side before uploading
+      let uploadBlob: Blob = file;
+      try {
+        uploadBlob = await compressAvatar(file);
+      } catch (compressErr) {
+        console.error('[Avatar Compression Failed, using original]:', compressErr);
+      }
+
       const formData = new FormData();
-      formData.append('avatar', file);
+      formData.append('avatar', uploadBlob, 'avatar.jpg');
 
       const token = await firebaseUser.getIdToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/avatar/upload`, {
