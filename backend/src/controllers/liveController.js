@@ -139,8 +139,8 @@ export const joinStream = async (req, res, next) => {
       }
     }
 
-    // Add to participants if not already present
-    if (!stream.participants.some(id => id.toString() === viewer._id.toString())) {
+    // Add to viewers participants if not host and not already present
+    if (!isHost && !stream.participants.some(id => id.toString() === viewer._id.toString())) {
       stream.participants.push(viewer._id);
       stream.viewerCount = stream.participants.length;
       await stream.save();

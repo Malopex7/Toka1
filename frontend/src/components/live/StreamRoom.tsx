@@ -556,14 +556,12 @@ function LiveBroadcastStage({
   );
 }
 
-function LiveViewerBadge({ isHost, fallbackCount }: { isHost: boolean; fallbackCount: number }) {
+function LiveViewerBadge({ isHost }: { isHost: boolean; fallbackCount?: number }) {
   const remoteParticipants = useRemoteParticipants();
-  const storeCount = useLiveStore((s) => s.viewerCount);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Exact real-time connected audience count from LiveKit WebRTC
-  const livekitCount = isHost ? remoteParticipants.length : remoteParticipants.length + 1;
-  const count = Math.max(livekitCount, storeCount, fallbackCount);
+  // Exact real-time connected audience count
+  const audienceCount = remoteParticipants.length;
 
   return (
     <div className="relative">
@@ -573,7 +571,7 @@ function LiveViewerBadge({ isHost, fallbackCount }: { isHost: boolean; fallbackC
         title="View live audience"
       >
         <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
-        <span>{count}</span>
+        <span>{audienceCount}</span>
       </button>
 
       {/* Viewers Popup Dropdown */}
@@ -582,7 +580,7 @@ function LiveViewerBadge({ isHost, fallbackCount }: { isHost: boolean; fallbackC
           <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <h4 className="text-cloud-white font-bold text-xs">Live Viewers ({count})</h4>
+              <h4 className="text-cloud-white font-bold text-xs">Live Viewers ({audienceCount})</h4>
             </div>
             <button
               onClick={() => setIsOpen(false)}
