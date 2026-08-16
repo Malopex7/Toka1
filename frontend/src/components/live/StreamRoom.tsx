@@ -7,6 +7,7 @@ import {
   VideoTrack,
   useLocalParticipant,
   useRoomContext,
+  useRemoteParticipants,
   isTrackReference,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
@@ -82,9 +83,11 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
           });
           return;
         }
-        if (!res.ok) throw new Error(data.message);
         setLivekitConnection(data.data.token, data.data.livekitUrl);
         setCurrentRoom(data.data.stream);
+        if (data.data?.stream?.viewerCount !== undefined) {
+          useLiveStore.getState().setViewerCount(data.data.stream.viewerCount);
+        }
       } catch (err) {
         console.error('[StreamRoom] join error:', err);
       } finally {
@@ -195,10 +198,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
               {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
             </div>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-cloud-white/90 text-xs bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm font-mono">
-                <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
-                {viewerCount}
-              </span>
+              <LiveViewerBadge isHost={isHost} fallbackCount={currentRoom?.viewerCount || 0} />
               {isHost && (
                 <button
                   onClick={handleEndStream}
@@ -553,5 +553,21 @@ function LiveBroadcastStage({
         </div>
       )}
     </div>
+  );
+}
+
+function LiveViewerBadge({ isHost, fallbackCount }: { isHost: boolean; fallbackCount: number }) {
+  const remoteParticipants = useRemoteParticipants();
+  const storeCount = useLiveStore((s) => s.viewerCount);
+
+  // Exact real-time connected audience count from LiveKit WebRTC
+  const livekitCount = isHost ? remoteParticipants.length : remoteParticipants.length + 1;
+  const count = Math.max(livekitCount, storeCount, fallbackCount);
+
+  return (
+    <span className="flex items-center gap-1 text-cloud-white/90 text-xs bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm font-mono">
+      <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
+      {count}
+    </span>
   );
 }
