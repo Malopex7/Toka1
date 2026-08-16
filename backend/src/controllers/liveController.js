@@ -1,9 +1,9 @@
-// src/controllers/liveController.js
 import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import LiveStream from '../models/LiveStream.js';
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import { AppError } from '../middlewares/error.js';
+import { sendFcmNotification } from '../services/notificationService.js';
 
 const getLivekitConfig = () => ({
   host: process.env.LIVEKIT_HOST || 'ws://localhost:7880',
@@ -300,10 +300,26 @@ export const inviteCohost = async (req, res, next) => {
       // Emit to stream room for audience members
       io.to(stream.livekitRoomName).emit('cohost_invited', invitePayload);
 
-      // Emit to direct channels
+      // Emit to direct user channels & global listener
+      io.emit('global_cohost_invite', invitePayload);
       io.emit(`cohost_invited:${invitee._id.toString()}`, invitePayload);
       io.emit(`cohost_invited:${invitee.username.toLowerCase()}`, invitePayload);
     }
+
+    // Persist to user's notifications inbox & trigger device push
+    sendFcmNotification(
+      invitee._id,
+      'Live Co-Host Invitation! 🎥',
+      `@${req.user.username} invited you to Co-Host their live stream "${stream.title || 'Live Broadcast'}"!`,
+      {
+        type: 'live_cohost_invite',
+        roomId: stream._id.toString(),
+        roomName: stream.livekitRoomName,
+        hostUsername: req.user.username,
+        hostAvatarUrl: req.user.avatarUrl || '',
+        streamTitle: stream.title || '',
+      }
+    ).catch(err => console.error('[FCM Co-Host Invite Failed]', err));
 
     res.json({ status: 'success', message: `Co-host invite sent to @${cleanUsername}` });
   } catch (err) {

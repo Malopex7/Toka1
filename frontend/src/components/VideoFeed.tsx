@@ -445,9 +445,20 @@ export default function VideoFeed() {
     setIsNotificationsOpen(false);
     const videoId = notif.metadata?.videoId;
     const commentId = notif.metadata?.commentId;
-    const type = notif.type;
+    // 1) Live Co-Host invitations: navigate directly to /live/[roomId]
+    const liveRoomId = notif.metadata?.roomId || (typeof notif.metadata?.get === 'function' ? notif.metadata.get('roomId') : null);
+    if (
+      type === 'live_cohost_invite' ||
+      notif.title?.toLowerCase().includes('live co-host') ||
+      notif.body?.toLowerCase().includes('co-host their live')
+    ) {
+      if (liveRoomId) {
+        router.push(`/live/${liveRoomId}`);
+        return;
+      }
+    }
 
-    // 1) Sponsorship-related notifications: navigate directly to /sponsorships
+    // 2) Sponsorship-related notifications: navigate directly to /sponsorships
     if (
       type === 'sponsorship_requested' || 
       type?.startsWith('sponsorship_') ||
@@ -458,7 +469,7 @@ export default function VideoFeed() {
       return;
     }
 
-    // 2) Verification-related notifications: navigate to /moderation (moderator) or /profile
+    // 3) Verification-related notifications: navigate to /moderation (moderator) or /profile
     if (type?.includes('verification') || notif.title?.toLowerCase().includes('verification')) {
       if (mongooseUser?.role === 'moderator') {
         router.push('/moderation');

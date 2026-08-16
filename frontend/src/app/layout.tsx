@@ -6,6 +6,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobalModal from "@/components/GlobalModal";
 import PWAProvider from "@/components/PWAProvider";
 import DesktopSidebar from "@/components/DesktopSidebar";
+import GlobalCohostInviteListener from "@/components/live/GlobalCohostInviteListener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,6 +73,7 @@ export default function RootLayout({
               </div>
             </div>
             <GlobalModal />
+            <GlobalCohostInviteListener />
             <PWAProvider />
           </ErrorBoundary>
         </AuthContextProvider>
