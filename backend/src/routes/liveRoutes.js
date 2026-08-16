@@ -11,6 +11,8 @@ import {
   unlockPrivateRoom,
   inviteCohost,
   acceptCohost,
+  leaveCohost,
+  removeCohost,
   endStream,
 } from '../controllers/liveController.js';
 
@@ -28,6 +30,8 @@ router.post('/live/:roomId/tip', protect, tipHost);
 router.post('/live/:roomId/unlock-private', protect, unlockPrivateRoom);
 router.post('/live/:roomId/invite-cohost', protect, inviteCohost);
 router.post('/live/:roomId/cohost', protect, acceptCohost);
+router.post('/live/:roomId/leave-cohost', protect, leaveCohost);
+router.post('/live/:roomId/remove-cohost', protect, removeCohost);
 router.post('/live/:roomId/end', protect, endStream);
 
 export default router;

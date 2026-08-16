@@ -379,6 +379,82 @@ export const acceptCohost = async (req, res, next) => {
   }
 };
 
+// POST /api/live/:roomId/leave-cohost
+export const leaveCohost = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findById(req.params.roomId).populate('hostId', 'username avatarUrl isBrandSafeVerified');
+    if (!stream || stream.status !== 'live') return next(new AppError('Stream not found', 404));
+
+    const userId = req.user._id.toString();
+    stream.cohosts = (stream.cohosts || []).filter(id => (id._id || id).toString() !== userId);
+    if (stream.invitedCohosts) {
+      stream.invitedCohosts = stream.invitedCohosts.filter(id => (id._id || id).toString() !== userId);
+    }
+    await stream.save();
+
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(stream.livekitRoomName).emit('cohost_left', {
+        cohost: {
+          id: req.user._id.toString(),
+          username: req.user.username,
+        },
+        roomId: stream._id.toString(),
+      });
+    }
+
+    // Return viewer token (canPublish: false)
+    const token = await mintToken(stream.livekitRoomName, req.user.username, req.user._id, false);
+    res.json({
+      status: 'success',
+      data: {
+        token,
+        livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880',
+        stream,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/live/:roomId/remove-cohost
+export const removeCohost = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findById(req.params.roomId).populate('hostId', 'username avatarUrl isBrandSafeVerified');
+    if (!stream || stream.status !== 'live') return next(new AppError('Stream not found', 404));
+
+    const hostIdStr = stream.hostId?._id?.toString() || stream.hostId?.toString();
+    if (hostIdStr !== req.user._id.toString()) {
+      return next(new AppError('Only the host can remove a co-host', 403));
+    }
+
+    const { cohostId } = req.body;
+    if (!cohostId) return next(new AppError('cohostId is required', 400));
+
+    stream.cohosts = (stream.cohosts || []).filter(id => (id._id || id).toString() !== cohostId.toString());
+    await stream.save();
+
+    const io = req.app.locals.io;
+    if (io) {
+      const payload = {
+        cohostId: cohostId.toString(),
+        roomId: stream._id.toString(),
+      };
+      io.to(stream.livekitRoomName).emit('cohost_removed', payload);
+      io.emit(`cohost_removed:${cohostId.toString()}`, payload);
+    }
+
+    res.json({
+      status: 'success',
+      data: { stream },
+      message: 'Co-host removed successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // POST /api/live/:roomId/end
 export const endStream = async (req, res, next) => {
   try {

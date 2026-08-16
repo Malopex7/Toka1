@@ -126,7 +126,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     };
   }, [roomId, isAuthenticated, livekitToken, currentRoom, getIdToken, setLivekitConnection, setCurrentRoom]);
 
-  // Socket.io: listen for stream_ended and cohost invitations
+  // Socket.io: listen for stream_ended, cohost invitations, cohost join/leave events
   useEffect(() => {
     const sock = getSocket();
     if (!sock.connected) sock.connect();
@@ -156,10 +156,47 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       }
     };
 
+    const handleCohostJoined = (data: { cohost: { id: string; username: string; avatarUrl?: string } }) => {
+      if (currentRoom) {
+        const cohostId = data.cohost?.id;
+        if (cohostId && !currentRoom.cohosts?.some((c: any) => (c?._id || c)?.toString() === cohostId)) {
+          setCurrentRoom({
+            ...currentRoom,
+            cohosts: [...(currentRoom.cohosts || []), cohostId],
+          });
+        }
+      }
+    };
+
+    const handleCohostLeft = (data: { cohost?: { id: string; username: string }; cohostId?: string; roomId?: string }) => {
+      const targetCohostId = data.cohost?.id || data.cohostId;
+      const myId = mongooseUser?._id?.toString();
+
+      if (targetCohostId && targetCohostId === myId) {
+        // Current user is no longer a co-host, downgrade to viewer
+        if (currentRoom) {
+          setCurrentRoom({
+            ...currentRoom,
+            cohosts: (currentRoom.cohosts || []).filter((c: any) => (c?._id || c)?.toString() !== myId),
+          });
+        }
+      } else if (currentRoom && targetCohostId) {
+        setCurrentRoom({
+          ...currentRoom,
+          cohosts: (currentRoom.cohosts || []).filter((c: any) => (c?._id || c)?.toString() !== targetCohostId),
+        });
+      }
+    };
+
     sock.on('stream_ended', handleEnded);
     sock.on('cohost_invited', handleCohostInvite);
+    sock.on('cohost_joined', handleCohostJoined);
+    sock.on('cohost_left', handleCohostLeft);
+    sock.on('cohost_removed', handleCohostLeft);
+
     if (mongooseUser?._id) {
       sock.on(`cohost_invited:${mongooseUser._id}`, handleCohostInvite);
+      sock.on(`cohost_removed:${mongooseUser._id}`, handleCohostLeft);
     }
     if (mongooseUser?.username) {
       sock.on(`cohost_invited:${mongooseUser.username.toLowerCase()}`, handleCohostInvite);
@@ -168,14 +205,18 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     return () => {
       sock.off('stream_ended', handleEnded);
       sock.off('cohost_invited', handleCohostInvite);
+      sock.off('cohost_joined', handleCohostJoined);
+      sock.off('cohost_left', handleCohostLeft);
+      sock.off('cohost_removed', handleCohostLeft);
       if (mongooseUser?._id) {
         sock.off(`cohost_invited:${mongooseUser._id}`, handleCohostInvite);
+        sock.off(`cohost_removed:${mongooseUser._id}`, handleCohostLeft);
       }
       if (mongooseUser?.username) {
         sock.off(`cohost_invited:${mongooseUser.username.toLowerCase()}`, handleCohostInvite);
       }
     };
-  }, [roomId, router, mongooseUser]);
+  }, [roomId, router, mongooseUser, currentRoom, setCurrentRoom]);
 
   const handleAcceptCohost = async () => {
     if (!pendingCohostInvite) return;
@@ -207,6 +248,35 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       console.error('[StreamRoom] accept cohost error:', err);
     } finally {
       setAcceptingCohost(false);
+    }
+  };
+
+  const handleLeaveCohost = async () => {
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/live/${roomId}/leave-cohost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (data.data?.token) {
+        setLivekitConnection(data.data.token, data.data.livekitUrl);
+      }
+      if (data.data?.stream) {
+        setCurrentRoom(data.data.stream);
+      } else if (currentRoom && mongooseUser?._id) {
+        setCurrentRoom({
+          ...currentRoom,
+          cohosts: (currentRoom.cohosts || []).filter(
+            (c: any) => (c?._id || c)?.toString() !== mongooseUser._id.toString()
+          ),
+        });
+      }
+    } catch (err) {
+      console.error('[StreamRoom] leave cohost error:', err);
     }
   };
 
@@ -293,6 +363,11 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
               <span className="flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
               </span>
+              {isCohost && !isHost && (
+                <span className="flex items-center gap-1 bg-toka-flare text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                  <span className="material-symbols-outlined text-[13px]">groups</span> CO-HOST
+                </span>
+              )}
               {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
             </div>
             <div className="flex items-center gap-2">
@@ -305,6 +380,16 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
                   End Stream
                 </button>
               )}
+              {!isHost && isCohost && (
+                <button
+                  onClick={handleLeaveCohost}
+                  className="bg-red-700/90 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer flex items-center gap-1"
+                  title="Leave Co-Host Stage"
+                >
+                  <span className="material-symbols-outlined text-[14px]">logout</span>
+                  <span>Leave Stage</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -312,10 +397,13 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
           <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
             <LiveBroadcastStage
               isHost={isHost}
+              isCohost={isCohost}
+              canPublish={canPublish}
               hostUsername={currentRoom?.hostId?.username}
               hostAvatarUrl={currentRoom?.hostId?.avatarUrl}
               showCohostPanel={showCohostPanel}
               onToggleCohostPanel={() => setShowCohostPanel((v) => !v)}
+              onLeaveCohost={handleLeaveCohost}
               onShare={async () => {
                 if (currentRoom) {
                   try {
@@ -329,7 +417,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
           </div>
 
           {/* Mobile Floating Action Sidebar (Right side, for audience only) */}
-          {!isHost && currentRoom && (
+          {!isHost && !isCohost && currentRoom && (
             <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-4">
               <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
               <button
@@ -519,24 +607,30 @@ function MobileChatInput({ roomName, username, avatarUrl }: { roomName: string; 
 
 function LiveBroadcastStage({
   isHost,
+  isCohost,
+  canPublish,
   hostUsername,
   hostAvatarUrl,
   showCohostPanel,
   onToggleCohostPanel,
+  onLeaveCohost,
   onShare,
 }: {
   isHost: boolean;
+  isCohost: boolean;
+  canPublish: boolean;
   hostUsername?: string;
   hostAvatarUrl?: string;
   showCohostPanel?: boolean;
   onToggleCohostPanel?: () => void;
+  onLeaveCohost?: () => void;
   onShare?: () => void;
 }) {
   const room = useRoomContext();
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
   const [audioPlaybackAllowed, setAudioPlaybackAllowed] = useState(true);
 
-  const canPublish = isHost || Boolean(localParticipant?.permissions?.canPublish);
+  const isPresenter = canPublish || isHost || isCohost || Boolean(localParticipant?.permissions?.canPublish) || localParticipant.isCameraEnabled || localParticipant.isMicrophoneEnabled;
 
   // Subscribe to all active camera and screen-share tracks in the room
   const tracks = useTracks([
@@ -546,7 +640,7 @@ function LiveBroadcastStage({
 
   // Auto-enable camera and mic for publishing presenters upon entering
   useEffect(() => {
-    if (canPublish && localParticipant) {
+    if (isPresenter && localParticipant) {
       if (!localParticipant.isCameraEnabled) {
         localParticipant.setCameraEnabled(true).catch(console.error);
       }
@@ -554,7 +648,7 @@ function LiveBroadcastStage({
         localParticipant.setMicrophoneEnabled(true).catch(console.error);
       }
     }
-  }, [canPublish, localParticipant]);
+  }, [isPresenter, localParticipant]);
 
   // Check if audio playback is permitted by the browser
   useEffect(() => {
@@ -626,17 +720,17 @@ function LiveBroadcastStage({
           </div>
           <div>
             <h3 className="text-cloud-white font-bold text-base">
-              {canPublish ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
+              {isPresenter ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
             </h3>
             <p className="text-cloud-white/50 text-xs mt-1">
-              {canPublish ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
+              {isPresenter ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
             </p>
           </div>
         </div>
       )}
 
       {/* Tap to Unmute Overlay for Audience */}
-      {!canPublish && !audioPlaybackAllowed && (
+      {!isPresenter && !audioPlaybackAllowed && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 animate-bounce">
           <button
             onClick={handleStartAudio}
@@ -649,13 +743,13 @@ function LiveBroadcastStage({
       )}
 
       {/* Unified Presenter Floating Controls Dock */}
-      {canPublish && (
-        <div className="absolute bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 md:gap-2 bg-black/80 backdrop-blur-xl px-2.5 md:px-3 py-1.5 md:py-2 rounded-2xl border border-white/15 shadow-2xl max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar">
+      {isPresenter && (
+        <div className="absolute bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 md:gap-2 bg-black/85 backdrop-blur-xl px-2.5 md:px-3 py-1.5 md:py-2 rounded-2xl border border-white/20 shadow-2xl max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar">
           {/* Camera Toggle */}
           <button
             onClick={toggleCamera}
             className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-              isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
+              isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg shadow-red-600/30'
             }`}
             title={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
           >
@@ -668,7 +762,7 @@ function LiveBroadcastStage({
           <button
             onClick={toggleMic}
             className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-              isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
+              isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg shadow-red-600/30'
             }`}
             title={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
           >
@@ -681,7 +775,7 @@ function LiveBroadcastStage({
           <button
             onClick={toggleScreenShare}
             className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-              isScreenShareEnabled ? 'bg-toka-flare text-white shadow-lg' : 'bg-white/10 text-cloud-white hover:bg-white/20'
+              isScreenShareEnabled ? 'bg-toka-flare text-white shadow-lg shadow-toka-flare/30' : 'bg-white/10 text-cloud-white hover:bg-white/20'
             }`}
             title={isScreenShareEnabled ? 'Stop Screen Share' : 'Share Screen'}
           >
@@ -699,12 +793,24 @@ function LiveBroadcastStage({
               onClick={onToggleCohostPanel}
               className={`flex items-center gap-1.5 px-3 md:px-3.5 h-9 md:h-10 rounded-xl font-bold text-[11px] md:text-xs shrink-0 whitespace-nowrap transition-all cursor-pointer shadow-md active:scale-95 ${
                 showCohostPanel
-                  ? 'bg-toka-flare text-white'
+                  ? 'bg-toka-flare text-white shadow-toka-flare/30'
                   : 'bg-white/10 text-cloud-white hover:bg-white/20'
               }`}
             >
               <span className="material-symbols-outlined text-[16px] md:text-[18px]">group_add</span>
               <span>Invite Co-Host</span>
+            </button>
+          )}
+
+          {/* Leave Stage (Co-Host only) */}
+          {!isHost && isCohost && onLeaveCohost && (
+            <button
+              onClick={onLeaveCohost}
+              className="flex items-center gap-1.5 px-3 md:px-3.5 h-9 md:h-10 rounded-xl font-bold text-[11px] md:text-xs shrink-0 whitespace-nowrap transition-all cursor-pointer shadow-md active:scale-95 bg-red-600/80 hover:bg-red-600 text-white shadow-red-600/20"
+              title="Leave Co-Host Stage"
+            >
+              <span className="material-symbols-outlined text-[16px] md:text-[18px]">call_end</span>
+              <span>Leave Stage</span>
             </button>
           )}
 
