@@ -2,9 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   LiveKitRoom,
-  VideoConference,
   RoomAudioRenderer,
+  useTracks,
+  VideoTrack,
+  useLocalParticipant,
+  useRoomContext,
+  isTrackReference,
 } from '@livekit/components-react';
+import { Track } from 'livekit-client';
 import '@livekit/components-styles';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveStore } from '@/store/useLiveStore';
@@ -47,7 +52,6 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     privateMode: 'entry_fee' | 'subscription' | 'tip_invite';
     entryFeeZAR: number; subscriberPriceZAR: number; tipInviteMinZAR: number;
   } | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCohostPanel, setShowCohostPanel] = useState(false);
 
   const isHost = currentRoom?.hostId?._id === mongooseUser?._id?.toString() ||
@@ -78,15 +82,11 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
           });
           return;
         }
-        if (!res.ok) {
-          setErrorMessage(data.message || 'Stream is no longer active');
-          return;
-        }
+        if (!res.ok) throw new Error(data.message);
         setLivekitConnection(data.data.token, data.data.livekitUrl);
         setCurrentRoom(data.data.stream);
       } catch (err) {
-        console.warn('[StreamRoom] join error:', err);
-        if (isMounted) setErrorMessage(err instanceof Error ? err.message : 'Stream is not active');
+        console.error('[StreamRoom] join error:', err);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -157,32 +157,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     );
   }
 
-  if (errorMessage || !livekitToken) {
+  if (!livekitToken) {
     return (
-      <div className="min-h-screen bg-midnight-boma flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-cloud-white/40">
-          <span className="material-symbols-outlined text-[32px]">videocam_off</span>
-        </div>
-        <h2 className="text-cloud-white font-bold text-lg mb-1">
-          {errorMessage || 'Stream Unavailable'}
-        </h2>
-        <p className="text-cloud-white/60 text-sm max-w-sm mb-6">
-          This live broadcast has concluded or is no longer accessible.
-        </p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/live')}
-            className="px-5 py-2.5 bg-toka-flare text-white font-bold text-xs rounded-xl shadow-lg hover:bg-toka-flare/90 transition-all cursor-pointer"
-          >
-            Explore Live Streams
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="px-5 py-2.5 bg-white/10 text-cloud-white font-bold text-xs rounded-xl hover:bg-white/15 transition-all cursor-pointer"
-          >
-            Go Home
-          </button>
-        </div>
+      <div className="min-h-screen bg-midnight-boma flex items-center justify-center">
+        <p className="text-cloud-white/60 text-sm">Stream unavailable. Please try again.</p>
       </div>
     );
   }
@@ -204,10 +182,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
       {/* ---- UNIFIED RESPONSIVE STREAM ROOM LAYOUT ---- */}
       <div className="relative h-screen w-full bg-midnight-boma overflow-hidden flex flex-col md:flex-row select-none">
-        
+
         {/* Main Video Area (Full viewport on mobile, flex-1 left pane on desktop) */}
         <div className="relative flex-1 h-full min-w-0 bg-black flex flex-col">
-          
+
           {/* Top Floating HUD Bar */}
           <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
             <div className="flex items-center gap-2">
@@ -232,9 +210,13 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
             </div>
           </div>
 
-          {/* SINGLE VideoConference Instance */}
+          {/* Dedicated Full-Screen Live Broadcast Stage */}
           <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
-            <VideoConference className="h-full w-full" />
+            <LiveBroadcastStage
+              isHost={isHost}
+              hostUsername={currentRoom?.hostId?.username}
+              hostAvatarUrl={currentRoom?.hostId?.avatarUrl}
+            />
           </div>
 
           {/* Mobile Floating Action Sidebar (Right side) */}
@@ -370,5 +352,134 @@ function MobileChatInput({ roomName, username, avatarUrl }: { roomName: string; 
         <span className="material-symbols-outlined text-white text-[18px]">send</span>
       </button>
     </form>
+  );
+}
+
+function LiveBroadcastStage({
+  isHost,
+  hostUsername,
+  hostAvatarUrl,
+}: {
+  isHost: boolean;
+  hostUsername?: string;
+  hostAvatarUrl?: string;
+}) {
+  const room = useRoomContext();
+  const { localParticipant, isCameraEnabled, isMicrophoneEnabled } = useLocalParticipant();
+  const [audioPlaybackAllowed, setAudioPlaybackAllowed] = useState(true);
+
+  // Subscribe to all active camera and screen-share tracks in the room
+  const tracks = useTracks([
+    { source: Track.Source.Camera, withPlaceholder: false },
+    { source: Track.Source.ScreenShare, withPlaceholder: false },
+  ]);
+
+  // Check if audio playback is permitted by the browser
+  useEffect(() => {
+    if (!room) return;
+    const checkAudio = () => {
+      setAudioPlaybackAllowed(room.canPlaybackAudio);
+    };
+    checkAudio();
+    room.on('audioPlaybackChanged', checkAudio);
+    return () => {
+      room.off('audioPlaybackChanged', checkAudio);
+    };
+  }, [room]);
+
+  const handleStartAudio = async () => {
+    if (room) {
+      await room.startAudio();
+      setAudioPlaybackAllowed(true);
+    }
+  };
+
+  const toggleCamera = async () => {
+    if (localParticipant) {
+      await localParticipant.setCameraEnabled(!isCameraEnabled);
+    }
+  };
+
+  const toggleMic = async () => {
+    if (localParticipant) {
+      await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+    }
+  };
+
+  // Find host or active presenter tracks
+  const mainTrack = tracks.find(isTrackReference);
+
+  return (
+    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+      {mainTrack ? (
+        <div className="w-full h-full relative">
+          <VideoTrack
+            trackRef={mainTrack}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-toka-flare/20 border-2 border-toka-flare/40 flex items-center justify-center animate-pulse">
+            {hostAvatarUrl ? (
+              <img src={hostAvatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-toka-flare text-2xl font-bold">
+                {hostUsername?.[0]?.toUpperCase() || 'L'}
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-cloud-white font-bold text-base">
+              {isHost ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
+            </h3>
+            <p className="text-cloud-white/50 text-xs mt-1">
+              {isHost ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tap to Unmute Overlay for Audience */}
+      {!isHost && !audioPlaybackAllowed && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 animate-bounce">
+          <button
+            onClick={handleStartAudio}
+            className="flex items-center gap-2 bg-toka-flare text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl hover:scale-105 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">volume_up</span>
+            Tap to Unmute Audio
+          </button>
+        </div>
+      )}
+
+      {/* Host In-Stream Floating Controls */}
+      {isHost && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 shadow-xl">
+          <button
+            onClick={toggleCamera}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white'
+            }`}
+            title={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isCameraEnabled ? 'videocam' : 'videocam_off'}
+            </span>
+          </button>
+          <button
+            onClick={toggleMic}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white'
+            }`}
+            title={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isMicrophoneEnabled ? 'mic' : 'mic_off'}
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

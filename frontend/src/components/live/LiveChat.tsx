@@ -9,7 +9,11 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    socket = socketIO(BACKEND_URL, { withCredentials: true });
+    socket = socketIO(BACKEND_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+    });
   }
   return socket;
 }
@@ -28,31 +32,43 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
 
   useEffect(() => {
     const sock = getSocket();
+    if (!sock.connected) {
+      sock.connect();
+    }
     sock.emit('join_live_room', roomName);
 
-    sock.on('live_chat', (data: LiveChatMessage) => {
-      addMessage({ ...data, id: `${Date.now()}-${Math.random()}` });
-    });
-
-    sock.on('live_tip', ({ tipper, amount }: { tipper: { username: string; avatarUrl?: string }, amount: number }) => {
+    const handleChat = (data: { user: { username: string; avatarUrl?: string }; message: string; timestamp?: number }) => {
       addMessage({
-        id: `tip-${Date.now()}`,
+        id: `${Date.now()}-${Math.random()}`,
+        user: data.user || { username: 'Anonymous' },
+        message: data.message,
+        timestamp: data.timestamp || Date.now(),
+      });
+    };
+
+    const handleTip = ({ tipper, amount }: { tipper: { username: string; avatarUrl?: string }, amount: number }) => {
+      addMessage({
+        id: `tip-${Date.now()}-${Math.random()}`,
         user: tipper,
         message: `tipped R${amount} 🎉`,
         timestamp: Date.now(),
         isTip: true,
         tipAmount: amount,
       });
-    });
+    };
 
-    sock.on('viewer_count', ({ count }: { count: number }) => {
+    const handleViewerCount = ({ count }: { count: number }) => {
       useLiveStore.getState().setViewerCount(count);
-    });
+    };
+
+    sock.on('live_chat', handleChat);
+    sock.on('live_tip', handleTip);
+    sock.on('viewer_count', handleViewerCount);
 
     return () => {
-      sock.off('live_chat');
-      sock.off('live_tip');
-      sock.off('viewer_count');
+      sock.off('live_chat', handleChat);
+      sock.off('live_tip', handleTip);
+      sock.off('viewer_count', handleViewerCount);
       sock.emit('leave_live_room', roomName);
     };
   }, [roomName, addMessage]);
@@ -65,12 +81,19 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
     e.preventDefault();
     if (!input.trim()) return;
     const sock = getSocket();
-    const msg: Omit<LiveChatMessage, 'id'> = {
+    const chatData = {
+      roomName,
       user: currentUser,
       message: input.trim(),
       timestamp: Date.now(),
     };
-    sock.emit('live_chat', { roomName, ...msg });
+    sock.emit('live_chat', chatData);
+    addMessage({
+      id: `${Date.now()}-${Math.random()}`,
+      user: currentUser,
+      message: input.trim(),
+      timestamp: Date.now(),
+    });
     setInput('');
   };
 

@@ -32,8 +32,36 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-const allowedOrigin = rawFrontendUrl.endsWith('/') ? rawFrontendUrl.slice(0, -1) : rawFrontendUrl;
-app.use(cors({ origin: allowedOrigin, credentials: true }));
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://toka-frontend-ruby.vercel.app',
+  rawFrontendUrl.replace(/\/$/, ''),
+].filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (
+    allowedOrigins.includes(origin) ||
+    origin.endsWith('.vercel.app') ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1')
+  ) {
+    return true;
+  }
+  return false;
+};
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 import { ensureVideosBucket } from './config/supabase.js';
@@ -41,7 +69,17 @@ import { ensureVideosBucket } from './config/supabase.js';
 // Wrap Express with an HTTP server and attach Socket.io
 const httpServer = createServer(app);
 const io = new SocketServer(httpServer, {
-  cors: { origin: allowedOrigin, credentials: true }
+  cors: {
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Socket CORS blocked for origin: ${origin}`));
+      }
+    },
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
 });
 
 // Attach io to app.locals so controllers can broadcast
@@ -57,13 +95,21 @@ io.on('connection', (socket) => {
   });
 
   socket.on('leave_live_room', (roomName) => {
-    socket.leave(roomName);
+    if (typeof roomName === 'string') {
+      socket.leave(roomName);
+    }
   });
 
   // Live chat relay — broadcast to all room members
-  socket.on('live_chat', ({ roomName, message }) => {
-    if (typeof roomName === 'string' && typeof message === 'object') {
-      io.to(roomName).emit('live_chat', message);
+  socket.on('live_chat', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const { roomName, user, message, timestamp } = data;
+    if (typeof roomName === 'string' && roomName.startsWith('toka-live-') && message) {
+      io.to(roomName).emit('live_chat', {
+        user: user || { username: 'Anonymous' },
+        message: typeof message === 'string' ? message : String(message.message || ''),
+        timestamp: timestamp || Date.now(),
+      });
     }
   });
 });
