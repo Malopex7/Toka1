@@ -77,9 +77,9 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
     }
     sock.emit('join_live_room', roomName);
 
-    const handleChat = (data: { user: { username: string; avatarUrl?: string }; message: string; timestamp?: number }) => {
+    const handleChat = (data: { id?: string; user: { username: string; avatarUrl?: string }; message: string; timestamp?: number }) => {
       addMessage({
-        id: `${Date.now()}-${Math.random()}`,
+        id: data.id || `sock-${data.user?.username || 'user'}-${data.timestamp || Date.now()}`,
         user: data.user || { username: 'Anonymous' },
         message: data.message,
         timestamp: data.timestamp || Date.now(),
@@ -122,11 +122,14 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
     const text = input.trim();
     if (!text) return;
 
+    const timestamp = Date.now();
+    const msgId = `chat-${currentUser.username}-${timestamp}-${Math.floor(Math.random() * 1000)}`;
+
     const msg: LiveChatMessage = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: msgId,
       user: currentUser,
       message: text,
-      timestamp: Date.now(),
+      timestamp,
     };
 
     // Optimistically render locally
@@ -137,7 +140,7 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
     if (room && room.localParticipant) {
       try {
         const payload = new TextEncoder().encode(
-          JSON.stringify({ type: 'chat', ...msg })
+          JSON.stringify({ type: 'chat', id: msgId, user: currentUser, message: text, timestamp })
         );
         await room.localParticipant.publishData(payload, { reliable: true });
       } catch (err) {
@@ -150,9 +153,10 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
       const sock = getSocket();
       sock.emit('live_chat', {
         roomName,
+        id: msgId,
         user: currentUser,
         message: text,
-        timestamp: Date.now(),
+        timestamp,
       });
     } catch (_) {}
   };

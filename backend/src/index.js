@@ -103,9 +103,10 @@ io.on('connection', (socket) => {
   // Live chat relay — broadcast to all room members
   socket.on('live_chat', (data) => {
     if (!data || typeof data !== 'object') return;
-    const { roomName, user, message, timestamp } = data;
+    const { roomName, id, user, message, timestamp } = data;
     if (typeof roomName === 'string' && roomName.startsWith('toka-live-') && message) {
       io.to(roomName).emit('live_chat', {
+        id: id || `sock-${Date.now()}`,
         user: user || { username: 'Anonymous' },
         message: typeof message === 'string' ? message : String(message.message || ''),
         timestamp: timestamp || Date.now(),

@@ -102,7 +102,24 @@ export const useLiveStore = create<LiveState>((set) => ({
   },
 
   messages: [],
-  addMessage: (msg) => set((s) => ({ messages: [...s.messages.slice(-200), msg] })),
+  addMessage: (msg) =>
+    set((s) => {
+      // 1. Deduplicate by unique id
+      if (s.messages.some((m) => m.id === msg.id)) {
+        return s;
+      }
+      // 2. Deduplicate if same user + same message within 3 seconds
+      const isDuplicate = s.messages.some(
+        (m) =>
+          m.user.username === msg.user.username &&
+          m.message === msg.message &&
+          Math.abs((m.timestamp || 0) - (msg.timestamp || 0)) < 3000
+      );
+      if (isDuplicate) {
+        return s;
+      }
+      return { messages: [...s.messages.slice(-200), msg] };
+    }),
   clearMessages: () => set({ messages: [] }),
 
   viewerCount: 0,
