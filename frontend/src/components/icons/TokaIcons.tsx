@@ -191,3 +191,92 @@ export function TokaTipIcon({ size = 24, className = '', ...props }: IconProps) 
     </svg>
   );
 }
+
+/**
+ * 9. Official Toka Brand Icon (Orange Fruit Emblem + White Play Button)
+ */
+export function TokaBrandIcon({ size = 32, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      width={size}
+      height={size}
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <defs>
+        <linearGradient id="tokaBrandOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FF5C00" />
+          <stop offset="100%" stopColor="#FF3800" />
+        </linearGradient>
+      </defs>
+      <path 
+        d="M 52 33 C 41 27 33 13 43 7 C 52 1 61 13 58 27 C 56 31 53 33 52 33 Z" 
+        fill="url(#tokaBrandOrangeGrad)"
+      />
+      <path 
+        d="M 59 31 C 65 19 77 5 91 3 C 99 2 100 13 93 23 C 84 35 69 35 59 31 Z" 
+        fill="url(#tokaBrandOrangeGrad)"
+      />
+      <path 
+        d="M 82 36.5 C 76 32.5 68 30 59 30 C 34 30 14 50 14 75 C 14 100 34 120 59 120 C 84 120 104 100 104 75 C 104 61 97 49 87 41 L 87 55 C 92 61 95 67 95 75 C 95 95 79 111 59 111 C 39 111 23 95 23 75 C 23 55 39 39 59 39 C 65 39 71 41 76 44.5 Z" 
+        fill="url(#tokaBrandOrangeGrad)"
+      />
+      <path 
+        d="M 50 56 C 50 54.2 51.9 53.1 53.5 54 L 75.5 68 C 77.1 68.9 77.1 71.1 75.5 72 L 53.5 86 C 51.9 86.9 50 85.8 50 84 Z" 
+        fill="#FFFFFF"
+      />
+    </svg>
+  );
+}
+
+/**
+ * 10. Official Toka Brand Logo (Orange Fruit Emblem + White Tōka Wordmark)
+ */
+export function TokaBrandLogo({ width = 160, height = 48, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 420 120"
+      width={width}
+      height={height}
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <defs>
+        <linearGradient id="tokaLogoOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FF5C00" />
+          <stop offset="100%" stopColor="#FF3800" />
+        </linearGradient>
+      </defs>
+      <g transform="translate(10, 6)">
+        <path 
+          d="M 45 32 C 34 26 26 12 36 6 C 45 0 54 12 51 26 C 49 30 46 32 45 32 Z" 
+          fill="url(#tokaLogoOrangeGrad)"
+        />
+        <path 
+          d="M 52 30 C 58 18 70 4 84 2 C 92 1 93 12 86 22 C 77 34 62 34 52 30 Z" 
+          fill="url(#tokaLogoOrangeGrad)"
+        />
+        <path 
+          d="M 75 35.5 C 69 31.5 61 29 52 29 C 27 29 7 49 7 74 C 7 99 27 119 52 119 C 77 119 97 99 97 74 C 97 60 90 48 80 40 L 80 54 C 85 60 88 66 88 74 C 88 94 72 110 52 110 C 32 110 16 94 16 74 C 16 54 32 38 52 38 C 58 38 64 40 69 43.5 Z" 
+          fill="url(#tokaLogoOrangeGrad)"
+        />
+        <path 
+          d="M 43 55 C 43 53.2 44.9 52.1 46.5 53 L 68.5 67 C 70.1 67.9 70.1 70.1 68.5 71 L 46.5 85 C 44.9 85.9 43 84.8 43 83 Z" 
+          fill="#FFFFFF"
+        />
+      </g>
+      <g fill="#FFFFFF">
+        <path d="M 125 45 L 157 45 L 157 56 L 146 56 L 146 104 L 136 104 L 136 56 L 125 56 Z" />
+        <rect x="165" y="47" width="28" height="6" rx="2" />
+        <path d="M 179 60 C 167 60 159 70 159 82.5 C 159 95 167 105 179 105 C 191 105 199 95 199 82.5 C 199 70 191 60 179 60 Z M 179 70.5 C 185 70.5 188.5 75.5 188.5 82.5 C 188.5 89.5 185 94.5 179 94.5 C 173 94.5 169.5 89.5 169.5 82.5 C 169.5 75.5 173 70.5 179 70.5 Z" />
+        <path d="M 209 40 L 219.5 40 L 219.5 78.5 L 234.5 61.5 L 247.5 61.5 L 229 81.5 L 249 104 L 235.5 104 L 219.5 86 L 219.5 104 L 209 104 Z" />
+        <path d="M 271 61.5 L 281 61.5 L 281 104 L 271 104 L 271 96 C 267.5 101.5 261 105 254 105 C 243.5 105 237 97.5 237 88 C 237 77.5 245.5 72.5 258 72.5 L 271 72.5 L 271 70 C 271 65 267 62.5 261 62.5 C 255 62.5 250 64.5 246 67.5 L 242 59.5 C 248 55.5 255.5 53.5 263.5 53.5 C 273.5 53.5 279 58 279 67.5 Z M 271 80 L 260 80 C 252 80 247.5 83 247.5 88.5 C 247.5 93.5 251.5 96.5 257 96.5 C 264.5 96.5 271 91 271 84.5 Z" />
+      </g>
+    </svg>
+  );
+}
