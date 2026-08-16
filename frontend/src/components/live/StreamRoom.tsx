@@ -559,15 +559,70 @@ function LiveBroadcastStage({
 function LiveViewerBadge({ isHost, fallbackCount }: { isHost: boolean; fallbackCount: number }) {
   const remoteParticipants = useRemoteParticipants();
   const storeCount = useLiveStore((s) => s.viewerCount);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Exact real-time connected audience count from LiveKit WebRTC
   const livekitCount = isHost ? remoteParticipants.length : remoteParticipants.length + 1;
   const count = Math.max(livekitCount, storeCount, fallbackCount);
 
   return (
-    <span className="flex items-center gap-1 text-cloud-white/90 text-xs bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm font-mono">
-      <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
-      {count}
-    </span>
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-cloud-white/90 text-xs bg-black/60 hover:bg-black/80 active:scale-95 transition-all backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm font-mono cursor-pointer"
+        title="View live audience"
+      >
+        <span className="material-symbols-outlined text-[14px] text-red-400">visibility</span>
+        <span>{count}</span>
+      </button>
+
+      {/* Viewers Popup Dropdown */}
+      {isOpen && (
+        <div className="absolute top-10 right-0 w-64 bg-shaded-canopy/95 backdrop-blur-xl border border-white/15 rounded-2xl p-3 shadow-2xl z-50 animate-scale-up">
+          <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <h4 className="text-cloud-white font-bold text-xs">Live Viewers ({count})</h4>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-cloud-white/40 hover:text-white text-xs cursor-pointer p-0.5"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+            {remoteParticipants.length === 0 ? (
+              <p className="text-cloud-white/40 text-xs py-2 text-center italic">
+                {isHost ? 'Waiting for viewers to join...' : 'You are the only viewer'}
+              </p>
+            ) : (
+              remoteParticipants.map((p) => {
+                const name = p.name || p.identity || 'Viewer';
+                return (
+                  <div
+                    key={p.sid || p.identity}
+                    className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center text-[10px] font-bold text-toka-flare shrink-0">
+                        {name[0]?.toUpperCase()}
+                      </div>
+                      <span className="text-cloud-white text-xs font-semibold truncate">
+                        @{name}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-cloud-white/40 bg-white/5 px-2 py-0.5 rounded-md">
+                      Watching
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

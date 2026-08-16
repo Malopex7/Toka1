@@ -29,6 +29,7 @@ export interface LiveChatMessage {
   timestamp: number;
   isTip?: boolean;
   tipAmount?: number;
+  isSystem?: boolean;
 }
 
 interface LiveState {
