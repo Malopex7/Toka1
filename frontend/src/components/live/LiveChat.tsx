@@ -65,8 +65,14 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
 
     room.on(RoomEvent.DataReceived, handleDataReceived);
 
-    const handleParticipantConnected = (participant: { identity?: string; name?: string }) => {
-      const username = participant.identity || participant.name;
+    const handleParticipantConnected = (participant: { identity?: string; name?: string; metadata?: string }) => {
+      let username = participant.name || participant.identity;
+      if (participant.metadata) {
+        try {
+          const meta = JSON.parse(participant.metadata);
+          if (meta.username) username = meta.username;
+        } catch (_) {}
+      }
       if (username) {
         addMessage({
           id: `join-${username}-${Date.now()}`,

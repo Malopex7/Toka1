@@ -13,9 +13,11 @@ const getLivekitConfig = () => ({
 
 function mintToken(roomName, participantName, participantId, canPublish = false) {
   const { apiKey, apiSecret } = getLivekitConfig();
+  const username = participantName || `user_${participantId.toString().slice(-4)}`;
   const at = new AccessToken(apiKey, apiSecret, {
-    identity: participantId.toString(),
-    name: participantName,
+    identity: username,
+    name: username,
+    metadata: JSON.stringify({ userId: participantId.toString(), username }),
     ttl: '4h',
   });
   at.addGrant({
