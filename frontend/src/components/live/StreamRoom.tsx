@@ -195,10 +195,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       // Update room state with new stream and publisher token
       if (data.data?.stream) {
         setCurrentRoom(data.data.stream);
-      } else if (currentRoom) {
+      } else if (currentRoom && mongooseUser?._id) {
         setCurrentRoom({
           ...currentRoom,
-          cohosts: [...(currentRoom.cohosts || []), mongooseUser?._id],
+          cohosts: [...(currentRoom.cohosts || []), mongooseUser._id],
         });
       }
       setLivekitConnection(data.data.token, data.data.livekitUrl);
