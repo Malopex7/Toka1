@@ -8,6 +8,7 @@ import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
 import GoLiveOverlay from './live/GoLiveOverlay';
 import { TokaHomeIcon, TokaDiscoverIcon, TokaSponsorshipsIcon, IconProps } from './icons/TokaIcons';
+import { useLiveStore } from '@/store/useLiveStore';
 
 interface NavItem {
   label: string;
@@ -25,9 +26,9 @@ export default function DesktopSidebar() {
   const { isAuthenticated, mongooseUser, logout } = useAuth();
   const notifications = useFeedStore((state) => state.notifications);
   const markNotificationsAsRead = useFeedStore((state) => state.markNotificationsAsRead);
+  const openGoLive = useLiveStore((state) => state.openGoLive);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
 
   const hasUnreadInbox = notifications.some((n) => !n.read);
 
@@ -162,7 +163,7 @@ export default function DesktopSidebar() {
           </button>
           {isAuthenticated && (
             <button
-              onClick={() => setIsGoLiveOpen(true)}
+              onClick={openGoLive}
               className="w-full py-2.5 bg-red-600/15 border border-red-500/30 hover:border-red-500/60 text-red-400 hover:text-white hover:bg-red-600/30 rounded-xl font-bold transition-all shadow-sm flex justify-center items-center gap-2 text-xs active:scale-95 cursor-pointer"
             >
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -232,12 +233,6 @@ export default function DesktopSidebar() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
-
-      {isGoLiveOpen && (
-        <GoLiveOverlay
-          onClose={() => setIsGoLiveOpen(false)}
-        />
-      )}
     </>
   );
 }
