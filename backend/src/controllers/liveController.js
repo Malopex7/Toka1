@@ -286,12 +286,21 @@ export const inviteCohost = async (req, res, next) => {
 
     const io = req.app.locals.io;
     if (io) {
-      io.emit(`cohost_invited:${invitee._id}`, {
+      const invitePayload = {
         roomId: stream._id.toString(),
         roomName: stream.livekitRoomName,
         title: stream.title,
         host: { username: req.user.username, avatarUrl: req.user.avatarUrl },
-      });
+        targetUsername: invitee.username,
+        targetUserId: invitee._id.toString(),
+      };
+
+      // Emit to stream room for audience members
+      io.to(stream.livekitRoomName).emit('cohost_invited', invitePayload);
+
+      // Emit to direct channels
+      io.emit(`cohost_invited:${invitee._id.toString()}`, invitePayload);
+      io.emit(`cohost_invited:${invitee.username.toLowerCase()}`, invitePayload);
     }
 
     res.json({ status: 'success', message: `Co-host invite sent to @${cleanUsername}` });

@@ -55,6 +55,13 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
   } | null>(null);
   const [showCohostPanel, setShowCohostPanel] = useState(false);
 
+  const [pendingCohostInvite, setPendingCohostInvite] = useState<{
+    host: { username: string; avatarUrl?: string };
+    roomId: string;
+    title?: string;
+  } | null>(null);
+  const [acceptingCohost, setAcceptingCohost] = useState(false);
+
   const isHost = currentRoom?.hostId?._id === mongooseUser?._id?.toString() ||
     (currentRoom?.hostId as unknown as string) === mongooseUser?._id?.toString();
 
@@ -103,14 +110,81 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     };
   }, [roomId, isAuthenticated, livekitToken, currentRoom, getIdToken, setLivekitConnection, setCurrentRoom]);
 
-  // Socket.io: listen for stream_ended
+  // Socket.io: listen for stream_ended and cohost invitations
   useEffect(() => {
     const sock = getSocket();
-    sock.on('stream_ended', ({ roomId: endedRoomId }: { roomId: string }) => {
+    if (!sock.connected) sock.connect();
+
+    const handleEnded = ({ roomId: endedRoomId }: { roomId: string }) => {
       if (endedRoomId === roomId) router.push('/');
-    });
-    return () => { sock.off('stream_ended'); };
-  }, [roomId, router]);
+    };
+
+    const handleCohostInvite = (data: {
+      roomId: string;
+      targetUsername?: string;
+      targetUserId?: string;
+      host: { username: string; avatarUrl?: string };
+      title?: string;
+    }) => {
+      const myUsername = mongooseUser?.username?.toLowerCase();
+      const myId = mongooseUser?._id?.toString();
+      const targetUser = data.targetUsername?.toLowerCase();
+      const targetId = data.targetUserId;
+
+      if ((targetUser && targetUser === myUsername) || (targetId && targetId === myId)) {
+        setPendingCohostInvite({
+          host: data.host,
+          roomId: data.roomId,
+          title: data.title,
+        });
+      }
+    };
+
+    sock.on('stream_ended', handleEnded);
+    sock.on('cohost_invited', handleCohostInvite);
+    if (mongooseUser?._id) {
+      sock.on(`cohost_invited:${mongooseUser._id}`, handleCohostInvite);
+    }
+    if (mongooseUser?.username) {
+      sock.on(`cohost_invited:${mongooseUser.username.toLowerCase()}`, handleCohostInvite);
+    }
+
+    return () => {
+      sock.off('stream_ended', handleEnded);
+      sock.off('cohost_invited', handleCohostInvite);
+      if (mongooseUser?._id) {
+        sock.off(`cohost_invited:${mongooseUser._id}`, handleCohostInvite);
+      }
+      if (mongooseUser?.username) {
+        sock.off(`cohost_invited:${mongooseUser.username.toLowerCase()}`, handleCohostInvite);
+      }
+    };
+  }, [roomId, router, mongooseUser]);
+
+  const handleAcceptCohost = async () => {
+    if (!pendingCohostInvite) return;
+    setAcceptingCohost(true);
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/live/${pendingCohostInvite.roomId}/cohost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to accept co-host invite');
+
+      // Update connection with publisher token
+      setLivekitConnection(data.data.token, data.data.livekitUrl);
+      setPendingCohostInvite(null);
+    } catch (err) {
+      console.error('[StreamRoom] accept cohost error:', err);
+    } finally {
+      setAcceptingCohost(false);
+    }
+  };
 
   const handleEndStream = async () => {
     try {
@@ -282,6 +356,57 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
               <CohostInvitePanel roomId={roomId} />
             </div>
           )}
+
+          {/* Cohost Invitation Popup Alert for the invited viewer */}
+          {pendingCohostInvite && (
+            <div className="absolute top-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-50 animate-scale-up">
+              <div className="bg-shaded-canopy/95 backdrop-blur-xl border-2 border-toka-flare rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-toka-flare/30 border border-toka-flare/50 flex items-center justify-center shrink-0 overflow-hidden font-bold text-toka-flare text-sm">
+                    {pendingCohostInvite.host.avatarUrl ? (
+                      <img src={pendingCohostInvite.host.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      pendingCohostInvite.host.username[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-cloud-white font-bold text-sm">Co-Host Invitation</h4>
+                    <p className="text-cloud-white/70 text-xs truncate">
+                      <span className="text-toka-flare font-semibold">@{pendingCohostInvite.host.username}</span> invited you to co-host!
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-cloud-white/60 text-xs">
+                  Join the broadcast on live video & audio to stream together in split-screen.
+                </p>
+
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={handleAcceptCohost}
+                    disabled={acceptingCohost}
+                    className="flex-1 bg-toka-flare hover:bg-toka-flare/80 text-white rounded-xl py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {acceptingCohost ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-[16px]">videocam</span>
+                        <span>Accept & Go Live</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setPendingCohostInvite(null)}
+                    disabled={acceptingCohost}
+                    className="bg-white/10 hover:bg-white/20 text-cloud-white rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Desktop Sidebar (Chat + Host Metadata) */}
@@ -389,6 +514,8 @@ function LiveBroadcastStage({
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
   const [audioPlaybackAllowed, setAudioPlaybackAllowed] = useState(true);
 
+  const canPublish = isHost || Boolean(localParticipant?.permissions?.canPublish);
+
   // Subscribe to all active camera and screen-share tracks in the room
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: false },
@@ -433,17 +560,24 @@ function LiveBroadcastStage({
     }
   };
 
-  // Find host or active presenter tracks
-  const mainTrack = tracks.find(isTrackReference);
+  // Find valid presenter tracks
+  const validTracks = tracks.filter(isTrackReference);
 
   return (
     <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
-      {mainTrack ? (
-        <div className="w-full h-full relative">
-          <VideoTrack
-            trackRef={mainTrack}
-            className="w-full h-full object-cover"
-          />
+      {validTracks.length > 0 ? (
+        <div className={`w-full h-full ${validTracks.length > 1 ? 'grid grid-cols-1 md:grid-cols-2 gap-2 p-2' : 'relative'}`}>
+          {validTracks.map((trackRef, idx) => (
+            <div key={trackRef.publication?.trackSid || idx} className="relative w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+              <VideoTrack
+                trackRef={trackRef}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-cloud-white text-[11px] font-bold">
+                @{trackRef.participant.identity || 'Presenter'}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
@@ -458,17 +592,17 @@ function LiveBroadcastStage({
           </div>
           <div>
             <h3 className="text-cloud-white font-bold text-base">
-              {isHost ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
+              {canPublish ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
             </h3>
             <p className="text-cloud-white/50 text-xs mt-1">
-              {isHost ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
+              {canPublish ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
             </p>
           </div>
         </div>
       )}
 
       {/* Tap to Unmute Overlay for Audience */}
-      {!isHost && !audioPlaybackAllowed && (
+      {!canPublish && !audioPlaybackAllowed && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 animate-bounce">
           <button
             onClick={handleStartAudio}
@@ -480,8 +614,8 @@ function LiveBroadcastStage({
         </div>
       )}
 
-      {/* Unified Host Floating Controls Dock */}
-      {isHost && (
+      {/* Unified Presenter Floating Controls Dock */}
+      {canPublish && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/75 backdrop-blur-lg px-3 py-2 rounded-2xl border border-white/15 shadow-2xl">
           {/* Camera Toggle */}
           <button
@@ -525,8 +659,8 @@ function LiveBroadcastStage({
           {/* Divider */}
           <div className="w-px h-6 bg-white/20 mx-1" />
 
-          {/* Invite Co-Host */}
-          {onToggleCohostPanel && (
+          {/* Invite Co-Host (Host only) */}
+          {isHost && onToggleCohostPanel && (
             <button
               onClick={onToggleCohostPanel}
               className={`flex items-center gap-1.5 px-3.5 h-10 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95 ${

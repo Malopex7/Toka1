@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRoomContext } from '@livekit/components-react';
 
 interface UserSearchResult {
   _id: string;
@@ -15,6 +16,7 @@ interface CohostInvitePanelProps {
 }
 
 export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
+  const room = useRoomContext();
   const { getIdToken } = useAuth();
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
@@ -92,6 +94,21 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Invite failed');
+
+      // Publish over LiveKit Data Channel for instant in-room delivery
+      if (room && room.localParticipant) {
+        try {
+          const payload = new TextEncoder().encode(
+            JSON.stringify({
+              type: 'cohost_invite',
+              targetUsername: cleanUsername,
+              roomId,
+            })
+          );
+          await room.localParticipant.publishData(payload, { reliable: true });
+        } catch (_) {}
+      }
+
       setMessage(`✓ Invite sent to @${cleanUsername}`);
       setQuery('');
       setSearchResults([]);
