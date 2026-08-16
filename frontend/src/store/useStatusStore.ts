@@ -29,6 +29,7 @@ export interface StatusItem {
     username: string;
     isBrandSafeVerified?: boolean;
     role?: string;
+    avatarUrl?: string;
   };
   type: 'text' | 'image' | 'video';
   textContent?: string;
@@ -44,9 +45,9 @@ export interface StatusItem {
   stickers: StatusSticker[];
   audio?: StatusAudio | null;
   caption?: string;
-  viewers?: Array<{ user: { _id: string; username: string }; viewedAt: string }>;
-  reactions?: Array<{ user: { _id: string; username: string }; emoji: string; reactedAt: string }>;
-  replies?: Array<{ user: { _id: string; username: string }; message: string; sentAt: string }>;
+  viewers?: Array<{ user: { _id: string; username: string; avatarUrl?: string }; viewedAt: string }>;
+  reactions?: Array<{ user: { _id: string; username: string; avatarUrl?: string }; emoji: string; reactedAt: string }>;
+  replies?: Array<{ user: { _id: string; username: string; avatarUrl?: string }; message: string; sentAt: string }>;
   hasViewed?: boolean;
   viewsCount?: number;
   reactionsCount?: number;
@@ -61,6 +62,7 @@ export interface UserStoryGroup {
     username: string;
     isBrandSafeVerified?: boolean;
     role?: string;
+    avatarUrl?: string;
   };
   isSelf: boolean;
   hasUnseen: boolean;

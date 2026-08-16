@@ -215,8 +215,17 @@ export default function StatusViewerModal() {
         <div className="absolute top-6 inset-x-0 z-40 px-3.5 py-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-toka-flare to-fintech-mint p-[2px] flex-shrink-0">
-              <div className="w-full h-full rounded-full bg-midnight-boma flex items-center justify-center font-bold text-xs text-cloud-white">
-                {currentGroup.user.username.substring(0, 2).toUpperCase()}
+              <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center font-bold text-xs text-cloud-white">
+                {currentGroup.user.avatarUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={currentGroup.user.avatarUrl}
+                    alt={currentGroup.user.username}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  currentGroup.user.username.substring(0, 2).toUpperCase()
+                )}
               </div>
             </div>
 
@@ -502,8 +511,17 @@ export default function StatusViewerModal() {
                       className="flex items-center justify-between p-2.5 rounded-xl bg-shaded-canopy/60 border border-white/5"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-xs text-cloud-white">
-                          {viewerItem.user?.username?.substring(0, 2).toUpperCase() || 'U'}
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center font-bold text-xs text-cloud-white flex-shrink-0">
+                          {viewerItem.user?.avatarUrl ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={viewerItem.user.avatarUrl}
+                              alt={viewerItem.user.username}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            viewerItem.user?.username?.substring(0, 2).toUpperCase() || 'U'
+                          )}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-xs font-semibold text-cloud-white">

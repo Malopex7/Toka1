@@ -54,7 +54,16 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
               title={hasSelfStory ? 'View your status' : 'Add 24h status'}
             >
               <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center font-bold text-base text-cloud-white">
-                {mongooseUser?.username?.substring(0, 2).toUpperCase() || 'ME'}
+                {mongooseUser?.avatarUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={mongooseUser.avatarUrl}
+                    alt={mongooseUser.username}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  mongooseUser?.username?.substring(0, 2).toUpperCase() || 'ME'
+                )}
               </div>
             </button>
 
@@ -95,9 +104,18 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
                 }`}
               >
                 <div className="w-full h-full rounded-full bg-midnight-boma p-[2px] overflow-hidden flex items-center justify-center">
-                  <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-bold text-sm text-cloud-white">
-                    {group.user.username.substring(0, 2).toUpperCase()}
-                  </div>
+                  {group.user.avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={group.user.avatarUrl}
+                      alt={group.user.username}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-bold text-sm text-cloud-white">
+                      {group.user.username.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </div>
               </div>
 
