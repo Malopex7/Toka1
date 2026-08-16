@@ -113,7 +113,7 @@ function IconTrash({ className = "w-3 h-3" }: { className?: string }) {
 function IconVerifiedCheck({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#00F5A0" />
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="var(--fintech-mint)" />
     </svg>
   );
 }
@@ -760,50 +760,50 @@ function ProfileContent() {
           )}
         </div>
 
-        {/* Modern Sleek Stats Row */}
+        {/* Modern Sleek Stats Row aligned with Toka Design System */}
         <div className={`grid ${isOwnProfile ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-3`}>
-          <div className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-toka-flare">
+          <div className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-toka-flare">
               <IconVideo className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold font-mono text-white">{videos.length}</span>
-            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Videos</span>
+            <span className="text-xl font-black font-mono text-cloud-white">{videos.length}</span>
+            <span className="text-[10px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Videos</span>
           </div>
 
           <button 
             type="button"
             onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
-            className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
+            className="bg-shaded-canopy border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
           >
-            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-white/70 group-hover:text-amber-400 transition-colors">
+            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/70 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
               <IconFollowers className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold font-mono text-white">{followerCount}</span>
-            <span className="text-[10px] font-semibold text-white/40 group-hover:text-amber-400 uppercase tracking-wider transition-colors">Followers</span>
+            <span className="text-xl font-black font-mono text-cloud-white">{followerCount}</span>
+            <span className="text-[10px] font-bold text-cloud-white/40 group-hover:text-amber-400 uppercase tracking-wider font-mono transition-colors">Followers</span>
           </button>
 
           <button 
             type="button"
             onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
-            className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
+            className="bg-shaded-canopy border border-white/10 hover:border-blue-400/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
           >
-            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-white/70 group-hover:text-blue-400 transition-colors">
+            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/70 group-hover:text-blue-400 group-hover:border-blue-400/30 transition-all">
               <IconFollowing className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold font-mono text-white">{targetUser.following?.length || 0}</span>
-            <span className="text-[10px] font-semibold text-white/40 group-hover:text-blue-400 uppercase tracking-wider transition-colors">Following</span>
+            <span className="text-xl font-black font-mono text-cloud-white">{targetUser.following?.length || 0}</span>
+            <span className="text-[10px] font-bold text-cloud-white/40 group-hover:text-blue-400 uppercase tracking-wider font-mono transition-colors">Following</span>
           </button>
 
           {isOwnProfile && mongooseUser && (
             <Link 
               href="/deposit"
-              className="bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
+              className="bg-fintech-mint/5 hover:bg-fintech-mint/10 border border-fintech-mint/30 hover:border-fintech-mint/50 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-8 h-8 rounded-xl bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint">
                 <IconWallet className="w-4 h-4" />
               </div>
-              <span className="text-xl font-bold font-mono text-emerald-400">R {mongooseUser.walletBalance.toFixed(2)}</span>
-              <span className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wider">Balance</span>
+              <span className="text-xl font-black font-mono text-fintech-mint">R {mongooseUser.walletBalance.toFixed(2)}</span>
+              <span className="text-[10px] font-bold text-fintech-mint/70 uppercase tracking-wider font-mono">Balance</span>
             </Link>
           )}
         </div>
@@ -813,14 +813,14 @@ function ProfileContent() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/deposit"
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-toka-flare to-orange-600 hover:brightness-110 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95 shadow-lg shadow-orange-500/20"
+              className="flex items-center justify-center gap-2 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95 shadow-lg shadow-toka-flare/20"
             >
               <IconTopUp className="w-4 h-4" />
               Top Up Wallet
             </Link>
             <Link
               href="/inbox"
-              className="flex items-center justify-center gap-2 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.12] text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 bg-shaded-canopy hover:bg-white/10 border border-white/15 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95"
             >
               <IconInbox className="w-4 h-4" />
               View Inbox
