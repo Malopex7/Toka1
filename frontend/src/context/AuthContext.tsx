@@ -47,6 +47,8 @@ interface AuthContextType {
   checkEmailVerified: () => Promise<boolean>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** Returns a fresh Firebase ID token string for authorized API calls. */
+  getIdToken: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -318,6 +320,11 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const getIdToken = async (): Promise<string> => {
+    if (!firebaseUser) throw new Error('No authenticated user');
+    return firebaseUser.getIdToken();
+  };
+
   const isAuthenticated = !!firebaseUser && !!mongooseUser;
 
   return (
@@ -336,7 +343,8 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       resendVerificationEmail,
       checkEmailVerified,
       logout,
-      refreshProfile
+      refreshProfile,
+      getIdToken,
     }}>
       {children}
     </AuthContext.Provider>

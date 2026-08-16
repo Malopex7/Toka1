@@ -1,6 +1,8 @@
 // src/index.js
 import 'dotenv/config';
+import { createServer } from 'http';
 import express from 'express';
+import { Server as SocketServer } from 'socket.io';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -21,6 +23,8 @@ import commentRoutes from './routes/commentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import sponsorshipRoutes from './routes/sponsorshipRoutes.js';
 import statusRoutes from './routes/statusRoutes.js';
+import liveRoutes from './routes/liveRoutes.js';
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -33,6 +37,36 @@ app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 
 import { ensureVideosBucket } from './config/supabase.js';
+
+// Wrap Express with an HTTP server and attach Socket.io
+const httpServer = createServer(app);
+const io = new SocketServer(httpServer, {
+  cors: { origin: allowedOrigin, credentials: true }
+});
+
+// Attach io to app.locals so controllers can broadcast
+app.locals.io = io;
+
+// Socket.io: live room event handler
+io.on('connection', (socket) => {
+  // Client joins a LiveKit room channel for real-time events
+  socket.on('join_live_room', (roomName) => {
+    if (typeof roomName === 'string' && roomName.startsWith('toka-live-')) {
+      socket.join(roomName);
+    }
+  });
+
+  socket.on('leave_live_room', (roomName) => {
+    socket.leave(roomName);
+  });
+
+  // Live chat relay — broadcast to all room members
+  socket.on('live_chat', ({ roomName, message }) => {
+    if (typeof roomName === 'string' && typeof message === 'object') {
+      io.to(roomName).emit('live_chat', message);
+    }
+  });
+});
 
 // Connect to MongoDB (use MONGO_URI from .env)
 mongoose.connect(process.env.MONGO_URI)
@@ -67,6 +101,7 @@ app.use('/api', commentRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', sponsorshipRoutes);
 app.use('/api', statusRoutes);
+app.use('/api', liveRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {
@@ -76,7 +111,6 @@ app.all(/.*/, (req, res, next) => {
 // Global error handling middleware
 app.use(errorHandler);
 
-// Start server
+// Start HTTP server (replaces app.listen to support Socket.io)
 const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
-
+httpServer.listen(port, () => console.log(`Server running on port ${port} (Socket.io enabled)`));

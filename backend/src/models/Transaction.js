@@ -16,7 +16,7 @@ const transactionSchema = new mongoose.Schema({
   videoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Video',
-    // Required only for tips, optional for brand_sponsorship/deposit
+    // Required only for video tips; optional for live tips, sponsorships, deposits, entries
     required: function() {
       return this.type === 'tip';
     }
@@ -37,8 +37,13 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['tip', 'brand_sponsorship', 'deposit'],
+    enum: ['tip', 'brand_sponsorship', 'deposit', 'live_tip', 'live_entry'],
     required: [true, 'Transaction must have a type']
+  },
+  liveStreamId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LiveStream',
+    default: null
   },
   reference: {
     type: String,

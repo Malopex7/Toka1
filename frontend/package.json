@@ -9,15 +9,20 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@livekit/components-core": "^0.12.15",
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.17.1",
+    "livekit-client": "^2.21.0",
     "lucide-react": "^0.525.0",
     "next": "16.2.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.6"
   },

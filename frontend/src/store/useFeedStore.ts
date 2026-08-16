@@ -55,9 +55,9 @@ interface FeedStore {
   currentPage: number;
   hasNextPage: boolean;
   userWalletBalance: number;
-  feedType: 'foryou' | 'following';
+  feedType: 'foryou' | 'following' | 'live';
   creatorFilter: string | null;
-  setFeedType: (type: 'foryou' | 'following') => void;
+  setFeedType: (type: 'foryou' | 'following' | 'live') => void;
   setCreatorFilter: (creator: string | null) => void;
   setWalletBalance: (balance: number) => void;
   setCurrentIndex: (index: number) => void;
@@ -245,7 +245,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
 
   fetchNextPage: async () => {
     const { currentPage, videos, isLoading, hasNextPage, feedType, creatorFilter } = get();
-    if (isLoading || !hasNextPage) return;
+    if (isLoading || !hasNextPage || feedType === 'live') return;
 
     set({ isLoading: true });
 

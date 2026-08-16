@@ -16,6 +16,7 @@ import MentionText from './MentionText';
 import StatusTray from './status/StatusTray';
 import StatusViewerModal from './status/StatusViewerModal';
 import StatusCreatorModal from './status/StatusCreatorModal';
+import LiveDiscoveryPage from './live/LiveDiscoveryPage';
 import { useAuth } from '@/context/AuthContext';
 import { 
   TokaHeartIcon, 
@@ -629,7 +630,7 @@ export default function VideoFeed() {
             )}
 
             {!creatorParam && (
-              <div className="pointer-events-auto flex gap-6 items-center">
+              <div className="pointer-events-auto flex gap-5 items-center">
                 <button
                   onClick={() => requireAuth(() => setFeedType('following'))}
                   className={`text-sm transition-colors ${feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
@@ -643,6 +644,14 @@ export default function VideoFeed() {
                     }`}
                 >
                   For You
+                </button>
+                <button
+                  onClick={() => setFeedType('live')}
+                  className={`text-sm transition-colors flex items-center gap-1.5 ${feedType === 'live' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                    }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  Live
                 </button>
               </div>
             )}
@@ -758,8 +767,12 @@ export default function VideoFeed() {
             <StatusTray />
           </div>
 
-          {/* Snapping Scroll Container */}
-          {videos.length === 0 && !isLoading ? (
+          {/* Content: Live Streams Discovery or Videos Snapping Container */}
+          {feedType === 'live' ? (
+            <div className="w-full h-full overflow-y-auto pt-20 pb-16 no-scrollbar bg-midnight-boma">
+              <LiveDiscoveryPage />
+            </div>
+          ) : videos.length === 0 && !isLoading ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-black">
               <span className="material-symbols-outlined text-[56px] text-cloud-white/20 mb-3">videocam_off</span>
               <p className="text-sm font-bold text-cloud-white/80">No videos found</p>

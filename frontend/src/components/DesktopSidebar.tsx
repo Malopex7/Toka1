@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
 import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
+import GoLiveOverlay from './live/GoLiveOverlay';
 import { TokaHomeIcon, TokaDiscoverIcon, TokaSponsorshipsIcon, IconProps } from './icons/TokaIcons';
 
 interface NavItem {
@@ -15,6 +16,7 @@ interface NavItem {
   icon?: string;
   active: boolean;
   badge?: boolean;
+  liveBadge?: boolean;
   onClick?: () => void;
 }
 
@@ -25,6 +27,7 @@ export default function DesktopSidebar() {
   const markNotificationsAsRead = useFeedStore((state) => state.markNotificationsAsRead);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
 
   const hasUnreadInbox = notifications.some((n) => !n.read);
 
@@ -46,6 +49,13 @@ export default function DesktopSidebar() {
       href: '/discover',
       customIcon: TokaDiscoverIcon,
       active: pathname === '/discover'
+    },
+    {
+      label: 'Live',
+      href: '/live',
+      icon: 'live_tv',
+      active: pathname === '/live' || pathname.startsWith('/live/'),
+      liveBadge: true
     },
     {
       label: 'Inbox',
@@ -121,6 +131,12 @@ export default function DesktopSidebar() {
                   </span>
                 )}
                 <span>{item.label}</span>
+                {item.liveBadge && (
+                  <span className="ml-auto flex items-center gap-1 bg-red-600/20 border border-red-500/30 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
                 {item.badge && (
                   <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>
                 )}
@@ -129,8 +145,8 @@ export default function DesktopSidebar() {
           })}
         </nav>
 
-        {/* Create Video Action Button */}
-        <div className="mt-4 px-1">
+        {/* Action Buttons: Create Video & Go Live */}
+        <div className="mt-4 px-1 flex flex-col gap-2">
           <button
             onClick={() => {
               if (isAuthenticated) {
@@ -144,6 +160,15 @@ export default function DesktopSidebar() {
             <span className="material-symbols-outlined text-[20px]">add</span>
             Create
           </button>
+          {isAuthenticated && (
+            <button
+              onClick={() => setIsGoLiveOpen(true)}
+              className="w-full py-2.5 bg-red-600/15 border border-red-500/30 hover:border-red-500/60 text-red-400 hover:text-white hover:bg-red-600/30 rounded-xl font-bold transition-all shadow-sm flex justify-center items-center gap-2 text-xs active:scale-95 cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              Go Live
+            </button>
+          )}
         </div>
 
         {/* User / Auth Section at Bottom */}
@@ -207,6 +232,12 @@ export default function DesktopSidebar() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
+
+      {isGoLiveOpen && (
+        <GoLiveOverlay
+          onClose={() => setIsGoLiveOpen(false)}
+        />
+      )}
     </>
   );
 }
