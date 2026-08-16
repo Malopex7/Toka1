@@ -268,15 +268,21 @@ export const unlockPrivateRoom = async (req, res, next) => {
 // POST /api/live/:roomId/invite-cohost
 export const inviteCohost = async (req, res, next) => {
   try {
-    const { username } = req.body;
+    const rawUsername = (req.body.username || '').trim();
+    if (!rawUsername) return next(new AppError('Username is required', 400));
+    const cleanUsername = rawUsername.replace(/^@/, '').toLowerCase();
+
     const stream = await LiveStream.findById(req.params.roomId);
     if (!stream || stream.status !== 'live') return next(new AppError('Stream not found', 404));
     if (stream.hostId.toString() !== req.user._id.toString()) {
       return next(new AppError('Only the host can invite co-hosts', 403));
     }
 
-    const invitee = await User.findOne({ username }).select('_id username avatarUrl');
-    if (!invitee) return next(new AppError('User not found', 404));
+    const invitee = await User.findOne({
+      username: { $regex: new RegExp(`^${cleanUsername}$`, 'i') }
+    }).select('_id username avatarUrl');
+
+    if (!invitee) return next(new AppError(`User @${cleanUsername} not found`, 404));
 
     const io = req.app.locals.io;
     if (io) {
