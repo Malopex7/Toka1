@@ -75,7 +75,8 @@ export const useLiveStore = create<LiveState>((set) => ({
   fetchActiveStreams: async () => {
     set({ isLoadingStreams: true });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/live/active`);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/api/live/active`);
       const data = await res.json();
       if (data.status === 'success') {
         set({ activeLiveStreams: data.data.streams });
@@ -91,8 +92,14 @@ export const useLiveStore = create<LiveState>((set) => ({
   setCurrentRoom: (room) => set({ currentRoom: room }),
 
   livekitToken: null,
-  livekitUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL || 'ws://localhost:7880',
-  setLivekitConnection: (token, url) => set({ livekitToken: token, livekitUrl: url }),
+  livekitUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud',
+  setLivekitConnection: (token, url) => {
+    let resolvedUrl = url;
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && (!resolvedUrl || resolvedUrl.includes('localhost'))) {
+      resolvedUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud';
+    }
+    set({ livekitToken: token, livekitUrl: resolvedUrl || url });
+  },
 
   messages: [],
   addMessage: (msg) => set((s) => ({ messages: [...s.messages.slice(-200), msg] })),

@@ -122,10 +122,11 @@ export const joinStream = async (req, res, next) => {
 
     const viewer = req.user;
 
+    const isHost = stream.hostId.toString() === viewer._id.toString();
+    const isCohost = stream.cohosts.some(id => id.toString() === viewer._id.toString());
+
     // Private stream access check
     if (stream.privacy === 'private') {
-      const isHost = stream.hostId.toString() === viewer._id.toString();
-      const isCohost = stream.cohosts.some(id => id.toString() === viewer._id.toString());
       const isUnlocked = stream.unlockedViewers.some(id => id.toString() === viewer._id.toString());
       if (!isHost && !isCohost && !isUnlocked) {
         return res.status(403).json({
@@ -145,7 +146,8 @@ export const joinStream = async (req, res, next) => {
       await stream.save();
     }
 
-    const token = await mintToken(stream.livekitRoomName, viewer.username, viewer._id, false);
+    const canPublish = isHost || isCohost;
+    const token = await mintToken(stream.livekitRoomName, viewer.username, viewer._id, canPublish);
 
     // Broadcast updated viewer count
     const io = req.app.locals.io;

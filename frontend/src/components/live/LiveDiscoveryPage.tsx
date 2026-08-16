@@ -8,7 +8,7 @@ const POLL_INTERVAL = 15000;
 
 export default function LiveDiscoveryPage() {
   const { activeLiveStreams, setActiveLiveStreams } = useLiveStore();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(activeLiveStreams.length === 0);
 
   const fetchStreams = useCallback(async () => {
     try {

@@ -1,9 +1,8 @@
 "use client";
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LiveKitRoom,
   VideoConference,
-  useLocalParticipant,
   RoomAudioRenderer,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
@@ -37,48 +36,6 @@ function LiveDurationTimer({ startedAt }: { startedAt: string }) {
   return <span className="font-mono text-[11px] text-cloud-white/80">{m}:{s}</span>;
 }
 
-function HostMediaTracker({
-  isHost,
-  onStreamReady,
-}: {
-  isHost: boolean;
-  onStreamReady: (stream: MediaStream) => void;
-}) {
-  const { localParticipant } = useLocalParticipant();
-
-  useEffect(() => {
-    if (!isHost || !localParticipant) return;
-
-    const captureStream = () => {
-      const ms = new MediaStream();
-      localParticipant.videoTrackPublications.forEach((pub) => {
-        if (pub.track?.mediaStreamTrack) {
-          ms.addTrack(pub.track.mediaStreamTrack);
-        }
-      });
-      localParticipant.audioTrackPublications.forEach((pub) => {
-        if (pub.track?.mediaStreamTrack) {
-          ms.addTrack(pub.track.mediaStreamTrack);
-        }
-      });
-      if (ms.getTracks().length > 0) {
-        onStreamReady(ms);
-      }
-    };
-
-    captureStream();
-    localParticipant.on('trackPublished', captureStream);
-    localParticipant.on('trackUnpublished', captureStream);
-
-    return () => {
-      localParticipant.off('trackPublished', captureStream);
-      localParticipant.off('trackUnpublished', captureStream);
-    };
-  }, [isHost, localParticipant, onStreamReady]);
-
-  return null;
-}
-
 export default function StreamRoom({ roomId }: StreamRoomProps) {
   const { mongooseUser, getIdToken, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -90,8 +47,6 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     privateMode: 'entry_fee' | 'subscription' | 'tip_invite';
     entryFeeZAR: number; subscriberPriceZAR: number; tipInviteMinZAR: number;
   } | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [showCohostPanel, setShowCohostPanel] = useState(false);
 
   const isHost = currentRoom?.hostId?._id === mongooseUser?._id?.toString() ||
@@ -156,7 +111,9 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
-      setIsRecording(false);
+      setCurrentRoom(null);
+      setLivekitConnection('', '');
+      router.push('/');
     } catch (err) {
       console.error('[StreamRoom] end error:', err);
     }
@@ -203,23 +160,20 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     );
   }
 
+  const effectiveLivekitUrl = (typeof window !== 'undefined' && window.location.protocol === 'https:' && livekitUrl?.includes('localhost'))
+    ? (process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud')
+    : (livekitUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud');
+
   return (
     <LiveKitRoom
       token={livekitToken}
-      serverUrl={livekitUrl}
+      serverUrl={effectiveLivekitUrl}
       connect={true}
       video={isHost}
       audio={isHost}
     >
       <RoomAudioRenderer />
-      <HostMediaTracker
-        isHost={isHost}
-        onStreamReady={(stream) => {
-          setLocalStream(stream);
-          setIsRecording(true);
-        }}
-      />
-      <MediaRecorderManager stream={localStream} isRecording={isRecording} />
+      <MediaRecorderManager isHost={isHost} />
 
       {/* ---- UNIFIED RESPONSIVE STREAM ROOM LAYOUT ---- */}
       <div className="relative h-screen w-full bg-midnight-boma overflow-hidden flex flex-col md:flex-row select-none">

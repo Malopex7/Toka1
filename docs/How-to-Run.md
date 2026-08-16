@@ -9,7 +9,7 @@ This guide walks you through setting up and running the entire full-stack Toka a
 Ensure you have the following installed on your machine:
 - **Node.js**: v18.17+ or v20+
 - **npm**: v9+
-- **Docker Desktop** *(Recommended for LiveKit SFU)* or the standalone Windows LiveKit binary
+- **Docker Desktop**: Required for running the LiveKit SFU media server
 - **Git**
 
 ---
@@ -26,31 +26,21 @@ To run the full Toka experience, three services work together:
 
 ---
 
-## 🚀 Step 1: Start LiveKit SFU Server
-
-### Option A: Via Docker (Recommended)
+## 🚀 Step 1: Start LiveKit SFU Server (Docker)
 
 Ensure Docker Desktop is open and running, then execute:
 
 ```bash
-docker run --rm -d --name toka-livekit -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server --dev --bind 0.0.0.0
+docker run --rm -d --name toka-livekit -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server --dev --bind 0.0.0.0 --node-ip 127.0.0.1
 ```
 
-> **Note**: `--bind 0.0.0.0` ensures the container accepts connections forwarded from your host machine (`localhost`).
+> **Note**: `--bind 0.0.0.0 --node-ip 127.0.0.1` ensures the container binds properly and advertises local WebRTC ICE candidates to your browser.
 
 **Verify LiveKit Docker Status:**
 ```bash
 docker ps
 curl http://localhost:7880
 # Output should return: OK
-```
-
-### Option B: Via Native Standalone Binary (Windows)
-
-If you prefer running LiveKit directly without Docker:
-
-```powershell
-& "$env:USERPROFILE\.livekit\bin\livekit-server.exe" --dev
 ```
 
 ---
@@ -76,9 +66,9 @@ If you prefer running LiveKit directly without Docker:
    JWT_SECRET=your_jwt_secret
 
    # LiveKit Local Config (Defaults match --dev mode)
-   LIVEKIT_HOST=ws://localhost:7880
-   LIVEKIT_API_KEY=devkey
-   LIVEKIT_API_SECRET=secret
+   LIVEKIT_HOST=wss://toka-qbo14kfo.livekit.cloud
+   LIVEKIT_API_KEY=APIjoMytxKmYt7X
+   LIVEKIT_API_SECRET=lAcRg3rVWxR557iaL86MV7I9mU5VjWKHyUDty3leEid
 
    # Paystack & Other Integrations
    PAYSTACK_PUBLIC_KEY=pk_test_...
