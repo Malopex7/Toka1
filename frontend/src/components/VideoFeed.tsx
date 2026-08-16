@@ -17,6 +17,13 @@ import StatusTray from './status/StatusTray';
 import StatusViewerModal from './status/StatusViewerModal';
 import StatusCreatorModal from './status/StatusCreatorModal';
 import { useAuth } from '@/context/AuthContext';
+import { 
+  TokaHeartIcon, 
+  TokaCommentIcon, 
+  TokaTipIcon, 
+  TokaShareIcon, 
+  TokaRepostIcon 
+} from './icons/TokaIcons';
 
 function generateHeartId(prefix = 'heart'): string {
   return `${prefix}-${Date.now()}-${Math.random()}`;
@@ -861,13 +868,13 @@ export default function VideoFeed() {
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <span
-                          className={`material-symbols-outlined text-[24px] transition-all duration-200 ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
-                            }`}
-                          style={video.isLiked ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                        >
-                          favorite
-                        </span>
+                        <TokaHeartIcon
+                          size={24}
+                          filled={video.isLiked}
+                          className={`transition-all duration-200 ${
+                            video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white'
+                          }`}
+                        />
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
                         {video.likes}
@@ -880,7 +887,7 @@ export default function VideoFeed() {
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <span className="material-symbols-outlined text-cloud-white text-[24px]">forum</span>
+                        <TokaCommentIcon size={24} className="text-cloud-white" />
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
                         {video.commentsCount || 0}
@@ -893,7 +900,7 @@ export default function VideoFeed() {
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="sidebar-tip-btn w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
-                        <span className="material-symbols-outlined text-cloud-white text-[28px]">payments</span>
+                        <TokaTipIcon size={26} className="text-cloud-white" />
                       </div>
                       <span className="font-mono text-[10px] font-bold text-toka-flare drop-shadow-md uppercase tracking-wider">Tip ZAR</span>
                     </button>
@@ -904,7 +911,7 @@ export default function VideoFeed() {
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none"
                     >
                       <div className="sidebar-action-btn w-11 h-11 rounded-full bg-shaded-canopy/40 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-all">
-                        <span className="material-symbols-outlined text-cloud-white text-[24px]">share</span>
+                        <TokaShareIcon size={20} className="text-cloud-white" />
                       </div>
                       <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">{video.shares}</span>
                     </button>
@@ -948,9 +955,7 @@ export default function VideoFeed() {
                               video.isReposted ? 'text-amber-400 hover:text-amber-300' : 'text-cloud-white/90 hover:text-cloud-white'
                             }`}
                           >
-                            <span className="material-symbols-outlined text-[18px]">
-                              {video.isReposted ? 'repeat_on' : 'repeat'}
-                            </span>
+                            <TokaRepostIcon size={18} className="shrink-0" />
                             <span>{video.isReposted ? 'Remove Repost' : 'Repost Video'}</span>
                           </button>
 

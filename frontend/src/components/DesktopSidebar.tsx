@@ -6,6 +6,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useFeedStore } from '@/store/useFeedStore';
 import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
+import { TokaHomeIcon, TokaDiscoverIcon, TokaSponsorshipsIcon, IconProps } from './icons/TokaIcons';
+
+interface NavItem {
+  label: string;
+  href: string;
+  customIcon?: React.ComponentType<IconProps>;
+  icon?: string;
+  active: boolean;
+  badge?: boolean;
+  onClick?: () => void;
+}
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
@@ -23,17 +34,17 @@ export default function DesktopSidebar() {
     }
   };
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       label: 'Home',
       href: '/',
-      icon: 'home',
+      customIcon: TokaHomeIcon,
       active: pathname === '/'
     },
     {
       label: 'Discover',
       href: '/discover',
-      icon: 'explore',
+      customIcon: TokaDiscoverIcon,
       active: pathname === '/discover'
     },
     {
@@ -50,7 +61,7 @@ export default function DesktopSidebar() {
     navItems.push({
       label: 'Sponsorships',
       href: '/sponsorships',
-      icon: 'handshake',
+      customIcon: TokaSponsorshipsIcon,
       active: pathname === '/sponsorships'
     });
   }
@@ -78,30 +89,44 @@ export default function DesktopSidebar() {
 
         {/* Navigation Items */}
         <nav className="flex flex-col gap-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={item.onClick}
-              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left relative ${
-                item.active
-                  ? 'bg-white/10 text-cloud-white font-bold'
-                  : 'text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white'
-              }`}
-            >
-              <span
-                className={`material-symbols-outlined text-[24px] ${
-                  item.active ? 'material-symbols-filled text-toka-flare' : ''
+          {navItems.map((item) => {
+            const CustomIcon = item.customIcon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={item.onClick}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left relative group ${
+                  item.active
+                    ? 'bg-white/10 text-cloud-white font-bold'
+                    : 'text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white'
                 }`}
               >
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-              {item.badge && (
-                <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>
-              )}
-            </Link>
-          ))}
+                {CustomIcon ? (
+                  <CustomIcon
+                    size={24}
+                    className={`shrink-0 transition-colors ${
+                      item.active
+                        ? 'text-toka-flare'
+                        : 'text-cloud-white/70 group-hover:text-cloud-white'
+                    }`}
+                  />
+                ) : (
+                  <span
+                    className={`material-symbols-outlined text-[24px] ${
+                      item.active ? 'material-symbols-filled text-toka-flare' : ''
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                )}
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Create Video Action Button */}
