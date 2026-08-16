@@ -577,21 +577,7 @@ export default function VideoFeed() {
   // Loading Skeletons
   if (videos.length === 0 && isLoading) {
     return (
-      <div className="relative w-full h-screen bg-midnight-boma text-cloud-white overflow-hidden flex font-sans">
-        {/* Desktop Navigation Left Sidebar (Skeleton) */}
-        <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none animate-pulse">
-          <div className="h-8 bg-white/15 rounded-xl mb-12 w-28"></div>
-          <div className="flex flex-col gap-4">
-            <div className="h-10 bg-white/10 rounded-xl"></div>
-            <div className="h-10 bg-white/10 rounded-xl"></div>
-            <div className="h-10 bg-white/10 rounded-xl"></div>
-          </div>
-          <div className="mt-auto flex flex-col gap-4">
-            <div className="h-10 bg-white/10 rounded-xl"></div>
-            <div className="h-10 bg-white/10 rounded-xl"></div>
-          </div>
-        </aside>
-
+      <div className="relative w-full h-full bg-midnight-boma text-cloud-white overflow-hidden flex justify-center items-center font-sans">
         {/* Main Feed Container (Skeleton) */}
         <div className="flex-1 flex justify-center items-center h-full relative">
           <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black flex flex-col justify-end p-6 gap-4">
@@ -611,100 +597,9 @@ export default function VideoFeed() {
   }
 
   return (
-    <div className="relative w-full h-screen bg-midnight-boma text-cloud-white overflow-hidden flex font-sans">
-
-      {/* Desktop Navigation Left Sidebar (Hidden on Mobile) */}
-      <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
-        <div className="mb-12 px-4 flex items-center select-none">
-          <img
-            src="/images/logo/logo.png"
-            alt="Toka"
-            className="h-36 w-auto object-contain"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <button className="flex items-center gap-4 px-4 py-3 bg-white/10 rounded-xl text-cloud-white font-bold transition-all text-left">
-            <span className="material-symbols-outlined text-toka-flare">home</span>
-            Home
-          </button>
-          <Link href="/discover" className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left">
-            <span className="material-symbols-outlined">explore</span>
-            Discover
-          </Link>
-          <Link href="/inbox" className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left relative"
-            onClick={clearInboxDot}
-          >
-            <span className="material-symbols-outlined">mail</span>
-            Inbox
-            {hasUnreadInbox && <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>}
-          </Link>
-          {isAuthenticated && mongooseUser?.isBrandSafeVerified && (
-            <Link href="/sponsorships" className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left">
-              <span className="material-symbols-outlined text-[20px]">handshake</span>
-              Sponsorships
-            </Link>
-          )}
-          {isAuthenticated ? (
-            <div className="flex flex-col gap-1.5 px-4 py-3 bg-black/25 border border-white/10 rounded-xl mt-2 select-none">
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-toka-flare text-[20px]">person</span>
-                <span className="font-bold text-sm text-cloud-white truncate">@{mongooseUser?.username}</span>
-              </div>
-              <Link
-                href="/deposit"
-                className="flex justify-between items-center text-xs mt-1 text-cloud-white/60 hover:text-cloud-white font-mono cursor-pointer transition-colors group"
-              >
-                <span>Wallet:</span>
-                <span className="font-bold text-fintech-mint group-hover:underline">ZAR {mongooseUser?.walletBalance.toFixed(2)}</span>
-              </Link>
-              <button
-                onClick={logout}
-                className="text-left text-xs font-bold text-red-500 hover:text-red-400 mt-2.5 flex items-center gap-1.5 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="flex items-center gap-4 px-4 py-3 rounded-xl text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white transition-all text-left w-full"
-            >
-              <span className="material-symbols-outlined">login</span>
-              Sign In
-            </button>
-          )}
-        </div>
-
-        <div className="mt-auto">
-          <button
-            onClick={() => {
-              requireAuth(() => {
-                if (mongooseUser?.role === 'moderator') {
-                  window.location.href = '/moderation';
-                } else {
-                  showAlert('Access Denied', 'Access denied. Only moderators can access the Moderation queue.');
-                }
-              });
-            }}
-            className="w-full py-3 bg-shaded-canopy border border-white/10 text-cloud-white/70 rounded-xl font-bold hover:bg-white/5 transition-all flex justify-center items-center gap-2 mb-4 text-sm"
-          >
-            <span className="material-symbols-outlined text-toka-flare text-[20px]">shield</span>
-            Moderator Panel
-          </button>
-          <button
-            onClick={() => requireAuth(() => setIsUploadModalOpen(true))}
-            className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Create
-          </button>
-        </div>
-      </aside>
-
+    <div className="relative w-full h-full bg-midnight-boma text-cloud-white overflow-hidden flex justify-center items-center font-sans">
       {/* Main Feed Container */}
       <div className="flex-1 flex justify-center items-center h-full relative">
-
         {/* Mobile Viewport Wrapper */}
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
 
@@ -1225,7 +1120,7 @@ export default function VideoFeed() {
             isCleanMode ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
           }`}>
             <button className="flex flex-col items-center justify-center text-toka-flare scale-105 transition-all w-14 select-none">
-              <span className="material-symbols-outlined">home</span>
+              <span className="material-symbols-outlined material-symbols-filled">home</span>
               <span className="text-[10px] font-medium font-mono">Home</span>
             </button>
             <Link href="/discover" className="flex flex-col items-center justify-center text-cloud-white/60 hover:text-cloud-white transition-all w-14 select-none">

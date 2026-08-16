@@ -5,6 +5,7 @@ import { AuthContextProvider } from "@/context/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobalModal from "@/components/GlobalModal";
 import PWAProvider from "@/components/PWAProvider";
+import DesktopSidebar from "@/components/DesktopSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,7 +65,12 @@ export default function RootLayout({
       >
         <AuthContextProvider>
           <ErrorBoundary>
-            {children}
+            <div className="flex h-screen w-full bg-midnight-boma text-cloud-white overflow-hidden">
+              <DesktopSidebar />
+              <div className="flex-1 h-full overflow-y-auto relative no-scrollbar">
+                {children}
+              </div>
+            </div>
             <GlobalModal />
             <PWAProvider />
           </ErrorBoundary>

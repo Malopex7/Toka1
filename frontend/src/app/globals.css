@@ -224,6 +224,10 @@
   animation: float-reaction 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24 !important;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
