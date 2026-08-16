@@ -13,6 +13,9 @@ import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
 import CommentsModal from './CommentsModal';
 import MentionText from './MentionText';
+import StatusTray from './status/StatusTray';
+import StatusViewerModal from './status/StatusViewerModal';
+import StatusCreatorModal from './status/StatusCreatorModal';
 import { useAuth } from '@/context/AuthContext';
 
 function generateHeartId(prefix = 'heart'): string {
@@ -846,6 +849,13 @@ export default function VideoFeed() {
             </div>
           </header>
 
+          {/* Top Status Updates Carousel (Followers-Only Ephemeral Tray) */}
+          <div className={`absolute top-16 left-0 right-0 z-35 pointer-events-auto transition-all duration-300 ${
+            isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+          }`}>
+            <StatusTray />
+          </div>
+
           {/* Snapping Scroll Container */}
           {videos.length === 0 && !isLoading ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-black">
@@ -1290,6 +1300,12 @@ export default function VideoFeed() {
           highlightCommentId={highlightCommentId ?? undefined}
         />
       )}
+
+      {/* 24-Hour Ephemeral Status Story Viewer Modal */}
+      <StatusViewerModal />
+
+      {/* 24-Hour Status Creator Modal */}
+      <StatusCreatorModal />
 
     </div>
   );

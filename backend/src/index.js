@@ -20,6 +20,7 @@ import userRoutes from './routes/userRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import sponsorshipRoutes from './routes/sponsorshipRoutes.js';
+import statusRoutes from './routes/statusRoutes.js';
 const app = express();
 app.set('trust proxy', 1);
 
@@ -65,6 +66,7 @@ app.use('/api', userRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', sponsorshipRoutes);
+app.use('/api', statusRoutes);
 
 // Fallback for unmatched API routes
 app.all(/.*/, (req, res, next) => {

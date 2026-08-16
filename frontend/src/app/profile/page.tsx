@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
 import FollowListModal from '@/components/FollowListModal';
+import ProfileHighlightsReel from '@/components/status/ProfileHighlightsReel';
+import StatusViewerModal from '@/components/status/StatusViewerModal';
+import { useStatusStore, StatusItem } from '@/store/useStatusStore';
 
 interface ProfileVideo {
   _id: string;
@@ -159,8 +162,11 @@ function ProfileContent() {
 
   // Video tab & reposts state
   const [repostVideos, setRepostVideos] = useState<ProfileVideo[]>([]);
+  const [isFollowingPending, setIsFollowingPending] = useState(false);
   const [fetchingReposts, setFetchingReposts] = useState(true);
   const [activeVideoTab, setActiveVideoTab] = useState<'uploads' | 'reposts'>('uploads');
+  const [userStories, setUserStories] = useState<StatusItem[]>([]);
+  const [hasActiveStatus, setHasActiveStatus] = useState<boolean>(false);
 
   // Settings Sheet state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -678,16 +684,46 @@ function ProfileContent() {
         {/* Profile Card */}
         <div className="bg-shaded-canopy border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 text-center shadow-xl">
           <div className="relative group">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-lg text-3xl font-black text-cloud-white select-none overflow-hidden border-2 border-white/10">
-              {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
-                <img 
-                  src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 
-                  alt={targetUser.username} 
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                targetUser.username.charAt(0).toUpperCase()
-              )}
+            <div 
+              onClick={() => {
+                if (hasActiveStatus && userStories.length > 0) {
+                  useStatusStore.setState({
+                    stories: [{
+                      user: {
+                        _id: targetUser._id,
+                        username: targetUser.username,
+                        isBrandSafeVerified: Boolean(targetUser.isBrandSafeVerified),
+                        role: targetUser.role
+                      },
+                      isSelf: Boolean(isOwnProfile),
+                      hasUnseen: userStories.some(s => !s.hasViewed),
+                      latestStatusTime: userStories[userStories.length - 1].createdAt,
+                      statuses: userStories
+                    }],
+                    activeGroupIndex: 0,
+                    activeSlideIndex: 0,
+                    isViewerOpen: true
+                  });
+                }
+              }}
+              className={`w-20 h-20 rounded-full flex items-center justify-center select-none overflow-hidden ${
+                hasActiveStatus 
+                  ? 'p-[3px] bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint cursor-pointer shadow-[0_0_16px_rgba(255,79,0,0.55)] hover:scale-105 active:scale-95 transition-all'
+                  : 'bg-gradient-to-br from-toka-flare to-orange-700 shadow-lg border-2 border-white/10'
+              }`}
+              title={hasActiveStatus ? 'Tap to view 24h Story' : undefined}
+            >
+              <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-3xl font-black text-cloud-white">
+                {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
+                  <img 
+                    src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 
+                    alt={targetUser.username} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  targetUser.username.charAt(0).toUpperCase()
+                )}
+              </div>
             </div>
 
             {/* In-place Avatar Upload Button (Own Profile) */}
@@ -827,6 +863,9 @@ function ProfileContent() {
             </Link>
           </div>
         )}
+
+        {/* Profile Story Highlights Reel */}
+        <ProfileHighlightsReel userId={targetUser._id} isSelf={Boolean(isOwnProfile)} />
 
         {/* Videos and Reposts Grid Section */}
         <div>
@@ -1220,6 +1259,9 @@ function ProfileContent() {
           </div>
         )}
       </main>
+
+      {/* 24-Hour Story Viewer Modal */}
+      <StatusViewerModal />
     </div>
   );
 }
