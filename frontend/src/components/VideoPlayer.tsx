@@ -221,7 +221,7 @@ export default function VideoPlayer({ src, isActive, poster, isCleanMode = false
 
       {/* CLEAN MODE CONTROLS: Micro Play/Pause & Seekable Scrubber */}
       {isCleanMode ? (
-        <div className="absolute bottom-4 left-0 right-0 z-40 px-5 flex flex-col gap-2 pointer-events-auto select-none transition-all duration-300 ease-out animate-fade-in">
+        <div className="absolute bottom-[8%] left-0 right-0 z-40 px-5 flex flex-col gap-2 pointer-events-auto select-none transition-all duration-300 ease-out animate-fade-in">
           
           {/* Micro Play/Pause Button & Timestamp */}
           <div className="flex items-center justify-between px-1">
