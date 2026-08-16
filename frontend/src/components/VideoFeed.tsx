@@ -151,6 +151,12 @@ export default function VideoFeed() {
   const [activeOptionsVideoId, setActiveOptionsVideoId] = useState<string | null>(null);
   const [dismissedRepostBadges, setDismissedRepostBadges] = useState<Set<string>>(new Set());
 
+  // Clean / Fullscreen View Mode state
+  const [isCleanMode, setIsCleanMode] = useState(false);
+  const [showCleanHint, setShowCleanHint] = useState(false);
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanHintTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleDismissRepostBadge = (videoId: string) => {
     setDismissedRepostBadges((prev) => {
       const next = new Set(prev);
@@ -302,6 +308,8 @@ export default function VideoFeed() {
     const index = Math.round(container.scrollTop / container.clientHeight);
     if (index !== currentIndex && index >= 0 && index < videos.length) {
       setCurrentIndex(index);
+      setIsCleanMode(false);
+      setShowCleanHint(false);
     }
   };
 
@@ -330,6 +338,38 @@ export default function VideoFeed() {
     setTimeout(() => {
       setHearts((prev) => prev.filter((h) => h.id !== heartId));
     }, 800);
+  };
+
+  const handleVideoCardClick = (videoId: string, e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.detail === 2) {
+      // Double tap: Cancel single tap timer & trigger heart like
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      handleDoubleTap(videoId, e);
+    } else if (e.detail === 1) {
+      // Single tap: Wait 240ms before toggling clean mode to allow double-tap
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+      singleTapTimerRef.current = setTimeout(() => {
+        setIsCleanMode((prev) => {
+          const next = !prev;
+          if (next) {
+            setShowCleanHint(true);
+            if (cleanHintTimerRef.current) clearTimeout(cleanHintTimerRef.current);
+            cleanHintTimerRef.current = setTimeout(() => {
+              setShowCleanHint(false);
+            }, 1600);
+          } else {
+            setShowCleanHint(false);
+          }
+          return next;
+        });
+        singleTapTimerRef.current = null;
+      }, 240);
+    }
   };
 
   const handleLikeToggle = async (videoId: string, e: React.MouseEvent) => {
@@ -668,7 +708,9 @@ export default function VideoFeed() {
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
 
           {/* Top Translucent Navigation Bar Overlay */}
-          <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-6 h-16 pointer-events-none">
+          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-6 h-16 pointer-events-none transition-all duration-300 ease-out ${
+            isCleanMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+          }`}>
             {creatorParam ? (
               <Link
                 href={`/profile?username=${creatorParam}`}
@@ -844,14 +886,20 @@ export default function VideoFeed() {
               return (
                 <div
                   key={video.id}
-                  onClick={(e) => {
-                    if (e.detail === 2) {
-                      handleDoubleTap(video.id, e);
-                    }
-                  }}
-                  className="relative w-full h-full snap-start shrink-0 z-0 bg-black flex flex-col justify-end"
+                  onClick={(e) => handleVideoCardClick(video.id, e)}
+                  className="relative w-full h-full snap-start shrink-0 z-0 bg-black flex flex-col justify-end cursor-pointer"
                 >
                   <VideoPlayer src={video.videoUrl} isActive={isActive} poster={video.poster} />
+
+                  {/* Clean Mode Floating Toast Hint */}
+                  {showCleanHint && (
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-fade-in">
+                      <div className="px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-xl border border-white/20 text-[11px] font-mono font-medium text-cloud-white shadow-2xl flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[15px] text-toka-flare">fullscreen</span>
+                        <span>Clean View • Tap to restore</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Floating hearts container */}
                   {hearts.map((heart) => (
@@ -870,7 +918,9 @@ export default function VideoFeed() {
                   ))}
 
                   {/* Right Action Sidebar Overlay */}
-                  <aside className="video-actions-sidebar absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto">
+                  <aside className={`video-actions-sidebar absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto transition-all duration-300 ease-out ${
+                    isCleanMode ? 'translate-x-20 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+                  }`}>
 
                     {/* Creator Avatar & Follow Button */}
                     <div className="relative mb-3 group select-none">
@@ -1056,7 +1106,9 @@ export default function VideoFeed() {
                   </aside>
 
                   {/* Bottom Left Info Overlay */}
-                  <div className="absolute bottom-24 left-4 z-30 flex flex-col gap-2 max-w-[75%] pointer-events-auto select-none">
+                  <div className={`absolute bottom-24 left-4 z-30 flex flex-col gap-2 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
+                    isCleanMode ? 'translate-y-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+                  }`}>
 
                     {/* Synced Mute / Unmute Button */}
                     <button
