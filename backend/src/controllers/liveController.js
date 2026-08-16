@@ -28,11 +28,38 @@ function mintToken(roomName, participantName, participantId, canPublish = false)
   return at.toJwt();
 }
 
+// GET /api/live/my-active
+export const getMyActiveStream = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findOne({ hostId: req.user._id, status: 'live' }).lean();
+    res.json({ status: 'success', data: { stream: stream || null } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // POST /api/live/start
 export const startStream = async (req, res, next) => {
   try {
     const { title, privacy = 'public', privateMode, entryFeeZAR, subscriberPriceZAR, tipInviteMinZAR } = req.body;
     const hostUser = req.user;
+
+    // Check if host already has an active stream
+    const existingActiveStream = await LiveStream.findOne({
+      hostId: hostUser._id,
+      status: 'live',
+    });
+
+    if (existingActiveStream) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'You already have an active live stream. You must end it before starting a new one.',
+        data: {
+          activeStreamId: existingActiveStream._id,
+          activeStreamTitle: existingActiveStream.title,
+        },
+      });
+    }
 
     const roomName = `toka-live-${hostUser._id}-${Date.now()}`;
 

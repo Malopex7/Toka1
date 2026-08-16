@@ -32,13 +32,64 @@ export default function GoLiveOverlay({ onClose }: GoLiveOverlayProps) {
   const [subscriberPriceZAR, setSubscriberPriceZAR] = useState<number>(20);
   const [tipInviteMinZAR, setTipInviteMinZAR] = useState<number>(5);
   const [loading, setLoading] = useState(false);
+  const [checkingActive, setCheckingActive] = useState(true);
+  const [activeStream, setActiveStream] = useState<{ _id: string; title: string; livekitRoomName?: string } | null>(null);
   const [error, setError] = useState('');
+
+  // Check on mount if user already has an active stream
+  useEffect(() => {
+    let isMounted = true;
+    const checkActiveStream = async () => {
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`${BACKEND_URL}/api/live/user/my-active`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (isMounted && data.status === 'success' && data.data.stream) {
+          setActiveStream(data.data.stream);
+        }
+      } catch (err) {
+        console.warn('Failed to check active stream status:', err);
+      } finally {
+        if (isMounted) setCheckingActive(false);
+      }
+    };
+    checkActiveStream();
+    return () => { isMounted = false; };
+  }, [getIdToken]);
 
   const handlePrivacyToggle = (value: 'public' | 'private') => {
     setPrivacy(value);
     if (value === 'private') {
       setShowPrivateModeModal(true);
     }
+  };
+
+  const handleEndActiveStream = async () => {
+    if (!activeStream) return;
+    setLoading(true);
+    setError('');
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/live/${activeStream._id}/end`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to end stream');
+      setActiveStream(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to end active stream');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResumeActiveStream = () => {
+    if (!activeStream) return;
+    onClose();
+    router.push(`/live/${activeStream._id}`);
   };
 
   const handleGoLive = async () => {
@@ -60,7 +111,12 @@ export default function GoLiveOverlay({ onClose }: GoLiveOverlayProps) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to start stream');
+      if (!res.ok) {
+        if (data.data?.activeStreamId) {
+          setActiveStream({ _id: data.data.activeStreamId, title: data.data.activeStreamTitle || 'Active Stream' });
+        }
+        throw new Error(data.message || 'Failed to start stream');
+      }
       setLivekitConnection(data.data.token, data.data.livekitUrl);
       setCurrentRoom(data.data.stream);
       onClose();
@@ -85,77 +141,119 @@ export default function GoLiveOverlay({ onClose }: GoLiveOverlayProps) {
         <div className="flex items-center justify-between">
           <h2 className="text-cloud-white font-bold text-xl flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-            Go Live
+            {activeStream ? 'Active Stream In Progress' : 'Go Live'}
           </h2>
-          <button onClick={onClose} className="text-cloud-white/50 hover:text-cloud-white transition-colors">
+          <button onClick={onClose} className="text-cloud-white/50 hover:text-cloud-white transition-colors cursor-pointer">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        {/* Title */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-cloud-white/70 text-xs font-semibold uppercase tracking-wider">Stream Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="What's your stream about?"
-            maxLength={120}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-cloud-white placeholder-cloud-white/30 focus:outline-none focus:border-toka-flare/50 text-sm transition-colors"
-          />
-        </div>
-
-        {/* Privacy toggle */}
-        <div className="flex flex-col gap-2">
-          <label className="text-cloud-white/70 text-xs font-semibold uppercase tracking-wider">Stream Access</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePrivacyToggle('public')}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                privacy === 'public'
-                  ? 'bg-toka-flare/20 border-toka-flare text-toka-flare'
-                  : 'border-white/10 text-cloud-white/60 hover:bg-white/5'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">public</span> Public
-            </button>
-            <button
-              onClick={() => handlePrivacyToggle('private')}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                privacy === 'private'
-                  ? 'bg-toka-flare/20 border-toka-flare text-toka-flare'
-                  : 'border-white/10 text-cloud-white/60 hover:bg-white/5'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">lock</span>
-              Private {privacy === 'private' && <span className="text-xs opacity-70">({PRIVATE_MODE_OPTIONS.find(o => o.value === privateMode)?.label})</span>}
-            </button>
+        {checkingActive ? (
+          <div className="py-8 flex flex-col items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs text-cloud-white/50">Checking stream status...</span>
           </div>
-          {privacy === 'private' && (
+        ) : activeStream ? (
+          /* Active Stream Warning & Resolution UI */
+          <div className="flex flex-col gap-4 py-2">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
+              <span className="material-symbols-outlined text-amber-400 text-[24px] shrink-0 mt-0.5">warning</span>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-amber-300">You already have an active stream</p>
+                <p className="text-xs text-cloud-white/80 mt-1">
+                  &ldquo;<span className="font-semibold text-cloud-white">{activeStream.title}</span>&rdquo; is currently live. You must end it before you can start a new broadcast.
+                </p>
+              </div>
+            </div>
+
+            {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={handleEndActiveStream}
+                disabled={loading}
+                className="flex-1 py-3.5 bg-red-600/20 border border-red-500/40 hover:bg-red-600 hover:text-white text-red-400 font-bold rounded-xl text-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {loading ? 'Ending...' : 'End Current Stream'}
+              </button>
+              <button
+                onClick={handleResumeActiveStream}
+                disabled={loading}
+                className="flex-1 py-3.5 bg-toka-flare hover:bg-toka-flare/90 text-white font-bold rounded-xl text-sm transition-all active:scale-95 cursor-pointer shadow-lg shadow-toka-flare/20"
+              >
+                Resume Stream
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Normal Go Live Creation Form */
+          <>
+            {/* Title */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-cloud-white/70 text-xs font-semibold uppercase tracking-wider">Stream Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What's your stream about?"
+                maxLength={120}
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-cloud-white placeholder-cloud-white/30 focus:outline-none focus:border-toka-flare/50 text-sm transition-colors"
+              />
+            </div>
+
+            {/* Privacy toggle */}
+            <div className="flex flex-col gap-2">
+              <label className="text-cloud-white/70 text-xs font-semibold uppercase tracking-wider">Stream Access</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handlePrivacyToggle('public')}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    privacy === 'public'
+                      ? 'bg-toka-flare/20 border-toka-flare text-toka-flare'
+                      : 'border-white/10 text-cloud-white/60 hover:bg-white/5'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">public</span> Public
+                </button>
+                <button
+                  onClick={() => handlePrivacyToggle('private')}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    privacy === 'private'
+                      ? 'bg-toka-flare/20 border-toka-flare text-toka-flare'
+                      : 'border-white/10 text-cloud-white/60 hover:bg-white/5'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">lock</span>
+                  Private {privacy === 'private' && <span className="text-xs opacity-70">({PRIVATE_MODE_OPTIONS.find(o => o.value === privateMode)?.label})</span>}
+                </button>
+              </div>
+              {privacy === 'private' && (
+                <button
+                  onClick={() => setShowPrivateModeModal(true)}
+                  className="text-xs text-toka-flare/80 hover:text-toka-flare text-left underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  Change private mode settings →
+                </button>
+              )}
+            </div>
+
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+
+            {/* CTA */}
             <button
-              onClick={() => setShowPrivateModeModal(true)}
-              className="text-xs text-toka-flare/80 hover:text-toka-flare text-left underline underline-offset-2 transition-colors"
+              onClick={handleGoLive}
+              disabled={loading || !title.trim()}
+              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-red-600/20 transition-all active:scale-98 disabled:opacity-50 text-base cursor-pointer"
             >
-              Change private mode settings →
+              {loading ? (
+                <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+              ) : (
+                <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+              )}
+              {loading ? 'Starting...' : 'Start Live Stream'}
             </button>
-          )}
-        </div>
-
-        {error && <p className="text-red-400 text-xs">{error}</p>}
-
-        {/* CTA */}
-        <button
-          onClick={handleGoLive}
-          disabled={loading || !title.trim()}
-          className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-red-600/20 transition-all active:scale-98 disabled:opacity-50 text-base"
-        >
-          {loading ? (
-            <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-          ) : (
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-          )}
-          {loading ? 'Starting...' : 'Start Live Stream'}
-        </button>
+          </>
+        )}
       </div>
 
       {/* Private Mode Selection Modal */}

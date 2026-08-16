@@ -3,6 +3,7 @@ import express from 'express';
 import { protect } from '../middlewares/auth.js';
 import {
   startStream,
+  getMyActiveStream,
   getActiveStreams,
   getStream,
   joinStream,
@@ -20,6 +21,7 @@ router.get('/live/active', getActiveStreams);
 router.get('/live/:roomId', getStream);
 
 // Protected routes
+router.get('/live/user/my-active', protect, getMyActiveStream);
 router.post('/live/start', protect, startStream);
 router.post('/live/:roomId/join', protect, joinStream);
 router.post('/live/:roomId/tip', protect, tipHost);
