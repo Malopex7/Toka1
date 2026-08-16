@@ -219,53 +219,61 @@ export default function VideoPlayer({ src, isActive, poster, isCleanMode = false
         </div>
       )}
 
-      {/* Bottom Progress Bar & Micro Controls Overlay */}
-      <div className={`absolute left-0 right-0 z-30 px-4 pt-3 flex flex-col gap-1.5 pointer-events-auto select-none group/player transition-all duration-300 ease-out ${
-        isCleanMode ? 'bottom-3' : 'bottom-[76px]'
-      }`}>
-        
-        {/* Top Control Line: Micro Play/Pause & Live Timestamp */}
-        <div className="flex items-center justify-between px-0.5">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePlay();
-            }}
-            className="w-7 h-7 rounded-full bg-black/60 hover:bg-toka-flare backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all shadow-md active:scale-90 cursor-pointer"
-            title={isPlaying ? "Pause Video" : "Play Video"}
-          >
-            {isPlaying ? (
-              <Pause className="w-3.5 h-3.5 text-white fill-white" />
-            ) : (
-              <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+      {/* CLEAN MODE CONTROLS: Micro Play/Pause & Seekable Scrubber */}
+      {isCleanMode ? (
+        <div className="absolute bottom-4 left-0 right-0 z-40 px-5 flex flex-col gap-2 pointer-events-auto select-none transition-all duration-300 ease-out animate-fade-in">
+          
+          {/* Micro Play/Pause Button & Timestamp */}
+          <div className="flex items-center justify-between px-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlay();
+              }}
+              className="w-8 h-8 rounded-full bg-black/70 hover:bg-toka-flare backdrop-blur-xl border border-white/20 text-white flex items-center justify-center transition-all shadow-lg active:scale-90 cursor-pointer"
+              title={isPlaying ? "Pause Video" : "Play Video"}
+            >
+              {isPlaying ? (
+                <Pause className="w-4 h-4 text-white fill-white" />
+              ) : (
+                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+              )}
+            </button>
+
+            {duration > 0 && (
+              <span className="text-[11px] font-mono font-bold text-cloud-white/90 drop-shadow-md bg-black/50 px-2 py-0.5 rounded-full border border-white/10">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
             )}
-          </button>
+          </div>
 
-          {duration > 0 && (
-            <span className="text-[10px] font-mono font-bold text-cloud-white/80 drop-shadow-md">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          )}
-        </div>
-
-        {/* Seekable Progress Bar Scrubber */}
-        <div
-          ref={progressBarRef}
-          onClick={handleSeek}
-          onMouseDown={() => setIsScrubbing(true)}
-          onMouseUp={() => setIsScrubbing(false)}
-          onTouchStart={() => setIsScrubbing(true)}
-          onTouchMove={handleSeek}
-          onTouchEnd={() => setIsScrubbing(false)}
-          className="relative w-full h-1.5 hover:h-2.5 rounded-full bg-white/20 hover:bg-white/30 transition-all cursor-pointer flex items-center overflow-hidden"
-          title="Scrub video"
-        >
+          {/* Interactive Clean Mode Progress Scrubber */}
           <div
-            className="h-full bg-toka-flare transition-[width] duration-100 ease-linear rounded-full"
+            ref={progressBarRef}
+            onClick={handleSeek}
+            onMouseDown={() => setIsScrubbing(true)}
+            onMouseUp={() => setIsScrubbing(false)}
+            onTouchStart={() => setIsScrubbing(true)}
+            onTouchMove={handleSeek}
+            onTouchEnd={() => setIsScrubbing(false)}
+            className="relative w-full h-2 hover:h-3 rounded-full bg-white/25 hover:bg-white/35 transition-all cursor-pointer flex items-center overflow-hidden shadow-md"
+            title="Scrub video"
+          >
+            <div
+              className="h-full bg-toka-flare transition-[width] duration-100 ease-linear rounded-full"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        /* NORMAL MODE: Ultra-thin 1.5px non-intrusive progress line placed at the very bottom */
+        <div className="absolute bottom-0 left-0 right-0 z-30 w-full h-[2px] bg-white/15 pointer-events-none">
+          <div
+            className="h-full bg-toka-flare/90 transition-[width] duration-100 ease-linear"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }
