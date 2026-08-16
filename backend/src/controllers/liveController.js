@@ -294,7 +294,7 @@ export const inviteCohost = async (req, res, next) => {
       });
     }
 
-    res.json({ status: 'success', message: `Co-host invite sent to @${username}` });
+    res.json({ status: 'success', message: `Co-host invite sent to @${cleanUsername}` });
   } catch (err) {
     next(err);
   }
