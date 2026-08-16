@@ -150,7 +150,7 @@ export const joinStream = async (req, res, next) => {
       await stream.save();
     }
 
-    const canPublish = isHost || isCohost;
+    const canPublish = isHost || isCohost || isInvitedCohost;
     const token = await mintToken(stream.livekitRoomName, viewer.username, viewer._id, canPublish);
 
     // Broadcast updated viewer count
@@ -166,6 +166,7 @@ export const joinStream = async (req, res, next) => {
         livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880',
         stream,
         isInvitedCohost: Boolean(isInvitedCohost),
+        canPublish,
       }
     });
   } catch (err) {
@@ -343,7 +344,7 @@ export const inviteCohost = async (req, res, next) => {
 // POST /api/live/:roomId/cohost (accept invite)
 export const acceptCohost = async (req, res, next) => {
   try {
-    const stream = await LiveStream.findById(req.params.roomId);
+    const stream = await LiveStream.findById(req.params.roomId).populate('hostId', 'username avatarUrl isBrandSafeVerified');
     if (!stream || stream.status !== 'live') return next(new AppError('Stream not found', 404));
 
     const cohost = req.user;
@@ -352,9 +353,27 @@ export const acceptCohost = async (req, res, next) => {
       await stream.save();
     }
 
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(stream.livekitRoomName).emit('cohost_joined', {
+        cohost: {
+          id: cohost._id.toString(),
+          username: cohost.username,
+          avatarUrl: cohost.avatarUrl,
+        }
+      });
+    }
+
     // Co-host gets publish permission
     const token = await mintToken(stream.livekitRoomName, cohost.username, cohost._id, true);
-    res.json({ status: 'success', data: { token, livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880' } });
+    res.json({
+      status: 'success',
+      data: {
+        token,
+        livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880',
+        stream,
+      }
+    });
   } catch (err) {
     next(err);
   }

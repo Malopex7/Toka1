@@ -64,6 +64,12 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
   const isHost = currentRoom?.hostId?._id === mongooseUser?._id?.toString() ||
     (currentRoom?.hostId as unknown as string) === mongooseUser?._id?.toString();
+  const isCohost = Boolean(
+    currentRoom?.cohosts?.some(
+      (id: any) => (id?._id || id)?.toString() === mongooseUser?._id?.toString()
+    )
+  );
+  const canPublish = isHost || isCohost;
 
   // Join stream if we don't already have a token
   useEffect(() => {
@@ -186,7 +192,15 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to accept co-host invite');
 
-      // Update connection with publisher token
+      // Update room state with new stream and publisher token
+      if (data.data?.stream) {
+        setCurrentRoom(data.data.stream);
+      } else if (currentRoom) {
+        setCurrentRoom({
+          ...currentRoom,
+          cohosts: [...(currentRoom.cohosts || []), mongooseUser?._id],
+        });
+      }
       setLivekitConnection(data.data.token, data.data.livekitUrl);
       setPendingCohostInvite(null);
     } catch (err) {
@@ -261,8 +275,8 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       token={livekitToken}
       serverUrl={effectiveLivekitUrl}
       connect={true}
-      video={isHost}
-      audio={isHost}
+      video={canPublish}
+      audio={canPublish}
     >
       <RoomAudioRenderer />
       <MediaRecorderManager isHost={isHost} />
@@ -529,6 +543,18 @@ function LiveBroadcastStage({
     { source: Track.Source.Camera, withPlaceholder: false },
     { source: Track.Source.ScreenShare, withPlaceholder: false },
   ]);
+
+  // Auto-enable camera and mic for publishing presenters upon entering
+  useEffect(() => {
+    if (canPublish && localParticipant) {
+      if (!localParticipant.isCameraEnabled) {
+        localParticipant.setCameraEnabled(true).catch(console.error);
+      }
+      if (!localParticipant.isMicrophoneEnabled) {
+        localParticipant.setMicrophoneEnabled(true).catch(console.error);
+      }
+    }
+  }, [canPublish, localParticipant]);
 
   // Check if audio playback is permitted by the browser
   useEffect(() => {
