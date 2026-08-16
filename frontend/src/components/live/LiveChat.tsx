@@ -186,7 +186,7 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
 
   return (
     <div className={`flex flex-col ${isMobile
-      ? 'absolute bottom-16 left-0 right-0 max-h-64 bg-gradient-to-t from-black/80 to-transparent pointer-events-none px-3 pb-2'
+      ? 'absolute bottom-28 left-0 right-0 max-h-56 bg-gradient-to-t from-black/80 to-transparent pointer-events-none px-3 pb-2'
       : 'h-full bg-shaded-canopy/80 backdrop-blur-md border-l border-white/10'
     }`}>
       {/* Header (desktop only) */}

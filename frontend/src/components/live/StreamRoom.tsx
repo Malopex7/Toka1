@@ -304,29 +304,27 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
             />
           </div>
 
-          {/* Mobile Floating Action Sidebar (Right side) */}
-          <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-5">
-            {currentRoom && (
+          {/* Mobile Floating Action Sidebar (Right side, for audience only) */}
+          {!isHost && currentRoom && (
+            <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-4">
               <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
-            )}
-            <button
-              onClick={async () => {
-                if (currentRoom) {
+              <button
+                onClick={async () => {
                   try {
                     await navigator.share({ title: currentRoom.title, url: window.location.href });
                   } catch {
                     navigator.clipboard.writeText(window.location.href);
                   }
-                }
-              }}
-              className="flex flex-col items-center gap-1 cursor-pointer select-none"
-            >
-              <span className="material-symbols-outlined text-cloud-white text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                share
-              </span>
-              <span className="text-[10px] text-cloud-white/80 font-bold drop-shadow">Share</span>
-            </button>
-          </div>
+                }}
+                className="flex flex-col items-center gap-1 cursor-pointer select-none"
+              >
+                <span className="material-symbols-outlined text-cloud-white text-[24px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                  share
+                </span>
+                <span className="text-[10px] text-cloud-white/80 font-bold drop-shadow">Share</span>
+              </button>
+            </div>
+          )}
 
           {/* Mobile Floating Chat Overlay */}
           <div className="md:hidden pointer-events-none">
@@ -341,7 +339,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
           {/* Mobile Chat Input Bar */}
           {mongooseUser && currentRoom && (
-            <div className="md:hidden absolute bottom-4 left-4 right-20 z-30">
+            <div className="md:hidden absolute bottom-3 left-3 right-3 z-30">
               <MobileChatInput
                 roomName={currentRoom.livekitRoomName}
                 username={mongooseUser.username}
@@ -352,7 +350,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
           {/* Host Co-Host Invite Panel Popup */}
           {isHost && showCohostPanel && (
-            <div className="absolute bottom-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-30 animate-scale-up">
+            <div className="absolute bottom-32 left-3 right-3 md:left-auto md:right-8 md:bottom-20 md:w-96 z-40 animate-scale-up">
               <CohostInvitePanel roomId={roomId} />
             </div>
           )}
@@ -616,16 +614,16 @@ function LiveBroadcastStage({
 
       {/* Unified Presenter Floating Controls Dock */}
       {canPublish && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/75 backdrop-blur-lg px-3 py-2 rounded-2xl border border-white/15 shadow-2xl">
+        <div className="absolute bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 md:gap-2 bg-black/80 backdrop-blur-xl px-2.5 md:px-3 py-1.5 md:py-2 rounded-2xl border border-white/15 shadow-2xl max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar">
           {/* Camera Toggle */}
           <button
             onClick={toggleCamera}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
               isCameraEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
             }`}
             title={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               {isCameraEnabled ? 'videocam' : 'videocam_off'}
             </span>
           </button>
@@ -633,12 +631,12 @@ function LiveBroadcastStage({
           {/* Mic Toggle */}
           <button
             onClick={toggleMic}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
               isMicrophoneEnabled ? 'bg-white/10 text-cloud-white hover:bg-white/20' : 'bg-red-600 text-white shadow-lg'
             }`}
             title={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               {isMicrophoneEnabled ? 'mic' : 'mic_off'}
             </span>
           </button>
@@ -646,30 +644,30 @@ function LiveBroadcastStage({
           {/* Screen Share Toggle */}
           <button
             onClick={toggleScreenShare}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer ${
               isScreenShareEnabled ? 'bg-toka-flare text-white shadow-lg' : 'bg-white/10 text-cloud-white hover:bg-white/20'
             }`}
             title={isScreenShareEnabled ? 'Stop Screen Share' : 'Share Screen'}
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               {isScreenShareEnabled ? 'stop_screen_share' : 'screen_share'}
             </span>
           </button>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-white/20 mx-1" />
+          <div className="w-px h-5 md:h-6 bg-white/20 mx-0.5 md:mx-1 shrink-0" />
 
           {/* Invite Co-Host (Host only) */}
           {isHost && onToggleCohostPanel && (
             <button
               onClick={onToggleCohostPanel}
-              className={`flex items-center gap-1.5 px-3.5 h-10 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 md:px-3.5 h-9 md:h-10 rounded-xl font-bold text-[11px] md:text-xs shrink-0 whitespace-nowrap transition-all cursor-pointer shadow-md active:scale-95 ${
                 showCohostPanel
                   ? 'bg-toka-flare text-white'
                   : 'bg-white/10 text-cloud-white hover:bg-white/20'
               }`}
             >
-              <span className="material-symbols-outlined text-[18px]">group_add</span>
+              <span className="material-symbols-outlined text-[16px] md:text-[18px]">group_add</span>
               <span>Invite Co-Host</span>
             </button>
           )}
@@ -678,10 +676,10 @@ function LiveBroadcastStage({
           {onShare && (
             <button
               onClick={onShare}
-              className="w-10 h-10 rounded-xl bg-white/10 text-cloud-white hover:bg-white/20 flex items-center justify-center transition-all cursor-pointer"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 text-cloud-white hover:bg-white/20 shrink-0 flex items-center justify-center transition-all cursor-pointer"
               title="Share Stream Link"
             >
-              <span className="material-symbols-outlined text-[18px]">share</span>
+              <span className="material-symbols-outlined text-[16px] md:text-[18px]">share</span>
             </button>
           )}
         </div>
