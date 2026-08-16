@@ -21,6 +21,103 @@ interface ProfileVideo {
   }>;
 }
 
+// Sleek Nano-style Minimalist Vector Icons
+function IconVideo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect width="18" height="15" x="3" y="4.5" rx="2.5" />
+      <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function IconFollowers({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconFollowing({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+      <path d="m16 11 2 2 4-4" />
+    </svg>
+  );
+}
+
+function IconWallet({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect width="20" height="14" x="2" y="5" rx="3" />
+      <line x1="2" x2="22" y1="10" y2="10" />
+      <circle cx="17" cy="14" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconTopUp({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect width="20" height="14" x="2" y="5" rx="2.5" />
+      <line x1="2" x2="22" y1="10" y2="10" />
+      <line x1="12" x2="12" y1="13" y2="17" />
+      <line x1="10" x2="14" y1="15" y2="15" />
+    </svg>
+  );
+}
+
+function IconInbox({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  );
+}
+
+function IconRepeat({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m17 2 4 4-4 4" />
+      <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+      <path d="m7 22-4-4 4-4" />
+      <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
+
+function IconCamera({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
+function IconTrash({ className = "w-3 h-3" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconVerifiedCheck({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#00F5A0" />
+    </svg>
+  );
+}
+
 interface TargetUser {
   _id: string;
   username: string;
@@ -599,13 +696,13 @@ function ProfileContent() {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-toka-flare hover:bg-toka-flare/90 text-cloud-white flex items-center justify-center shadow-lg border-2 border-midnight-boma transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer z-10"
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-black/70 hover:bg-toka-flare text-cloud-white flex items-center justify-center shadow-lg border border-white/20 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer z-10 backdrop-blur-md"
                   title="Change Profile Photo"
                 >
                   {uploadingAvatar ? (
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                   ) : (
-                    <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+                    <IconCamera className="w-3.5 h-3.5" />
                   )}
                 </button>
                 <input
@@ -623,9 +720,9 @@ function ProfileContent() {
             <button
               onClick={handleRemoveAvatar}
               disabled={uploadingAvatar}
-              className="text-[11px] font-bold text-red-400 hover:text-red-300 hover:underline -mt-2 transition-colors flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-medium text-white/40 hover:text-red-400 -mt-2 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[14px]">delete</span>
+              <IconTrash className="w-3 h-3" />
               Remove Photo
             </button>
           )}
@@ -634,14 +731,16 @@ function ProfileContent() {
             <div className="flex items-center justify-center gap-1.5">
               <h2 className="text-xl font-black tracking-tight text-cloud-white">@{targetUser.username}</h2>
               {targetUser.isBrandSafeVerified && (
-                <span className="material-symbols-outlined text-fintech-mint text-[20px] select-none" title="Brand-Safe Verified Profile">verified</span>
+                <span title="Brand-Safe Verified Profile">
+                  <IconVerifiedCheck className="w-4 h-4 inline-block" />
+                </span>
               )}
             </div>
             {isOwnProfile && mongooseUser && (
               <p className="text-xs text-cloud-white/50 mt-0.5">{mongooseUser.email}</p>
             )}
           </div>
-          <span className={`border rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${roleColors[targetUser.role] || roleColors.fan}`}>
+          <span className={`border rounded-full px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider ${roleColors[targetUser.role] || roleColors.fan}`}>
             {targetUser.role}
           </span>
 
@@ -655,48 +754,56 @@ function ProfileContent() {
                   : 'bg-toka-flare hover:bg-toka-flare/90 text-cloud-white'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">{isFollowing ? 'person_remove' : 'person_add'}</span>
+              <IconFollowing className="w-4 h-4" />
               {isFollowing ? 'Unfollow' : 'Follow'}
             </button>
           )}
         </div>
 
-        {/* Stats Row */}
+        {/* Modern Sleek Stats Row */}
         <div className={`grid ${isOwnProfile ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-3`}>
-          <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
-            <span className="material-symbols-outlined text-toka-flare text-[24px]">videocam</span>
-            <span className="text-xl font-black font-mono">{videos.length}</span>
-            <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Videos</span>
+          <div className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-toka-flare">
+              <IconVideo className="w-4 h-4" />
+            </div>
+            <span className="text-xl font-bold font-mono text-white">{videos.length}</span>
+            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Videos</span>
           </div>
 
           <button 
             type="button"
             onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
-            className="bg-shaded-canopy border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+            className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
           >
-            <span className="material-symbols-outlined text-amber-400 text-[24px] group-hover:scale-110 transition-transform">group</span>
-            <span className="text-xl font-black font-mono">{followerCount}</span>
-            <span className="text-[9px] text-cloud-white/40 group-hover:text-amber-400 uppercase font-bold tracking-wider">Followers</span>
+            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-white/70 group-hover:text-amber-400 transition-colors">
+              <IconFollowers className="w-4 h-4" />
+            </div>
+            <span className="text-xl font-bold font-mono text-white">{followerCount}</span>
+            <span className="text-[10px] font-semibold text-white/40 group-hover:text-amber-400 uppercase tracking-wider transition-colors">Followers</span>
           </button>
 
           <button 
             type="button"
             onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
-            className="bg-shaded-canopy border border-white/10 hover:border-blue-400/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+            className="bg-white/[0.03] border border-white/[0.08] hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
           >
-            <span className="material-symbols-outlined text-blue-400 text-[24px] group-hover:scale-110 transition-transform">person_check</span>
-            <span className="text-xl font-black font-mono">{targetUser.following?.length || 0}</span>
-            <span className="text-[9px] text-cloud-white/40 group-hover:text-blue-400 uppercase font-bold tracking-wider">Following</span>
+            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center text-white/70 group-hover:text-blue-400 transition-colors">
+              <IconFollowing className="w-4 h-4" />
+            </div>
+            <span className="text-xl font-bold font-mono text-white">{targetUser.following?.length || 0}</span>
+            <span className="text-[10px] font-semibold text-white/40 group-hover:text-blue-400 uppercase tracking-wider transition-colors">Following</span>
           </button>
 
           {isOwnProfile && mongooseUser && (
             <Link 
               href="/deposit"
-              className="bg-shaded-canopy border border-white/10 hover:border-fintech-mint/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+              className="bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
             >
-              <span className="material-symbols-outlined text-fintech-mint text-[24px] group-hover:scale-110 transition-transform">account_balance_wallet</span>
-              <span className="text-xl font-black font-mono">R {mongooseUser.walletBalance.toFixed(2)}</span>
-              <span className="text-[9px] text-cloud-white/40 group-hover:text-fintech-mint uppercase font-bold tracking-wider">Balance</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <IconWallet className="w-4 h-4" />
+              </div>
+              <span className="text-xl font-bold font-mono text-emerald-400">R {mongooseUser.walletBalance.toFixed(2)}</span>
+              <span className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wider">Balance</span>
             </Link>
           )}
         </div>
@@ -706,35 +813,34 @@ function ProfileContent() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/deposit"
-              className="flex items-center justify-center gap-2 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95 shadow-lg"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-toka-flare to-orange-600 hover:brightness-110 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95 shadow-lg shadow-orange-500/20"
             >
-              <span className="material-symbols-outlined text-[18px]">add_card</span>
+              <IconTopUp className="w-4 h-4" />
               Top Up Wallet
             </Link>
             <Link
               href="/inbox"
-              className="flex items-center justify-center gap-2 bg-shaded-canopy hover:bg-white/10 border border-white/15 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.12] text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95"
             >
-              <span className="material-symbols-outlined text-[18px]">inbox</span>
+              <IconInbox className="w-4 h-4" />
               View Inbox
             </Link>
           </div>
         )}
 
-
         {/* Videos and Reposts Grid Section */}
         <div>
           {/* Tab Switcher */}
-          <div className="flex items-center gap-3 border-b border-white/10 mb-4 pb-2">
+          <div className="flex items-center gap-4 border-b border-white/10 mb-4 pb-2">
             <button
               onClick={() => setActiveVideoTab('uploads')}
-              className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-xs font-bold uppercase tracking-wider pb-1.5 transition-all flex items-center gap-2 cursor-pointer ${
                 activeVideoTab === 'uploads'
                   ? 'text-cloud-white border-b-2 border-toka-flare font-black'
                   : 'text-cloud-white/40 hover:text-cloud-white/70'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">videocam</span>
+              <IconVideo className="w-4 h-4" />
               <span>{isOwnProfile ? 'My Videos' : 'Videos'}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                 activeVideoTab === 'uploads' ? 'bg-toka-flare/20 text-toka-flare' : 'bg-white/10 text-cloud-white/50'
@@ -745,13 +851,13 @@ function ProfileContent() {
 
             <button
               onClick={() => setActiveVideoTab('reposts')}
-              className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-xs font-bold uppercase tracking-wider pb-1.5 transition-all flex items-center gap-2 cursor-pointer ${
                 activeVideoTab === 'reposts'
                   ? 'text-cloud-white border-b-2 border-amber-400 font-black'
                   : 'text-cloud-white/40 hover:text-cloud-white/70'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px] text-amber-400">repeat</span>
+              <IconRepeat className="w-4 h-4 text-amber-400" />
               <span>Reposts</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                 activeVideoTab === 'reposts' ? 'bg-amber-400/20 text-amber-400' : 'bg-white/10 text-cloud-white/50'
