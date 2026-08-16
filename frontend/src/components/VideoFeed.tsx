@@ -887,7 +887,7 @@ export default function VideoFeed() {
                   onClick={(e) => handleVideoCardClick(video.id, e)}
                   className="relative w-full h-full snap-start shrink-0 z-0 bg-black flex flex-col justify-end cursor-pointer"
                 >
-                  <VideoPlayer src={video.videoUrl} isActive={isActive} poster={video.poster} />
+                  <VideoPlayer src={video.videoUrl} isActive={isActive} poster={video.poster} isCleanMode={isCleanMode} />
 
                   {/* Clean Mode Floating Toast Hint */}
                   {showCleanHint && (
@@ -1211,7 +1211,9 @@ export default function VideoFeed() {
           )}
 
           {/* Mobile Bottom Navigation Bar */}
-          <nav className="absolute bottom-0 left-0 w-full z-40 bg-midnight-boma/95 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-4">
+          <nav className={`absolute bottom-0 left-0 w-full z-40 bg-midnight-boma/95 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-4 transition-all duration-300 ease-out ${
+            isCleanMode ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+          }`}>
             <button className="flex flex-col items-center justify-center text-toka-flare scale-105 transition-all w-14 select-none">
               <span className="material-symbols-outlined">home</span>
               <span className="text-[10px] font-medium font-mono">Home</span>

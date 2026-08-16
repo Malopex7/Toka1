@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   src: string;
   isActive: boolean;
   poster?: string;
+  isCleanMode?: boolean;
 }
 
 function formatTime(seconds: number) {
@@ -19,7 +20,7 @@ function formatTime(seconds: number) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps) {
+export default function VideoPlayer({ src, isActive, poster, isCleanMode = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -219,7 +220,9 @@ export default function VideoPlayer({ src, isActive, poster }: VideoPlayerProps)
       )}
 
       {/* Bottom Progress Bar & Micro Controls Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 z-40 px-4 pb-2 pt-4 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col gap-1.5 pointer-events-auto select-none group/player">
+      <div className={`absolute left-0 right-0 z-30 px-4 pt-3 flex flex-col gap-1.5 pointer-events-auto select-none group/player transition-all duration-300 ease-out ${
+        isCleanMode ? 'bottom-3' : 'bottom-[76px]'
+      }`}>
         
         {/* Top Control Line: Micro Play/Pause & Live Timestamp */}
         <div className="flex items-center justify-between px-0.5">
