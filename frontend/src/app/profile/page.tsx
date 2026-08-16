@@ -65,6 +65,9 @@ function ProfileContent() {
   const [fetchingReposts, setFetchingReposts] = useState(true);
   const [activeVideoTab, setActiveVideoTab] = useState<'uploads' | 'reposts'>('uploads');
 
+  // Settings Sheet state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   // Privacy setting states
   const [taggingPermission, setTaggingPermission] = useState<string>('allow_all');
   const [followListPrivacy, setFollowListPrivacy] = useState<string>('everyone');
@@ -564,11 +567,12 @@ function ProfileContent() {
         </div>
         {isOwnProfile && (
           <button
-            onClick={logout}
-            className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1.5 transition-colors"
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-cloud-white text-xs font-bold transition-all active:scale-95 border border-white/10 shadow-sm cursor-pointer"
+            title="Profile & Privacy Settings"
           >
-            <span className="material-symbols-outlined text-[16px]">logout</span>
-            Sign Out
+            <span className="material-symbols-outlined text-[18px] text-toka-flare">settings</span>
+            <span>Settings</span>
           </button>
         )}
       </header>
@@ -657,184 +661,6 @@ function ProfileContent() {
           )}
         </div>
 
-        {/* Brand Safety Verification Banner */}
-        {isOwnProfile && targetUser && (mongooseUser?.role === 'creator' || mongooseUser?.role === 'brand') && (
-          <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg select-none">
-            <div className="flex items-center gap-3">
-              <span className={`material-symbols-outlined text-[28px] ${
-                targetUser.isBrandSafeVerified 
-                  ? 'text-fintech-mint' 
-                  : targetUser.verificationRequestStatus === 'pending'
-                    ? 'text-yellow-400 animate-pulse'
-                    : targetUser.verificationRequestStatus === 'rejected'
-                      ? 'text-red-400'
-                      : 'text-cloud-white/40'
-              }`}>
-                {targetUser.isBrandSafeVerified 
-                  ? 'verified' 
-                  : targetUser.verificationRequestStatus === 'pending'
-                    ? 'schedule'
-                    : targetUser.verificationRequestStatus === 'rejected'
-                      ? 'error'
-                      : 'shield'
-              }
-              </span>
-              <div className="text-left">
-                <h4 className="text-xs font-bold text-cloud-white">Brand Safety Status</h4>
-                <p className="text-[10px] text-cloud-white/50 mt-0.5 leading-relaxed">
-                  {targetUser.isBrandSafeVerified 
-                    ? 'Your profile is brand-safe verified. You can now request & fund sponsorships.'
-                    : targetUser.verificationRequestStatus === 'pending'
-                      ? 'Safety review request is pending moderator approval.'
-                      : targetUser.verificationRequestStatus === 'rejected'
-                        ? 'Your request was declined. You can resubmit for review.'
-                        : 'Request verification to unlock direct sponsorships.'
-                  }
-                </p>
-              </div>
-            </div>
-            
-            {!targetUser.isBrandSafeVerified && targetUser.verificationRequestStatus !== 'pending' && (
-              <button
-                disabled={verificationLoading}
-                onClick={handleRequestVerification}
-                className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/15 text-cloud-white text-[11px] font-bold rounded-xl active:scale-95 transition-all disabled:opacity-50 shrink-0"
-              >
-                {verificationLoading ? 'Submitting...' : 'Request Verify'}
-              </button>
-            )}
-
-            {targetUser.isBrandSafeVerified && isOwnProfile && (
-              <Link
-                href="/sponsorships"
-                className="w-full sm:w-auto px-4 py-2.5 bg-fintech-mint/20 hover:bg-fintech-mint/30 border border-fintech-mint/40 text-fintech-mint text-[11px] font-bold rounded-xl active:scale-95 transition-all shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[15px]">handshake</span>
-                Manage Sponsorships
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* Tagging & Privacy Settings */}
-        {isOwnProfile && targetUser && (
-          <div className="flex flex-col gap-4">
-            {/* Tagging Permissions */}
-            <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-toka-flare text-[22px]">sell</span>
-                  <div>
-                    <h4 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions Privacy</h4>
-                    <p className="text-[10px] text-cloud-white/50 mt-0.5">
-                      Control how other creators can tag you in videos.
-                    </p>
-                  </div>
-                </div>
-                {isUpdatingSettings && (
-                  <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-                {[
-                  {
-                    id: 'allow_all',
-                    label: 'Allow Tags',
-                    desc: 'Tags are active immediately (Default)'
-                  },
-                  {
-                    id: 'require_approval',
-                    label: 'Review Tags',
-                    desc: 'Require manual approval in Inbox'
-                  },
-                  {
-                    id: 'disabled',
-                    label: 'Turn Tags Off',
-                    desc: 'No one can tag you in videos'
-                  }
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleUpdateTaggingPermission(opt.id)}
-                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
-                      taggingPermission === opt.id
-                        ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
-                        : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-bold">{opt.label}</span>
-                      {taggingPermission === opt.id && (
-                        <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
-                      )}
-                    </div>
-                    <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Followers & Following List Privacy */}
-            <div className="w-full bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-toka-flare text-[22px]">visibility</span>
-                  <div>
-                    <h4 className="text-xs font-bold text-cloud-white">Followers &amp; Following List Privacy</h4>
-                    <p className="text-[10px] text-cloud-white/50 mt-0.5">
-                      Choose who can see your followers and following lists.
-                    </p>
-                  </div>
-                </div>
-                {isUpdatingSettings && (
-                  <span className="text-[10px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-                {[
-                  {
-                    id: 'everyone',
-                    label: 'Everyone',
-                    desc: 'Public to all users (Default)'
-                  },
-                  {
-                    id: 'followers_only',
-                    label: 'Followers Only',
-                    desc: 'Only your followers can view'
-                  },
-                  {
-                    id: 'only_me',
-                    label: 'Only Me',
-                    desc: 'Private (Visible only to you)'
-                  }
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleUpdateFollowListPrivacy(opt.id)}
-                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
-                      (targetUser.followListPrivacy || 'everyone') === opt.id
-                        ? 'bg-toka-flare/15 border-toka-flare text-cloud-white shadow-sm'
-                        : 'bg-black/30 border-white/5 text-cloud-white/60 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-bold">{opt.label}</span>
-                      {(targetUser.followListPrivacy || 'everyone') === opt.id && (
-                        <span className="material-symbols-outlined text-toka-flare text-[14px]">check_circle</span>
-                      )}
-                    </div>
-                    <span className="text-[9px] text-cloud-white/40">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Row */}
         <div className={`grid ${isOwnProfile ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-3`}>
           <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
@@ -864,11 +690,14 @@ function ProfileContent() {
           </button>
 
           {isOwnProfile && mongooseUser && (
-            <div className="bg-shaded-canopy border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-1">
-              <span className="material-symbols-outlined text-fintech-mint text-[24px]">account_balance_wallet</span>
+            <Link 
+              href="/deposit"
+              className="bg-shaded-canopy border border-white/10 hover:border-fintech-mint/40 rounded-2xl p-4 flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer group"
+            >
+              <span className="material-symbols-outlined text-fintech-mint text-[24px] group-hover:scale-110 transition-transform">account_balance_wallet</span>
               <span className="text-xl font-black font-mono">R {mongooseUser.walletBalance.toFixed(2)}</span>
-              <span className="text-[9px] text-cloud-white/40 uppercase font-bold tracking-wider">Balance</span>
-            </div>
+              <span className="text-[9px] text-cloud-white/40 group-hover:text-fintech-mint uppercase font-bold tracking-wider">Balance</span>
+            </Link>
           )}
         </div>
 
@@ -891,6 +720,7 @@ function ProfileContent() {
             </Link>
           </div>
         )}
+
 
         {/* Videos and Reposts Grid Section */}
         <div>
@@ -1088,8 +918,200 @@ function ProfileContent() {
             initialTab={followModalTab}
             followersCount={followerCount}
             followingCount={targetUser.following?.length || 0}
-            onFollowCountChange={() => setRefreshTrigger(prev => prev + 1)}
+            onFollowCountChange={() => setRefreshTrigger((prev) => prev + 1)}
           />
+        )}
+
+        {/* Profile Settings & Privacy Modal Drawer */}
+        {isOwnProfile && targetUser && isSettingsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in font-sans">
+            <div className="relative w-full max-w-lg max-h-[90vh] bg-shaded-canopy/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 shadow-2xl overflow-y-auto flex flex-col gap-6 animate-scale-up select-none">
+              
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-toka-flare/20 flex items-center justify-center text-toka-flare border border-toka-flare/30">
+                    <span className="material-symbols-outlined text-[20px]">settings</span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-cloud-white tracking-tight">Settings &amp; Privacy</h3>
+                    <p className="text-[11px] text-cloud-white/50">Manage your permissions, verification &amp; account</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/60 hover:text-cloud-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              {/* Section 1: Privacy & Permissions */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-toka-flare text-[18px]">lock</span>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Privacy &amp; Permissions</h4>
+                </div>
+
+                {/* Tagging Permissions */}
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions</h5>
+                      <p className="text-[10px] text-cloud-white/50">Control how other creators can tag you in videos</p>
+                    </div>
+                    {isUpdatingSettings && (
+                      <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 mt-1">
+                    {[
+                      { id: 'allow_all', label: 'Allow All' },
+                      { id: 'require_approval', label: 'Review' },
+                      { id: 'disabled', label: 'Off' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleUpdateTaggingPermission(opt.id)}
+                        className={`py-2 px-2 rounded-xl border text-center text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          taggingPermission === opt.id
+                            ? 'bg-toka-flare/20 border-toka-flare text-cloud-white shadow-sm'
+                            : 'bg-white/5 border-white/5 text-cloud-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                        {taggingPermission === opt.id && (
+                          <span className="material-symbols-outlined text-toka-flare text-[13px]">check</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Follow List Privacy */}
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold text-cloud-white">Followers &amp; Following List</h5>
+                      <p className="text-[10px] text-cloud-white/50">Who can see your followers and following lists</p>
+                    </div>
+                    {isUpdatingSettings && (
+                      <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 mt-1">
+                    {[
+                      { id: 'everyone', label: 'Everyone' },
+                      { id: 'followers_only', label: 'Followers' },
+                      { id: 'only_me', label: 'Only Me' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleUpdateFollowListPrivacy(opt.id)}
+                        className={`py-2 px-2 rounded-xl border text-center text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          (targetUser.followListPrivacy || 'everyone') === opt.id
+                            ? 'bg-toka-flare/20 border-toka-flare text-cloud-white shadow-sm'
+                            : 'bg-white/5 border-white/5 text-cloud-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                        {(targetUser.followListPrivacy || 'everyone') === opt.id && (
+                          <span className="material-symbols-outlined text-toka-flare text-[13px]">check</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Creator Tools & Verification */}
+              {(mongooseUser?.role === 'creator' || mongooseUser?.role === 'brand') && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-fintech-mint text-[18px]">verified_user</span>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Creator Verification &amp; Brand Safety</h4>
+                  </div>
+
+                  <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`material-symbols-outlined text-[24px] ${
+                          targetUser.isBrandSafeVerified 
+                            ? 'text-fintech-mint' 
+                            : targetUser.verificationRequestStatus === 'pending'
+                              ? 'text-yellow-400 animate-pulse'
+                              : 'text-cloud-white/40'
+                        }`}>
+                          {targetUser.isBrandSafeVerified ? 'verified' : 'shield'}
+                        </span>
+                        <div>
+                          <h5 className="text-xs font-bold text-cloud-white">
+                            {targetUser.isBrandSafeVerified ? 'Brand Safe Verified' : 'Verification Status'}
+                          </h5>
+                          <p className="text-[10px] text-cloud-white/50 leading-relaxed">
+                            {targetUser.isBrandSafeVerified 
+                              ? 'Your account is verified for direct brand sponsorships.'
+                              : targetUser.verificationRequestStatus === 'pending'
+                                ? 'Your verification request is currently under review.'
+                                : 'Apply for brand-safe verification to unlock sponsorships.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!targetUser.isBrandSafeVerified && targetUser.verificationRequestStatus !== 'pending' && (
+                        <button
+                          disabled={verificationLoading}
+                          onClick={handleRequestVerification}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/15 border border-white/15 text-cloud-white text-[11px] font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
+                        >
+                          {verificationLoading ? '...' : 'Request'}
+                        </button>
+                      )}
+                    </div>
+
+                    {targetUser.isBrandSafeVerified && (
+                      <Link
+                        href="/sponsorships"
+                        onClick={() => setIsSettingsOpen(false)}
+                        className="w-full py-2.5 bg-fintech-mint/15 hover:bg-fintech-mint/25 border border-fintech-mint/30 text-fintech-mint text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">handshake</span>
+                        Open Sponsorships Hub
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Account & Session */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-cloud-white/60 text-[18px]">manage_accounts</span>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Account &amp; Session</h4>
+                </div>
+
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-cloud-white">Logged in as</span>
+                    <span className="text-[11px] text-cloud-white/50">{firebaseUser?.email || mongooseUser?.email}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsSettingsOpen(false);
+                      logout();
+                    }}
+                    className="py-2 px-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">logout</span>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
         )}
       </main>
     </div>

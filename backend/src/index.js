@@ -31,6 +31,8 @@ const allowedOrigin = rawFrontendUrl.endsWith('/') ? rawFrontendUrl.slice(0, -1)
 app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 
+import { ensureVideosBucket } from './config/supabase.js';
+
 // Connect to MongoDB (use MONGO_URI from .env)
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -38,6 +40,8 @@ mongoose.connect(process.env.MONGO_URI)
     // Set up GridFS bucket
     const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
     console.log('GridFS bucket ready');
+    // Ensure Supabase public 'videos' bucket exists
+    ensureVideosBucket();
   })
   .catch(err => console.error(err));
 

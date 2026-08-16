@@ -7,6 +7,7 @@ import SponsorshipRequest from '../models/SponsorshipRequest.js';
 import { AppError } from '../middlewares/error.js';
 import { runAiPipeline } from '../services/aiPipeline.js';
 import { sendFcmNotification } from '../services/notificationService.js';
+import { supabase } from '../config/supabase.js';
 
 // Helper: Extract @usernames from text and find matching user IDs respecting tagging permissions
 export const extractMentions = async (text, currentUserId) => {
@@ -402,30 +403,51 @@ export const uploadGridFSVideo = async (req, res, next) => {
   const validTiers = ['fan_funded', 'brand_safe'];
   const resolvedTier = validTiers.includes(tier) ? tier : 'fan_funded';
 
-  if (!mongoose.connection.db) {
-    throw new AppError('Database not ready. Please try again in a moment.', 503);
-  }
-
-  const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
-
   const fileExtension = req.file.originalname.split('.').pop() || 'mp4';
-  const filename = `${Date.now()}_upload.${fileExtension}`;
+  const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExtension}`;
 
-  const uploadStream = bucket.openUploadStream(filename, {
-    contentType: req.file.mimetype
-  });
+  let videoUrl = '';
 
-  uploadStream.end(req.file.buffer);
+  // 1) Upload directly to Supabase Storage 'videos' bucket
+  try {
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype || 'video/mp4',
+        upsert: false
+      });
 
-  await new Promise((resolve, reject) => {
-    uploadStream.on('finish', resolve);
-    uploadStream.on('error', reject);
-  });
+    if (uploadError) {
+      console.error('[Supabase Storage Upload Error]:', uploadError);
+      throw new AppError(`Supabase Storage upload failed: ${uploadError.message}`, 500);
+    }
 
-  const host = req.get('host');
-  const isLocal = host?.includes('localhost') || host?.includes('127.0.0.1');
-  const protocol = isLocal ? req.protocol : 'https';
-  const videoUrl = `${protocol}://${host}/api/videos/stream/${filename}`;
+    const { data: { publicUrl } } = supabase.storage
+      .from('videos')
+      .getPublicUrl(filename);
+
+    videoUrl = publicUrl;
+    console.log(`[Supabase Storage] Video uploaded successfully: ${videoUrl}`);
+  } catch (err) {
+    // Fallback to GridFS if Supabase is unavailable
+    console.warn('[Storage Fallback] Falling back to GridFS upload:', err.message);
+    if (!mongoose.connection.db) {
+      throw new AppError('Database not ready. Please try again in a moment.', 503);
+    }
+    const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'media' });
+    const uploadStream = bucket.openUploadStream(filename, {
+      contentType: req.file.mimetype
+    });
+    uploadStream.end(req.file.buffer);
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+    });
+    const host = req.get('host');
+    const isLocal = host?.includes('localhost') || host?.includes('127.0.0.1');
+    const protocol = isLocal ? req.protocol : 'https';
+    videoUrl = `${protocol}://${host}/api/videos/stream/${filename}`;
+  }
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -707,8 +729,19 @@ export const deleteVideo = async (req, res, next) => {
       throw new AppError('You do not have permission to delete this video.', 403);
     }
 
-    // Cleanup GridFS if it's stored there
-    if (video.videoUrl && video.videoUrl.includes('/api/videos/stream/')) {
+    // Cleanup Supabase Storage or GridFS
+    if (video.videoUrl && video.videoUrl.includes('/storage/v1/object/public/videos/')) {
+      try {
+        const parts = video.videoUrl.split('/storage/v1/object/public/videos/');
+        const filename = parts[parts.length - 1];
+        if (filename) {
+          await supabase.storage.from('videos').remove([filename]);
+          console.log(`[Supabase Storage] Deleted video file: ${filename}`);
+        }
+      } catch (err) {
+        console.error('[Delete Video] Supabase Storage cleanup failed:', err);
+      }
+    } else if (video.videoUrl && video.videoUrl.includes('/api/videos/stream/')) {
       try {
         const parts = video.videoUrl.split('/api/videos/stream/');
         const filename = parts[parts.length - 1];
