@@ -308,8 +308,6 @@ export default function VideoFeed() {
     const index = Math.round(container.scrollTop / container.clientHeight);
     if (index !== currentIndex && index >= 0 && index < videos.length) {
       setCurrentIndex(index);
-      setIsCleanMode(false);
-      setShowCleanHint(false);
     }
   };
 
