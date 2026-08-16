@@ -47,6 +47,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     privateMode: 'entry_fee' | 'subscription' | 'tip_invite';
     entryFeeZAR: number; subscriberPriceZAR: number; tipInviteMinZAR: number;
   } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCohostPanel, setShowCohostPanel] = useState(false);
 
   const isHost = currentRoom?.hostId?._id === mongooseUser?._id?.toString() ||
@@ -77,11 +78,15 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
           });
           return;
         }
-        if (!res.ok) throw new Error(data.message);
+        if (!res.ok) {
+          setErrorMessage(data.message || 'Stream is no longer active');
+          return;
+        }
         setLivekitConnection(data.data.token, data.data.livekitUrl);
         setCurrentRoom(data.data.stream);
       } catch (err) {
-        console.error('[StreamRoom] join error:', err);
+        console.warn('[StreamRoom] join error:', err);
+        if (isMounted) setErrorMessage(err instanceof Error ? err.message : 'Stream is not active');
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -152,10 +157,32 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     );
   }
 
-  if (!livekitToken) {
+  if (errorMessage || !livekitToken) {
     return (
-      <div className="min-h-screen bg-midnight-boma flex items-center justify-center">
-        <p className="text-cloud-white/60 text-sm">Stream unavailable. Please try again.</p>
+      <div className="min-h-screen bg-midnight-boma flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-cloud-white/40">
+          <span className="material-symbols-outlined text-[32px]">videocam_off</span>
+        </div>
+        <h2 className="text-cloud-white font-bold text-lg mb-1">
+          {errorMessage || 'Stream Unavailable'}
+        </h2>
+        <p className="text-cloud-white/60 text-sm max-w-sm mb-6">
+          This live broadcast has concluded or is no longer accessible.
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/live')}
+            className="px-5 py-2.5 bg-toka-flare text-white font-bold text-xs rounded-xl shadow-lg hover:bg-toka-flare/90 transition-all cursor-pointer"
+          >
+            Explore Live Streams
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="px-5 py-2.5 bg-white/10 text-cloud-white font-bold text-xs rounded-xl hover:bg-white/15 transition-all cursor-pointer"
+          >
+            Go Home
+          </button>
+        </div>
       </div>
     );
   }
