@@ -6,6 +6,15 @@ import { AppError } from './error.js';
  * Protect middleware: validates the Firebase ID token and hydates req.user
  */
 export const protect = async (req, res, next) => {
+  // Developer benchmark authentication bypass (Dev mode only)
+  if (process.env.NODE_ENV === 'development' && req.headers['x-benchmark-user-id']) {
+    const devUser = await User.findById(req.headers['x-benchmark-user-id']);
+    if (devUser) {
+      req.user = devUser;
+      return next();
+    }
+  }
+
   // 1) Extract token from Authorization header
   let token;
   if (
@@ -49,6 +58,15 @@ export const protect = async (req, res, next) => {
  * but does not error if it's missing or invalid (guest mode).
  */
 export const optionalProtect = async (req, res, next) => {
+  // Developer benchmark authentication bypass (Dev mode only)
+  if (process.env.NODE_ENV === 'development' && req.headers['x-benchmark-user-id']) {
+    const devUser = await User.findById(req.headers['x-benchmark-user-id']);
+    if (devUser) {
+      req.user = devUser;
+      return next();
+    }
+  }
+
   let token;
   if (
     req.headers.authorization &&
