@@ -25,12 +25,19 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    const clean = val.trim().replace(/^@/, '');
+    if (!clean) {
+      setSearchResults([]);
+      setSearching(false);
+    }
+  };
+
   // Live debounced search
   useEffect(() => {
     const cleanQuery = query.trim().replace(/^@/, '');
-    if (!cleanQuery || cleanQuery.length < 1) {
-      setSearchResults([]);
-      setSearching(false);
+    if (!cleanQuery) {
       return;
     }
 
@@ -123,7 +130,7 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Search by @username..."
             className="w-full bg-black/50 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-cloud-white placeholder-cloud-white/40 focus:outline-none focus:border-toka-flare/60 transition-colors"
             autoFocus
