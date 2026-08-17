@@ -605,13 +605,12 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
 
     return (
       <div className={`flex flex-col gap-2 ${indentClass} border-l border-white/5 mt-2`}>
-        <div 
+        <div
           data-comment-id={node._id}
-          className={`flex items-start gap-2.5 group/reply p-2 rounded-xl transition-all duration-500 ${
-            isHighlighted 
-              ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse' 
+          className={`flex items-start gap-2.5 group/reply p-2 rounded-xl transition-all duration-500 ${isHighlighted
+              ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse'
               : ''
-          }`}
+            }`}
         >
           {/* User Avatar with Verified Badge */}
           <div className="relative shrink-0">
@@ -668,9 +667,8 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                   setInlineInputText(isOpen ? '' : `@${node.userId.username} `);
                   setReplyingTo(isOpen ? null : { commentId: parentCommentId, targetCommentId: String(node._id), username: node.userId.username });
                 }}
-                className={`text-[8px] font-bold transition-colors ${
-                  activeReplyBoxId === String(node._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
-                }`}
+                className={`text-[8px] font-bold transition-colors ${activeReplyBoxId === String(node._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
+                  }`}
               >
                 {activeReplyBoxId === String(node._id) ? 'Cancel' : 'Reply'}
               </button>
@@ -741,7 +739,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
 
       {/* Sheet panel container */}
       <div className="relative w-full md:w-[460px] h-[75vh] md:h-[600px] bg-midnight-boma border-t md:border border-white/10 rounded-t-3xl md:rounded-3xl flex flex-col mt-auto md:mt-0 shadow-2xl z-10 overflow-hidden font-sans">
-        
+
         {/* Drag handle for mobile */}
         <div className="w-12 h-1 bg-white/15 rounded-full mx-auto my-3 md:hidden"></div>
 
@@ -783,13 +781,12 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
               return (
                 <div key={comment._id} className="flex flex-col gap-3">
                   {/* Top-Level Parent Comment */}
-                  <div 
+                  <div
                     data-comment-id={comment._id}
-                    className={`flex items-start gap-3 group/comment p-2 rounded-2xl transition-all duration-500 ${
-                      isHighlighted 
-                        ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse' 
+                    className={`flex items-start gap-3 group/comment p-2 rounded-2xl transition-all duration-500 ${isHighlighted
+                        ? 'bg-toka-flare/10 ring-2 ring-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.2)] animate-pulse'
                         : ''
-                    }`}
+                      }`}
                   >
                     {/* User Avatar with Verified Badge */}
                     <div className="relative shrink-0">
@@ -838,34 +835,33 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                       )}
 
                       {/* Comment Action Links */}
-                    <div className="flex items-center gap-4 mt-2">
-                      <button
-                        onClick={() => {
-                          const isOpen = activeReplyBoxId === String(comment._id);
-                          setActiveReplyBoxId(isOpen ? null : String(comment._id));
-                          setInlineInputText(isOpen ? '' : `@${comment.userId.username} `);
-                          setReplyingTo(isOpen ? null : { commentId: String(comment._id), targetCommentId: String(comment._id), username: comment.userId.username });
-                        }}
-                        className={`text-[10px] font-bold transition-colors ${
-                          activeReplyBoxId === String(comment._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
-                        }`}
-                      >
-                        {activeReplyBoxId === String(comment._id) ? 'Cancel' : 'Reply'}
-                      </button>
-                      <button
-                        onClick={() => handleReportComment(comment._id)}
-                        className="text-[10px] font-bold text-cloud-white/45 hover:text-red-400 transition-colors"
-                      >
-                        Report
-                      </button>
-                      {isOwner && (
+                      <div className="flex items-center gap-4 mt-2">
                         <button
-                          onClick={() => handleEditComment(comment._id, comment.text, null)}
-                          className="text-[10px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+                          onClick={() => {
+                            const isOpen = activeReplyBoxId === String(comment._id);
+                            setActiveReplyBoxId(isOpen ? null : String(comment._id));
+                            setInlineInputText(isOpen ? '' : `@${comment.userId.username} `);
+                            setReplyingTo(isOpen ? null : { commentId: String(comment._id), targetCommentId: String(comment._id), username: comment.userId.username });
+                          }}
+                          className={`text-[10px] font-bold transition-colors ${activeReplyBoxId === String(comment._id) ? 'text-toka-flare' : 'text-cloud-white/45 hover:text-cloud-white'
+                            }`}
                         >
-                          Edit
+                          {activeReplyBoxId === String(comment._id) ? 'Cancel' : 'Reply'}
                         </button>
-                      )}
+                        <button
+                          onClick={() => handleReportComment(comment._id)}
+                          className="text-[10px] font-bold text-cloud-white/45 hover:text-red-400 transition-colors"
+                        >
+                          Report
+                        </button>
+                        {isOwner && (
+                          <button
+                            onClick={() => handleEditComment(comment._id, comment.text, null)}
+                            className="text-[10px] font-bold text-cloud-white/45 hover:text-cloud-white transition-colors"
+                          >
+                            Edit
+                          </button>
+                        )}
                         {(isOwner || isMod) && (
                           <button
                             onClick={() => handleDeleteComment(comment._id, null)}

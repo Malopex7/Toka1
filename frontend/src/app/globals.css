@@ -266,3 +266,42 @@
     font-size: 22px !important;
   }
 }
+
+/* ==========================================================================
+   Toka Rainbow Halo Ring for Avatars
+   Exact conic rainbow spectrum: Orange -> Amber -> Lime -> Cyan -> Violet -> Orange
+   ========================================================================== */
+.toka-rainbow-halo {
+  background: conic-gradient(
+    from 215deg at 50% 50%,
+    #FF4F00 0deg,
+    #FF8A00 45deg,
+    #FBBF24 95deg,
+    #84CC16 145deg,
+    #10B981 190deg,
+    #06B6D4 235deg,
+    #8B5CF6 295deg,
+    #FF4F00 360deg
+  );
+  padding: 2.5px;
+  border-radius: 9999px;
+  box-shadow: 0 0 12px rgba(255, 79, 0, 0.4), 0 0 5px rgba(132, 204, 22, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.toka-rainbow-halo-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: #09090B;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+

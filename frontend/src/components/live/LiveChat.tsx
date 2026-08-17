@@ -218,12 +218,14 @@ export default function LiveChat({ roomName, currentUser, isMobile = false }: Li
               key={msg.id}
               className={`flex items-start gap-2 animate-fade-in ${msg.isTip ? 'bg-amber-500/20 rounded-lg px-2 py-1' : ''}`}
             >
-              <div className="w-6 h-6 rounded-full bg-toka-flare/50 flex items-center justify-center shrink-0 text-[10px] font-bold text-white overflow-hidden">
-                {msg.user.avatarUrl ? (
-                  <img src={msg.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  msg.user.username[0]?.toUpperCase()
-                )}
+              <div className="w-6 h-6 toka-rainbow-halo p-[1.5px] shrink-0">
+                <div className="toka-rainbow-halo-inner text-[10px] font-bold text-white">
+                  {msg.user.avatarUrl ? (
+                    <img src={msg.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    msg.user.username[0]?.toUpperCase()
+                  )}
+                </div>
               </div>
               <div className="flex-1 min-w-0">
                 <span className={`font-bold text-[11px] mr-1 ${msg.isTip ? 'text-amber-400' : 'text-toka-flare'}`}>

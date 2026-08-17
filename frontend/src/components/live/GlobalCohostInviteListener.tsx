@@ -82,12 +82,14 @@ export default function GlobalCohostInviteListener() {
     <div className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-96 z-[9999] animate-bounce-short select-none">
       <div className="bg-shaded-canopy/95 backdrop-blur-xl border-2 border-toka-flare rounded-3xl p-4 shadow-2xl shadow-toka-flare/20 flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-toka-flare/20 border-2 border-toka-flare/60 flex items-center justify-center shrink-0 overflow-hidden text-toka-flare font-bold text-base">
-            {invite.host.avatarUrl ? (
-              <img src={invite.host.avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              invite.host.username[0]?.toUpperCase()
-            )}
+          <div className="w-11 h-11 toka-rainbow-halo p-[2px] shrink-0">
+            <div className="toka-rainbow-halo-inner text-cloud-white font-bold text-base">
+              {invite.host.avatarUrl ? (
+                <img src={invite.host.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                invite.host.username[0]?.toUpperCase()
+              )}
+            </div>
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">

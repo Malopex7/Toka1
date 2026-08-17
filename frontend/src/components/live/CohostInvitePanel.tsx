@@ -175,12 +175,14 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
               className="flex items-center justify-between px-3 py-2 hover:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center shrink-0 overflow-hidden text-xs font-bold text-toka-flare">
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    user.username[0]?.toUpperCase()
-                  )}
+                <div className="w-7 h-7 toka-rainbow-halo p-[1.5px] shrink-0">
+                  <div className="toka-rainbow-halo-inner text-xs font-bold text-cloud-white">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      user.username[0]?.toUpperCase()
+                    )}
+                  </div>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">

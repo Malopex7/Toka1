@@ -156,7 +156,7 @@ export default function FollowListModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in font-sans select-none">
       <div className="relative w-full max-w-[420px] bg-shaded-canopy border border-white/10 rounded-3xl p-5 shadow-2xl overflow-hidden flex flex-col gap-4 max-h-[85vh]">
-        
+
         {/* Header with Title and Close */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
@@ -175,32 +175,28 @@ export default function FollowListModal({
         <div className="grid grid-cols-2 bg-black/40 p-1 rounded-2xl border border-white/5">
           <button
             onClick={() => { setActiveTab('followers'); setSearchQuery(''); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'followers'
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === 'followers'
                 ? 'bg-toka-flare text-cloud-white shadow-md'
                 : 'text-cloud-white/60 hover:text-cloud-white'
-            }`}
+              }`}
           >
             <span>Followers</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'followers' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
-            }`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'followers' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
+              }`}>
               {followersCount}
             </span>
           </button>
 
           <button
             onClick={() => { setActiveTab('following'); setSearchQuery(''); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'following'
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === 'following'
                 ? 'bg-toka-flare text-cloud-white shadow-md'
                 : 'text-cloud-white/60 hover:text-cloud-white'
-            }`}
+              }`}
           >
             <span>Following</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'following' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
-            }`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'following' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
+              }`}>
               {followingCount}
             </span>
           </button>
@@ -308,11 +304,10 @@ export default function FollowListModal({
                     <button
                       disabled={isLoadingAction}
                       onClick={() => handleFollowToggle(user._id, user.username)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 ${
-                        isFollowingThisUser
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 ${isFollowingThisUser
                           ? 'bg-white/10 hover:bg-red-500/20 text-cloud-white hover:text-red-400 border border-white/15'
                           : 'bg-toka-flare hover:bg-toka-flare/90 text-cloud-white shadow-sm'
-                      }`}
+                        }`}
                     >
                       {isLoadingAction ? (
                         <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

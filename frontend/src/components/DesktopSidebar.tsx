@@ -187,8 +187,8 @@ export default function DesktopSidebar() {
                   href="/profile"
                   className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF4F00] to-amber-500 p-[1.5px] shrink-0">
-                    <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-xs font-bold text-cloud-white">
+                  <div className="toka-rainbow-halo w-9 h-9 shrink-0">
+                    <div className="toka-rainbow-halo-inner text-xs font-bold text-cloud-white">
                       {mongooseUser?.avatarUrl ? (
                         <img
                           src={mongooseUser.avatarUrl}

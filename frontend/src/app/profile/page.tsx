@@ -819,14 +819,12 @@ function ProfileContent() {
                       });
                     }
                   }}
-                  className={`w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center select-none overflow-hidden ${
-                    hasActiveStatus 
-                      ? 'p-[3.5px] bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint cursor-pointer shadow-[0_0_24px_rgba(255,79,0,0.6)] hover:scale-105 active:scale-95 transition-all'
-                      : 'bg-gradient-to-br from-toka-flare to-orange-700 shadow-xl border-4 border-midnight-boma'
+                  className={`w-28 h-28 md:w-32 md:h-32 toka-rainbow-halo p-[4px] shadow-[0_0_24px_rgba(255,79,0,0.6)] select-none ${
+                    hasActiveStatus ? 'cursor-pointer hover:scale-105 active:scale-95 transition-all' : ''
                   }`}
                   title={hasActiveStatus ? 'Tap to view 24h Story' : undefined}
                 >
-                  <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-4xl font-black text-cloud-white">
+                  <div className="toka-rainbow-halo-inner text-4xl font-black text-cloud-white">
                     {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
                       <img 
                         src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 

@@ -935,18 +935,20 @@ export default function VideoFeed() {
                       {/* Creator Avatar & Follow Button */}
                       <div className="relative mb-3 group select-none">
                         <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
-                          <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform flex items-center justify-center bg-gradient-to-br from-toka-flare to-orange-700">
-                            {video.creatorAvatar ? (
-                              <img
-                                src={video.creatorAvatar}
-                                alt={video.creatorName}
-                                className="w-full h-full object-cover rounded-full bg-shaded-canopy"
-                              />
-                            ) : (
-                              <span className="font-black text-sm text-cloud-white">
-                                {video.creatorName.replace('@', '').charAt(0).toUpperCase()}
-                              </span>
-                            )}
+                          <div className="sidebar-creator-avatar toka-rainbow-halo w-12 h-12 hover:scale-105 transition-transform">
+                            <div className="toka-rainbow-halo-inner">
+                              {video.creatorAvatar ? (
+                                <img
+                                  src={video.creatorAvatar}
+                                  alt={video.creatorName}
+                                  className="w-full h-full object-cover select-none"
+                                />
+                              ) : (
+                                <span className="font-black text-sm text-cloud-white">
+                                  {video.creatorName.replace('@', '').charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </Link>
                         {mongooseUser?._id !== video.creatorId && (

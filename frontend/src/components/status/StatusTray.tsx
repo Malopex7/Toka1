@@ -46,14 +46,14 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
                   openCreator();
                 }
               }}
-              className={`w-11 h-11 rounded-full p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center ${
+              className={`w-11 h-11 toka-rainbow-halo p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center ${
                 hasSelfStory
-                  ? 'bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint shadow-[0_0_10px_rgba(255,79,0,0.4)]'
-                  : 'bg-shaded-canopy/80 border border-white/10 hover:border-toka-flare/40'
+                  ? 'shadow-[0_0_12px_rgba(255,79,0,0.55)] scale-105'
+                  : 'opacity-90 hover:opacity-100'
               }`}
               title={hasSelfStory ? 'View your status' : 'Add 24h status'}
             >
-              <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center font-bold text-xs text-cloud-white">
+              <div className="toka-rainbow-halo-inner font-bold text-xs text-cloud-white">
                 {mongooseUser?.avatarUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
@@ -97,22 +97,22 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
               className="flex flex-col items-center gap-1 cursor-pointer group"
             >
               <div
-                className={`w-11 h-11 rounded-full p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center ${
+                className={`w-11 h-11 toka-rainbow-halo p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center ${
                   group.hasUnseen
-                    ? 'bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint shadow-[0_0_12px_rgba(255,79,0,0.45)] animate-pulse-slow'
-                    : 'bg-white/20 hover:bg-white/35 opacity-75 hover:opacity-100'
+                    ? 'shadow-[0_0_14px_rgba(255,79,0,0.6)] animate-pulse-slow scale-105'
+                    : 'opacity-85 hover:opacity-100'
                 }`}
               >
-                <div className="w-full h-full rounded-full bg-midnight-boma p-[1.5px] overflow-hidden flex items-center justify-center">
+                <div className="toka-rainbow-halo-inner">
                   {group.user.avatarUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={group.user.avatarUrl}
                       alt={group.user.username}
-                      className="w-full h-full object-cover rounded-full"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-bold text-xs text-cloud-white">
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-bold text-xs text-cloud-white">
                       {group.user.username.substring(0, 2).toUpperCase()}
                     </div>
                   )}

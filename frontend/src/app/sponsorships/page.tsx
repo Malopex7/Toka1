@@ -40,23 +40,23 @@ type BrandTab = 'inbox' | 'history';
 export default function SponsorshipsPage() {
   const router = useRouter();
   const { isAuthenticated, mongooseUser, firebaseUser, isLoading, refreshProfile } = useAuth();
-  
+
   const [nowTime] = useState(() => Date.now());
 
   // Tabs
   const [creatorTab, setCreatorTab] = useState<CreatorTab>('sent');
   const [brandTab, setBrandTab] = useState<BrandTab>('inbox');
-  
+
   // Data lists
   const [sentRequests, setSentRequests] = useState<SponsorshipRequest[]>([]);
   const [brandRequests, setBrandRequests] = useState<SponsorshipRequest[]>([]);
   const [directoryUsers, setDirectoryUsers] = useState<any[]>([]);
-  
+
   // State loaders & alerts
   const [fetching, setFetching] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  
+
   // Video player modal
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [previewVideoTitle, setPreviewVideoTitle] = useState<string>('');
@@ -216,9 +216,9 @@ export default function SponsorshipsPage() {
 
   return (
     <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans antialiased select-none pb-24">
-      
+
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6 w-full">
-        
+
         {/* Back Link */}
         <button
           onClick={() => router.back()}
@@ -257,7 +257,7 @@ export default function SponsorshipsPage() {
 
         {/* Seamless Linear Metric Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 border-y border-white/10 py-5 my-1 gap-4 md:gap-0">
-          
+
           <div className="flex flex-col gap-1 md:pr-6 md:border-r border-white/10">
             <span className="text-xs text-cloud-white/50 font-medium">Active Deals</span>
             <span className="text-2xl font-black font-mono text-cloud-white">{activeDealsCount}</span>
@@ -288,11 +288,10 @@ export default function SponsorshipsPage() {
 
         {/* Global Feedback message */}
         {message && (
-          <div className={`px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
-            message.type === 'success'
+          <div className={`px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2 ${message.type === 'success'
               ? 'bg-fintech-mint/10 text-fintech-mint border border-fintech-mint/30'
               : 'bg-red-500/10 text-red-400 border border-red-500/30'
-          }`}>
+            }`}>
             <span>{message.type === 'success' ? '✓' : '⚠️'}</span>
             <span>{message.text}</span>
           </div>
@@ -304,21 +303,19 @@ export default function SponsorshipsPage() {
             <>
               <button
                 onClick={() => setBrandTab('inbox')}
-                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
-                  brandTab === 'inbox'
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${brandTab === 'inbox'
                     ? 'text-cloud-white border-b-2 border-toka-flare'
                     : 'text-cloud-white/40 hover:text-cloud-white/70'
-                }`}
+                  }`}
               >
                 Requests ({brandRequests.length})
               </button>
               <button
                 onClick={() => setBrandTab('history')}
-                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
-                  brandTab === 'history'
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${brandTab === 'history'
                     ? 'text-cloud-white border-b-2 border-toka-flare'
                     : 'text-cloud-white/40 hover:text-cloud-white/70'
-                }`}
+                  }`}
               >
                 History ({sentRequests.length})
               </button>
@@ -327,21 +324,19 @@ export default function SponsorshipsPage() {
             <>
               <button
                 onClick={() => setCreatorTab('sent')}
-                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
-                  creatorTab === 'sent'
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${creatorTab === 'sent'
                     ? 'text-cloud-white border-b-2 border-toka-flare'
                     : 'text-cloud-white/40 hover:text-cloud-white/70'
-                }`}
+                  }`}
               >
                 Requests ({sentRequests.length})
               </button>
               <button
                 onClick={() => setCreatorTab('directory')}
-                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
-                  creatorTab === 'directory'
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${creatorTab === 'directory'
                     ? 'text-cloud-white border-b-2 border-toka-flare'
                     : 'text-cloud-white/40 hover:text-cloud-white/70'
-                }`}
+                  }`}
               >
                 Verified Brands ({directoryUsers.length})
               </button>
@@ -598,11 +593,11 @@ export default function SponsorshipsPage() {
       {previewVideoUrl && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-[#18181B] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col relative max-h-[85vh]">
-            
+
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
               <h3 className="text-xs font-bold text-cloud-white truncate pr-4">&quot;{previewVideoTitle}&quot;</h3>
-              <button 
-                onClick={() => setPreviewVideoUrl(null)} 
+              <button
+                onClick={() => setPreviewVideoUrl(null)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
@@ -610,9 +605,9 @@ export default function SponsorshipsPage() {
             </div>
 
             <div className="flex-1 bg-black flex items-center justify-center min-h-[260px] overflow-hidden">
-              <video 
-                src={previewVideoUrl} 
-                controls 
+              <video
+                src={previewVideoUrl}
+                controls
                 autoPlay
                 className="max-h-[55vh] w-full object-contain"
               />
