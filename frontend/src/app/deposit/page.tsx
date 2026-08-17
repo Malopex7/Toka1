@@ -3,6 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import PageHeader from '@/components/PageHeader';
 
 function DepositContent() {
   const { mongooseUser, isAuthenticated, firebaseUser, isLoading, refreshProfile } = useAuth();
@@ -118,24 +119,17 @@ function DepositContent() {
   return (
     <div className="bg-midnight-boma text-cloud-white min-h-screen flex flex-col antialiased font-sans">
       
-      {/* Top Navbar */}
-      <header className="sticky top-0 w-full border-b border-white/10 bg-shaded-canopy flex justify-between items-center px-6 h-16 z-50 select-none">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back to Feed
-          </Link>
-          <h1 className="text-base font-bold text-toka-flare tracking-tight border-l border-white/15 pl-4">
-            Deposit Workspace
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-cloud-white/60">@{mongooseUser.username}</span>
-          <span className="bg-fintech-mint/10 border border-fintech-mint/35 text-fintech-mint text-xs font-mono font-bold px-3 py-1 rounded-lg">
-            Balance: R {mongooseUser.walletBalance.toFixed(2)}
-          </span>
-        </div>
-      </header>
+      <PageHeader
+        title="Deposit Workspace"
+        right={
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-cloud-white/60">@{mongooseUser.username}</span>
+            <span className="bg-fintech-mint/10 border border-fintech-mint/35 text-fintech-mint text-xs font-mono font-bold px-3 py-1 rounded-lg">
+              Balance: R {mongooseUser.walletBalance.toFixed(2)}
+            </span>
+          </div>
+        }
+      />
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-6">

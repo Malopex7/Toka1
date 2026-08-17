@@ -7,7 +7,14 @@ import { useFeedStore } from '@/store/useFeedStore';
 import AuthModal from './AuthModal';
 import UploadModal from './UploadModal';
 import GoLiveOverlay from './live/GoLiveOverlay';
-import { TokaHomeIcon, TokaDiscoverIcon, TokaSponsorshipsIcon, IconProps } from './icons/TokaIcons';
+import {
+  TokaHomeIcon,
+  TokaDiscoverIcon,
+  TokaLiveIcon,
+  TokaInboxIcon,
+  TokaSponsorshipsIcon,
+  IconProps
+} from './icons/TokaIcons';
 import { useLiveStore } from '@/store/useLiveStore';
 
 interface NavItem {
@@ -54,14 +61,13 @@ export default function DesktopSidebar() {
     {
       label: 'Live',
       href: '/live',
-      icon: 'live_tv',
-      active: pathname === '/live' || pathname.startsWith('/live/'),
-      liveBadge: true
+      customIcon: TokaLiveIcon,
+      active: pathname === '/live' || pathname.startsWith('/live/')
     },
     {
       label: 'Inbox',
       href: '/inbox',
-      icon: 'mail',
+      customIcon: TokaInboxIcon,
       active: pathname === '/inbox',
       badge: hasUnreadInbox,
       onClick: clearInboxDot
@@ -88,18 +94,23 @@ export default function DesktopSidebar() {
 
   return (
     <>
-      <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-6 px-4 shrink-0 select-none">
-        {/* Toka Logo */}
-        <Link href="/" className="mb-8 px-4 flex items-center select-none block hover:opacity-90 transition-opacity">
-          <img
-            src="/images/logo/logo.png"
-            alt="Toka"
-            className="h-28 w-auto object-contain"
-          />
-        </Link>
+      <aside className="hidden md:flex flex-col h-full w-64 bg-shaded-canopy border-r border-white/10 py-5 px-4 shrink-0 select-none">
+        {/* Toka Brand Logo Header */}
+        <div className="px-2 mb-8" style={{ marginTop: '2.5rem' }}>
+          <Link
+            href="/"
+            className="flex items-center select-none hover:opacity-90 active:scale-[0.98] transition-all"
+          >
+            <img
+              src="/images/TokaLogo.svg"
+              alt="Toka"
+              className="h-10 w-auto object-contain drop-shadow-sm"
+            />
+          </Link>
+        </div>
 
         {/* Navigation Items */}
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-1.5">
           {navItems.map((item) => {
             const CustomIcon = item.customIcon;
             return (
@@ -107,37 +118,28 @@ export default function DesktopSidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={item.onClick}
-                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left relative group ${
-                  item.active
-                    ? 'bg-white/10 text-cloud-white font-bold'
-                    : 'text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white'
-                }`}
+                className={`flex items-center gap-4 px-3.5 py-2.5 rounded-xl transition-all text-left relative group ${item.active
+                  ? 'bg-white/10 text-cloud-white font-bold shadow-sm'
+                  : 'text-cloud-white/70 hover:bg-white/5 hover:text-cloud-white'
+                  }`}
               >
                 {CustomIcon ? (
                   <CustomIcon
                     size={24}
-                    className={`shrink-0 transition-colors ${
-                      item.active
-                        ? 'text-toka-flare'
-                        : 'text-cloud-white/70 group-hover:text-cloud-white'
-                    }`}
+                    className={`shrink-0 transition-colors ${item.active
+                      ? 'text-toka-flare'
+                      : 'text-cloud-white/70 group-hover:text-cloud-white'
+                      }`}
                   />
                 ) : (
                   <span
-                    className={`material-symbols-outlined text-[24px] ${
-                      item.active ? 'material-symbols-filled text-toka-flare' : ''
-                    }`}
+                    className={`material-symbols-outlined text-[24px] ${item.active ? 'material-symbols-filled text-toka-flare' : ''
+                      }`}
                   >
                     {item.icon}
                   </span>
                 )}
                 <span>{item.label}</span>
-                {item.liveBadge && (
-                  <span className="ml-auto flex items-center gap-1 bg-red-600/20 border border-red-500/30 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                    LIVE
-                  </span>
-                )}
                 {item.badge && (
                   <span className="absolute top-4 right-4 w-2 h-2 bg-toka-flare rounded-full"></span>
                 )}
@@ -146,79 +148,104 @@ export default function DesktopSidebar() {
           })}
         </nav>
 
-        {/* Action Buttons: Create Video & Go Live */}
-        <div className="mt-4 px-1 flex flex-col gap-2">
-          <button
-            onClick={() => {
-              if (isAuthenticated) {
-                setIsUploadModalOpen(true);
-              } else {
-                setIsAuthModalOpen(true);
-              }
-            }}
-            className="w-full py-3 bg-toka-flare text-cloud-white rounded-xl font-bold hover:bg-toka-flare/90 transition-all shadow-lg flex justify-center items-center gap-2 text-sm active:scale-95 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Create
-          </button>
-          {isAuthenticated && (
+        {/* Anchored Bottom Tray Area */}
+        <div className="mt-auto pt-4 flex flex-col gap-3">
+          {/* Action Buttons: Side-by-side + Create and Go Live */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={openGoLive}
-              className="w-full py-2.5 bg-red-600/15 border border-red-500/30 hover:border-red-500/60 text-red-400 hover:text-white hover:bg-red-600/30 rounded-xl font-bold transition-all shadow-sm flex justify-center items-center gap-2 text-xs active:scale-95 cursor-pointer"
+              onClick={() => {
+                if (isAuthenticated) {
+                  setIsUploadModalOpen(true);
+                } else {
+                  setIsAuthModalOpen(true);
+                }
+              }}
+              className="flex-1 py-2 px-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white rounded-full font-bold text-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
             >
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              Go Live
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>Create</span>
             </button>
-          )}
-        </div>
 
-        {/* User / Auth Section at Bottom */}
-        <div className="mt-auto pt-4">
-          {isAuthenticated ? (
-            <div className="flex flex-col gap-1.5 px-4 py-3 bg-black/25 border border-white/10 rounded-xl select-none">
-              <Link
-                href="/profile"
-                className={`flex items-center gap-2.5 hover:opacity-90 transition-opacity ${
-                  pathname === '/profile' ? 'text-toka-flare font-bold' : ''
-                }`}
+            {isAuthenticated && (
+              <button
+                onClick={openGoLive}
+                title="Go Live"
+                className="py-2 px-3 bg-red-950/40 hover:bg-red-900/40 border border-red-800/60 text-red-400 hover:text-red-300 rounded-[6px] font-semibold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
               >
-                <span
-                  className={`material-symbols-outlined text-[20px] ${
-                    pathname === '/profile'
-                      ? 'material-symbols-filled text-toka-flare'
-                      : 'text-toka-flare'
-                  }`}
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Go Live</span>
+              </button>
+            )}
+          </div>
+
+          {/* Redesigned Creator Profile & Wallet Card */}
+          {isAuthenticated ? (
+            <div className="bg-[#18181B] border border-white/10 rounded-[10px] p-3 shadow-lg flex flex-col gap-2.5 select-none">
+              {/* Header: Avatar + @username + Signout Icon */}
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
                 >
-                  person
-                </span>
-                <span className="font-bold text-sm text-cloud-white truncate">
-                  @{mongooseUser?.username}
-                </span>
-              </Link>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF4F00] to-amber-500 p-[1.5px] shrink-0">
+                    <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-xs font-bold text-cloud-white">
+                      {mongooseUser?.avatarUrl ? (
+                        <img
+                          src={mongooseUser.avatarUrl}
+                          alt={mongooseUser.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        (mongooseUser?.username?.charAt(0) || 'U').toUpperCase()
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-xs text-cloud-white truncate flex items-center gap-1">
+                      @{mongooseUser?.username}
+                      {mongooseUser?.isBrandSafeVerified && (
+                        <span className="material-symbols-outlined text-[13px] text-[#10B981]">
+                          verified
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-cloud-white/50 capitalize truncate">
+                      {mongooseUser?.role || 'Creator'}
+                    </span>
+                  </div>
+                </Link>
+
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="w-7 h-7 rounded-[8px] hover:bg-red-500/15 text-cloud-white/40 hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                >
+                  <span className="material-symbols-outlined text-[16px]">logout</span>
+                </button>
+              </div>
+
+              {/* Fintech Balance Pill (Geist Mono + Fintech Mint #10B981) */}
               <Link
                 href="/deposit"
-                className="flex justify-between items-center text-xs mt-1 text-cloud-white/60 hover:text-cloud-white font-mono cursor-pointer transition-colors group"
+                className="flex items-center justify-between px-2.5 py-1.5 bg-black/40 hover:bg-black/60 border border-white/5 hover:border-[#10B981]/30 rounded-[8px] transition-all group"
               >
-                <span>Wallet:</span>
-                <span className="font-bold text-fintech-mint group-hover:underline">
+                <span className="text-[11px] text-cloud-white/60 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                  Wallet Balance
+                </span>
+                <span className="font-mono font-bold text-[#10B981] text-xs tracking-tight">
                   ZAR {mongooseUser?.walletBalance ? mongooseUser.walletBalance.toFixed(2) : '0.00'}
                 </span>
               </Link>
-              <button
-                onClick={logout}
-                className="text-left text-xs font-bold text-red-500 hover:text-red-400 mt-2.5 flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
-                Sign Out
-              </button>
             </div>
           ) : (
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="w-full py-3 bg-gradient-to-r from-toka-flare to-orange-600 rounded-xl text-cloud-white font-bold text-sm shadow-lg shadow-toka-flare/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 bg-[#FF4F00] hover:bg-[#FF4F00]/90 text-cloud-white rounded-[10px] font-bold text-sm shadow-lg shadow-[#FF4F00]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">login</span>
-              Sign In
+              <span className="material-symbols-outlined text-[18px]">login</span>
+              <span>Sign In</span>
             </button>
           )}
         </div>

@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useModalStore } from '@/store/useModalStore';
+import PageHeader from '@/components/PageHeader';
 import FollowListModal from '@/components/FollowListModal';
 import ProfileHighlightsReel from '@/components/status/ProfileHighlightsReel';
 import StatusViewerModal from '@/components/status/StatusViewerModal';
@@ -717,28 +718,21 @@ function ProfileContent() {
 
   return (
     <div className="bg-midnight-boma text-cloud-white min-h-screen antialiased font-sans pb-12">
-      {/* Header */}
-      <header className="sticky top-0 w-full border-b border-white/10 bg-shaded-canopy flex justify-between items-center px-6 h-16 z-40 select-none">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back
-          </Link>
-          <h1 className="text-base font-bold text-toka-flare tracking-tight border-l border-white/15 pl-4">
-            {isOwnProfile ? 'My Profile' : `@${targetUser.username}'s Profile`}
-          </h1>
-        </div>
-        {isOwnProfile && (
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-cloud-white text-xs font-bold transition-all active:scale-95 border border-white/10 shadow-sm cursor-pointer"
-            title="Profile & Privacy Settings"
-          >
-            <span className="material-symbols-outlined text-[18px] text-toka-flare">settings</span>
-            <span>Settings</span>
-          </button>
-        )}
-      </header>
+      <PageHeader
+        title={isOwnProfile ? 'My Profile' : `@${targetUser.username}'s Profile`}
+        right={
+          isOwnProfile ? (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-cloud-white text-xs font-bold transition-all active:scale-95 border border-white/10 shadow-sm cursor-pointer"
+              title="Profile & Privacy Settings"
+            >
+              <span className="material-symbols-outlined text-[18px] text-toka-flare">settings</span>
+              <span>Settings</span>
+            </button>
+          ) : undefined
+        }
+      />
 
       <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
         {/* Profile Card */}

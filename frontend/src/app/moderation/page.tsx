@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import PageHeader from '@/components/PageHeader';
 import VideoPlayer from '@/components/VideoPlayer';
 import { useModalStore } from '@/store/useModalStore';
 
@@ -232,24 +233,17 @@ export default function ModerationQueue() {
   return (
     <div className="bg-midnight-boma text-cloud-white min-h-screen flex flex-col antialiased font-sans">
       
-      {/* Top Navbar */}
-      <header className="sticky top-0 w-full border-b border-white/10 bg-shaded-canopy flex justify-between items-center px-6 h-16 z-40 select-none">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-cloud-white/70 hover:text-cloud-white transition-colors flex items-center gap-1 text-sm font-semibold">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back to Feed
-          </Link>
-          <h1 className="text-base font-bold text-toka-flare tracking-tight border-l border-white/15 pl-4">
-            Toka Human-in-the-Loop Portal
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-cloud-white/60">@{mongooseUser.username}</span>
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex items-center justify-center bg-white/10">
-            <span className="material-symbols-outlined text-cloud-white text-[18px]">shield</span>
+      <PageHeader
+        title="Toka Moderation Portal"
+        right={
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-cloud-white/60">@{mongooseUser.username}</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex items-center justify-center bg-white/10">
+              <span className="material-symbols-outlined text-cloud-white text-[18px]">shield</span>
+            </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Workspace */}
       <div className="flex-1 flex flex-col p-6 gap-6 max-w-7xl w-full mx-auto pb-24">

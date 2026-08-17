@@ -177,9 +177,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <div className="flex flex-col gap-1 text-center items-center">
           <div className="mb-2 select-none flex justify-center items-center">
             <img 
-              src="/images/logo/logo.png" 
+              src="/images/TokaLogo.svg" 
               alt="Toka" 
-              className="h-28 w-auto object-contain" 
+              className="h-12 w-auto object-contain" 
             />
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-cloud-white">

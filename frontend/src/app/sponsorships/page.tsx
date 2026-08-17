@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import PageHeader from '@/components/PageHeader';
 
 interface UserInfo {
   _id: string;
@@ -199,8 +200,9 @@ export default function SponsorshipsPage() {
   const isBrand = mongooseUser.role === 'brand';
 
   return (
-    <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans p-6 md:p-10 select-none pb-24">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+    <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans select-none pb-24">
+      <PageHeader title="Sponsorships" />
+      <div className="max-w-6xl mx-auto flex flex-col gap-8 p-6 md:p-10">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-shaded-canopy border border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden backdrop-blur-md">

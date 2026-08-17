@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import PageHeader from '@/components/PageHeader';
 
 interface Transaction {
   _id: string;
@@ -220,24 +221,17 @@ export default function InboxPage() {
 
   return (
     <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans flex flex-col pb-24">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-40 bg-midnight-boma/90 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          </Link>
-          <div>
-            <h1 className="text-lg font-black tracking-tight">Activity Inbox</h1>
-            <p className="text-[11px] text-cloud-white/50">Track tips, collabs &amp; top-ups</p>
+      <PageHeader
+        title="Activity Inbox"
+        right={
+          <div className="text-right">
+            <span className="text-[10px] text-cloud-white/40 uppercase tracking-widest block font-bold">Balance</span>
+            <span className="text-sm font-black font-mono text-fintech-mint">
+              R {data?.walletBalance?.toFixed(2) ?? '—'}
+            </span>
           </div>
-        </div>
-        <div className="text-right">
-          <span className="text-[10px] text-cloud-white/40 uppercase tracking-widest block font-bold">Balance</span>
-          <span className="text-sm font-black font-mono text-fintech-mint">
-            R {data?.walletBalance?.toFixed(2) ?? '—'}
-          </span>
-        </div>
-      </header>
+        }
+      />
 
       <main className="flex-1 max-w-xl w-full mx-auto px-4 pt-6 flex flex-col gap-6">
         {/* Tab Switcher */}
