@@ -19,12 +19,12 @@ import StatusCreatorModal from './status/StatusCreatorModal';
 import { useStatusStore } from '@/store/useStatusStore';
 import LiveDiscoveryPage from './live/LiveDiscoveryPage';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  TokaHeartIcon, 
-  TokaCommentIcon, 
-  TokaTipIcon, 
-  TokaShareIcon, 
-  TokaRepostIcon 
+import {
+  TokaHeartIcon,
+  TokaCommentIcon,
+  TokaTipIcon,
+  TokaShareIcon,
+  TokaRepostIcon
 } from './icons/TokaIcons';
 
 function generateHeartId(prefix = 'heart'): string {
@@ -214,8 +214,8 @@ export default function VideoFeed() {
     const targetTab = (urlTab === 'following' || urlTab === 'live' || urlTab === 'foryou')
       ? urlTab
       : (savedTab === 'following' || savedTab === 'live' || savedTab === 'foryou')
-      ? savedTab
-      : 'foryou';
+        ? savedTab
+        : 'foryou';
 
     if (targetTab && targetTab !== feedType && !creatorParam) {
       setFeedType(targetTab as 'foryou' | 'following' | 'live');
@@ -517,7 +517,7 @@ export default function VideoFeed() {
 
     // 2) Sponsorship-related notifications: navigate directly to /sponsorships
     if (
-      type === 'sponsorship_requested' || 
+      type === 'sponsorship_requested' ||
       type?.startsWith('sponsorship_') ||
       notif.title?.toLowerCase().includes('sponsorship') ||
       notif.body?.toLowerCase().includes('sponsorship')
@@ -680,9 +680,8 @@ export default function VideoFeed() {
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
 
           {/* Top Translucent Navigation Bar Overlay (Clean 3-Point Header) */}
-          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-4 h-16 pointer-events-none transition-all duration-300 ease-out ${
-            isCleanMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-          }`}>
+          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-4 h-16 pointer-events-none transition-all duration-300 ease-out ${isCleanMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+            }`}>
             {/* Left Point: Search Icon */}
             {creatorParam ? (
               <Link
@@ -693,8 +692,8 @@ export default function VideoFeed() {
                 <span>@{creatorParam}&apos;s Videos</span>
               </Link>
             ) : (
-              <Link 
-                href="/discover" 
+              <Link
+                href="/discover"
                 className="pointer-events-auto w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/15 flex items-center justify-center text-cloud-white transition-all shadow-md active:scale-95"
                 title="Search"
               >
@@ -782,8 +781,8 @@ export default function VideoFeed() {
                               key={notif.id}
                               onClick={() => handleNotificationClick(notif)}
                               className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${!notif.read
-                                  ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
-                                  : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
+                                ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
+                                : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
                                 }`}
                             >
                               <div className="flex items-center justify-between gap-2 w-full">
@@ -889,268 +888,298 @@ export default function VideoFeed() {
               style={{ scrollBehavior: 'smooth' }}
             >
               {videos.map((video, index) => {
-              const isActive = index === currentIndex;
-              return (
-                <div
-                  key={video.id}
-                  onClick={(e) => handleVideoCardClick(video.id, e)}
-                  className="relative w-full h-full snap-start shrink-0 z-0 bg-black flex flex-col justify-end cursor-pointer"
-                >
-                  <VideoPlayer src={video.videoUrl} isActive={isActive} poster={video.poster} isCleanMode={isCleanMode} />
+                const isActive = index === currentIndex;
+                return (
+                  <div
+                    key={video.id}
+                    onClick={(e) => handleVideoCardClick(video.id, e)}
+                    className="relative w-full h-full snap-start shrink-0 z-0 bg-black flex flex-col justify-end cursor-pointer"
+                  >
+                    <VideoPlayer src={video.videoUrl} isActive={isActive} poster={video.poster} isCleanMode={isCleanMode} />
 
-                  {/* Clean Mode Floating Toast Hint */}
-                  {showCleanHint && (
-                    <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-fade-in">
-                      <div className="px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-xl border border-white/20 text-[11px] font-mono font-medium text-cloud-white shadow-2xl flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[15px] text-toka-flare">fullscreen</span>
-                        <span>Clean View • Tap to restore</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Floating hearts container */}
-                  {hearts.map((heart) => (
-                    <div
-                      key={heart.id}
-                      className="absolute z-40 pointer-events-none text-red-500 animate-heart-burst"
-                      style={{ left: heart.x, top: heart.y }}
-                    >
-                      <span
-                        className="material-symbols-outlined text-[48px]"
-                        style={{ fontVariationSettings: "'FILL' 1" }}
-                      >
-                        favorite
-                      </span>
-                    </div>
-                  ))}
-
-                  {/* Right Action Sidebar Overlay */}
-                  <aside className={`video-actions-sidebar absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto transition-all duration-300 ease-out ${
-                    isCleanMode ? 'translate-x-20 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
-                  }`}>
-
-                    {/* Creator Avatar & Follow Button */}
-                    <div className="relative mb-3 group select-none">
-                      <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
-                        <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform flex items-center justify-center bg-gradient-to-br from-toka-flare to-orange-700">
-                          {video.creatorAvatar ? (
-                            <img
-                              src={video.creatorAvatar}
-                              alt={video.creatorName}
-                              className="w-full h-full object-cover rounded-full bg-shaded-canopy"
-                            />
-                          ) : (
-                            <span className="font-black text-sm text-cloud-white">
-                              {video.creatorName.replace('@', '').charAt(0).toUpperCase()}
-                            </span>
-                          )}
+                    {/* Clean Mode Floating Toast Hint */}
+                    {showCleanHint && (
+                      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-fade-in">
+                        <div className="px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-xl border border-white/20 text-[11px] font-mono font-medium text-cloud-white shadow-2xl flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[15px] text-toka-flare">fullscreen</span>
+                          <span>Clean View • Tap to restore</span>
                         </div>
-                      </Link>
-                      {mongooseUser?._id !== video.creatorId && (
-                        <button
-                          onClick={() => handleFollowToggle(video.creatorId)}
-                          className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black ${followedCreators.has(video.creatorId) ? 'bg-fintech-mint text-midnight-boma' : 'bg-toka-flare text-cloud-white'
-                            }`}
-                        >
-                          <span className="material-symbols-outlined text-[14px] font-bold">
-                            {followedCreators.has(video.creatorId) ? 'check' : 'add'}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Like Action */}
-                    <button
-                      onClick={(e) => handleLikeToggle(video.id, e)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
-                    >
-                      <TokaHeartIcon
-                        size={44}
-                        filled={video.isLiked}
-                        className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${
-                          video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
-                        }`}
-                      />
-                      <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
-                        {video.likes}
-                      </span>
-                    </button>
-
-                    {/* Comment Action */}
-                    <button
-                      onClick={() => setActiveCommentsVideoId(video.id)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
-                    >
-                      <TokaCommentIcon 
-                        size={32} 
-                        className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
-                      />
-                      <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
-                        {video.commentsCount || 0}
-                      </span>
-                    </button>
-
-                    {/* Tip Action (Sleek Fintech Mint Native Stack) */}
-                    <button
-                      onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
-                      title="Send a Tip"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-fintech-mint/30 hover:border-fintech-mint flex items-center justify-center transition-all group-hover:scale-105 group-hover:bg-fintech-mint/15 shadow-md">
-                        <TokaTipIcon size={22} className="text-fintech-mint" />
                       </div>
-                      <span className="font-mono text-[10px] font-bold text-fintech-mint drop-shadow-md">
-                        Tip
-                      </span>
-                    </button>
+                    )}
 
-                    {/* Share Action */}
-                    <button
-                      onClick={() => handleShare(video)}
-                      className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
-                    >
-                      <TokaShareIcon 
-                        size={26} 
-                        className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
-                      />
-                      <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">{video.shares}</span>
-                    </button>
-
-                    {/* More Action */}
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveOptionsVideoId(activeOptionsVideoId === video.id ? null : video.id);
-                        }}
-                        className="flex flex-col items-center gap-1 mt-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                    {/* Floating hearts container */}
+                    {hearts.map((heart) => (
+                      <div
+                        key={heart.id}
+                        className="absolute z-40 pointer-events-none text-red-500 animate-heart-burst"
+                        style={{ left: heart.x, top: heart.y }}
                       >
-                        <span className="material-symbols-outlined text-cloud-white group-hover:text-white/80 text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-                          more_horiz
+                        <span
+                          className="material-symbols-outlined text-[48px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          favorite
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Right Action Sidebar Overlay */}
+                    <aside className={`video-actions-sidebar absolute right-4 bottom-24 z-30 flex flex-col gap-5 items-center pointer-events-auto transition-all duration-300 ease-out ${isCleanMode ? 'translate-x-20 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+                      }`}>
+
+                      {/* Creator Avatar & Follow Button */}
+                      <div className="relative mb-3 group select-none">
+                        <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
+                          <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-cloud-white p-[1px] shadow-lg hover:scale-105 transition-transform flex items-center justify-center bg-gradient-to-br from-toka-flare to-orange-700">
+                            {video.creatorAvatar ? (
+                              <img
+                                src={video.creatorAvatar}
+                                alt={video.creatorName}
+                                className="w-full h-full object-cover rounded-full bg-shaded-canopy"
+                              />
+                            ) : (
+                              <span className="font-black text-sm text-cloud-white">
+                                {video.creatorName.replace('@', '').charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                        {mongooseUser?._id !== video.creatorId && (
+                          <button
+                            onClick={() => handleFollowToggle(video.creatorId)}
+                            className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-black ${followedCreators.has(video.creatorId) ? 'bg-fintech-mint text-midnight-boma' : 'bg-toka-flare text-cloud-white'
+                              }`}
+                          >
+                            <span className="material-symbols-outlined text-[14px] font-bold">
+                              {followedCreators.has(video.creatorId) ? 'check' : 'add'}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Like Action */}
+                      <button
+                        onClick={(e) => handleLikeToggle(video.id, e)}
+                        className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                      >
+                        <TokaHeartIcon
+                          size={44}
+                          filled={video.isLiked}
+                          className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
+                            }`}
+                        />
+                        <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
+                          {video.likes}
                         </span>
                       </button>
 
-                      {activeOptionsVideoId === video.id && (
-                        <div className="absolute right-12 bottom-0 z-50 w-44 bg-shaded-canopy/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 animate-scale-up select-none pointer-events-auto">
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              requireAuth(async () => {
-                                try {
-                                  const wasReposted = video.isReposted;
-                                  await useFeedStore.getState().toggleRepost(video.id);
-                                  showAlert(
-                                    wasReposted ? 'Repost Removed' : 'Video Reposted! 🔁',
-                                    wasReposted
-                                      ? 'This video was removed from your profile reposts.'
-                                      : 'Video reposted! It now appears on your profile Reposts tab.'
-                                  );
-                                } catch (err) {
-                                  showAlert('Error', 'Failed to update repost.');
-                                }
-                              });
-                              setActiveOptionsVideoId(null);
-                            }}
-                            className={`flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold transition-colors cursor-pointer ${
-                              video.isReposted ? 'text-amber-400 hover:text-amber-300' : 'text-cloud-white/90 hover:text-cloud-white'
-                            }`}
-                          >
-                            <TokaRepostIcon size={18} className="shrink-0" />
-                            <span>{video.isReposted ? 'Remove Repost' : 'Repost Video'}</span>
-                          </button>
+                      {/* Comment Action */}
+                      <button
+                        onClick={() => setActiveCommentsVideoId(video.id)}
+                        className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                      >
+                        <TokaCommentIcon
+                          size={32}
+                          className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                        />
+                        <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
+                          {video.commentsCount || 0}
+                        </span>
+                      </button>
 
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await navigator.clipboard.writeText(video.videoUrl);
-                                showAlert('Link Copied', 'Video stream URL copied to clipboard!');
-                              } catch (err) {
-                                showAlert('Error', 'Failed to copy link.');
-                              }
-                              setActiveOptionsVideoId(null);
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/90 hover:text-cloud-white transition-colors cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">content_copy</span>
-                            Copy Link
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showAlert('Report Submitted', 'Thank you! This video has been flagged and queued for moderation review.');
-                              setActiveOptionsVideoId(null);
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[18px] text-red-500">flag</span>
-                            Report Video
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showAlert('Creator Blocked', `Creator blocked. You will no longer see content from @${video.creatorName}.`);
-                              setActiveOptionsVideoId(null);
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/60 hover:text-cloud-white transition-colors cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">block</span>
-                            Block Creator
-                          </button>
+                      {/* Tip Action (Sleek Fintech Mint Native Stack) */}
+                      <button
+                        onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
+                        className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                        title="Send a Tip"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-fintech-mint/30 hover:border-fintech-mint flex items-center justify-center transition-all group-hover:scale-105 group-hover:bg-fintech-mint/15 shadow-md">
+                          <TokaTipIcon size={22} className="text-fintech-mint" />
                         </div>
+                        <span className="font-mono text-[10px] font-bold text-fintech-mint drop-shadow-md">
+                          Tip
+                        </span>
+                      </button>
+
+                      {/* Share Action */}
+                      <button
+                        onClick={() => handleShare(video)}
+                        className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                      >
+                        <TokaShareIcon
+                          size={26}
+                          className="text-cloud-white group-hover:text-white/80 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                        />
+                        <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">{video.shares}</span>
+                      </button>
+
+                      {/* More Action */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveOptionsVideoId(activeOptionsVideoId === video.id ? null : video.id);
+                          }}
+                          className="flex flex-col items-center gap-1 mt-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-cloud-white group-hover:text-white/80 text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                            more_horiz
+                          </span>
+                        </button>
+
+                        {activeOptionsVideoId === video.id && (
+                          <div className="absolute right-12 bottom-0 z-50 w-44 bg-shaded-canopy/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 animate-scale-up select-none pointer-events-auto">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                requireAuth(async () => {
+                                  try {
+                                    const wasReposted = video.isReposted;
+                                    await useFeedStore.getState().toggleRepost(video.id);
+                                    showAlert(
+                                      wasReposted ? 'Repost Removed' : 'Video Reposted! 🔁',
+                                      wasReposted
+                                        ? 'This video was removed from your profile reposts.'
+                                        : 'Video reposted! It now appears on your profile Reposts tab.'
+                                    );
+                                  } catch (err) {
+                                    showAlert('Error', 'Failed to update repost.');
+                                  }
+                                });
+                                setActiveOptionsVideoId(null);
+                              }}
+                              className={`flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold transition-colors cursor-pointer ${video.isReposted ? 'text-amber-400 hover:text-amber-300' : 'text-cloud-white/90 hover:text-cloud-white'
+                                }`}
+                            >
+                              <TokaRepostIcon size={18} className="shrink-0" />
+                              <span>{video.isReposted ? 'Remove Repost' : 'Repost Video'}</span>
+                            </button>
+
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await navigator.clipboard.writeText(video.videoUrl);
+                                  showAlert('Link Copied', 'Video stream URL copied to clipboard!');
+                                } catch (err) {
+                                  showAlert('Error', 'Failed to copy link.');
+                                }
+                                setActiveOptionsVideoId(null);
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/90 hover:text-cloud-white transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                              Copy Link
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showAlert('Report Submitted', 'Thank you! This video has been flagged and queued for moderation review.');
+                                setActiveOptionsVideoId(null);
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[18px] text-red-500">flag</span>
+                              Report Video
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showAlert('Creator Blocked', `Creator blocked. You will no longer see content from @${video.creatorName}.`);
+                                setActiveOptionsVideoId(null);
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 rounded-xl text-left text-xs font-semibold text-cloud-white/60 hover:text-cloud-white transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">block</span>
+                              Block Creator
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Vinyl Audio Disk */}
+                      <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg">
+                        <img
+                          src={video.audioArt || '/images/audio-album.jpg'}
+                          alt="Audio art"
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      </div>
+                    </aside>
+
+                    {/* Soft Bottom Gradient Scrim behind captions */}
+                    <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#09090B]/95 via-[#09090B]/40 to-transparent pointer-events-none z-10" />
+
+                    {/* Top-Right Synced Mute / Unmute Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMute();
+                      }}
+                      className="absolute top-16 right-4 z-30 pointer-events-auto w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-white transition-all shadow-md active:scale-95"
+                      title={isMuted ? "Unmute" : "Mute"}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      ) : (
+                        <Volume2 className="w-4 h-4 text-white animate-pulse" />
                       )}
-                    </div>
+                    </button>
 
-                    {/* Vinyl Audio Disk */}
-                    <div className="w-10 h-10 rounded-full border border-white/20 p-1 mt-2 animate-[spin_6s_linear_infinite] overflow-hidden bg-black shadow-lg">
-                      <img
-                        src={video.audioArt || '/images/audio-album.jpg'}
-                        alt="Audio art"
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    </div>
-                  </aside>
+                    {/* Bottom Left Info Overlay - Positioned above bottom navigation bar */}
+                    <div className={`absolute bottom-24 left-4 z-30 flex flex-col gap-1.5 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${isCleanMode ? 'translate-y-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+                      }`}>
 
-                  {/* Soft Bottom Gradient Scrim behind captions */}
-                  <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#09090B]/95 via-[#09090B]/40 to-transparent pointer-events-none z-10" />
+                      {/* Repost Badge */}
+                      {video.isReposted && !dismissedRepostBadges.has(video.id) && (
+                        <SwipeableRepostBadge
+                          videoId={video.id}
+                          onDismiss={handleDismissRepostBadge}
+                        />
+                      )}
 
-                  {/* Top-Right Synced Mute / Unmute Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMute();
-                    }}
-                    className="absolute top-16 right-4 z-30 pointer-events-auto w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-white transition-all shadow-md active:scale-95"
-                    title={isMuted ? "Unmute" : "Mute"}
-                  >
-                    {isMuted ? (
-                      <VolumeX className="w-4 h-4 text-white" />
-                    ) : (
-                      <Volume2 className="w-4 h-4 text-white animate-pulse" />
-                    )}
-                  </button>
+                      {/* Creator Handle + Integrated Brand Safe Shield */}
+                      {(() => {
+                        const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted')?.user;
+                        if (acceptedCoAuthor) {
+                          return (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Link
+                                href={`/profile?username=${video.creatorName.replace('@', '')}`}
+                                className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                              >
+                                {video.creatorName}
+                                {video.vettingStatus === 'approved' && (
+                                  <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
+                                    verified_user
+                                  </span>
+                                )}
+                                {video.isVerified && (
+                                  <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
+                                )}
+                              </Link>
+                              <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1 py-0.5 rounded border border-white/10">
+                                &amp;
+                              </span>
+                              <Link
+                                href={`/profile?username=${acceptedCoAuthor.username}`}
+                                className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                              >
+                                @{acceptedCoAuthor.username}
+                                {acceptedCoAuthor.isBrandSafeVerified && (
+                                  <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
+                                    verified_user
+                                  </span>
+                                )}
+                              </Link>
+                            </div>
+                          );
+                        }
 
-                  {/* Bottom Left Info Overlay - Positioned above bottom navigation bar */}
-                  <div className={`absolute bottom-24 left-4 z-30 flex flex-col gap-1.5 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
-                    isCleanMode ? 'translate-y-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-                  }`}>
-
-                    {/* Repost Badge */}
-                    {video.isReposted && !dismissedRepostBadges.has(video.id) && (
-                      <SwipeableRepostBadge
-                        videoId={video.id}
-                        onDismiss={handleDismissRepostBadge}
-                      />
-                    )}
-
-                    {/* Creator Handle + Integrated Brand Safe Shield */}
-                    {(() => {
-                      const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted')?.user;
-                      if (acceptedCoAuthor) {
                         return (
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5">
                             <Link
                               href={`/profile?username=${video.creatorName.replace('@', '')}`}
                               className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
@@ -1165,72 +1194,37 @@ export default function VideoFeed() {
                                 <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
                               )}
                             </Link>
-                            <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1 py-0.5 rounded border border-white/10">
-                              &amp;
-                            </span>
-                            <Link
-                              href={`/profile?username=${acceptedCoAuthor.username}`}
-                              className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
-                            >
-                              @{acceptedCoAuthor.username}
-                              {acceptedCoAuthor.isBrandSafeVerified && (
-                                <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
-                                  verified_user
-                                </span>
-                              )}
-                            </Link>
                           </div>
                         );
-                      }
+                      })()}
 
-                      return (
-                        <div className="flex items-center gap-1.5">
-                          <Link
-                            href={`/profile?username=${video.creatorName.replace('@', '')}`}
-                            className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
-                          >
-                            {video.creatorName}
-                            {video.vettingStatus === 'approved' && (
-                              <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
-                                verified_user
-                              </span>
-                            )}
-                            {video.isVerified && (
-                              <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
-                            )}
-                          </Link>
-                        </div>
-                      );
-                    })()}
+                      {/* Description Caption */}
+                      <p className="text-xs text-cloud-white/90 drop-shadow-md leading-relaxed line-clamp-2">
+                        <MentionText text={video.description || video.title} />
+                      </p>
 
-                    {/* Description Caption */}
-                    <p className="text-xs text-cloud-white/90 drop-shadow-md leading-relaxed line-clamp-2">
-                      <MentionText text={video.description || video.title} />
-                    </p>
-
-                    {/* Audio track info with marquee effect */}
-                    {video.audioName && (
-                      <div className="flex items-center gap-1.5 mt-1 text-cloud-white/80 w-[200px] overflow-hidden select-none shrink-0">
-                        <span className="material-symbols-outlined text-toka-flare text-[16px] animate-pulse shrink-0">music_note</span>
-                        <div className="overflow-hidden w-full relative h-4 flex items-center">
-                          <div className="animate-marquee gap-8">
-                            <span>{video.audioName}</span>
-                            <span>{video.audioName}</span>
+                      {/* Audio track info with marquee effect */}
+                      {video.audioName && (
+                        <div className="flex items-center gap-1.5 mt-1 text-cloud-white/80 w-[200px] overflow-hidden select-none shrink-0">
+                          <span className="material-symbols-outlined text-toka-flare text-[16px] animate-pulse shrink-0">music_note</span>
+                          <div className="overflow-hidden w-full relative h-4 flex items-center">
+                            <div className="animate-marquee gap-8">
+                              <span>{video.audioName}</span>
+                              <span>{video.audioName}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
           )}
 
           {/* Mobile Bottom Navigation Bar */}
-          <nav className={`absolute bottom-0 left-0 w-full z-40 bg-midnight-boma/95 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-4 transition-all duration-300 ease-out ${
-            isCleanMode ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-          }`}>
+          <nav className={`absolute bottom-0 left-0 w-full z-40 bg-midnight-boma/95 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-4 transition-all duration-300 ease-out ${isCleanMode ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+            }`}>
             <button className="flex flex-col items-center justify-center text-toka-flare scale-105 transition-all w-14 select-none">
               <span className="material-symbols-outlined material-symbols-filled">home</span>
               <span className="text-[10px] font-medium font-mono">Home</span>
