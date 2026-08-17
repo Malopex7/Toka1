@@ -132,20 +132,20 @@ function DepositContent() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-shaded-canopy border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col gap-6">
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#09090B] border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-5">
           
           {successState ? (
             // Success Card State
-            <div className="flex flex-col items-center text-center gap-4 py-4 animate-fade-in select-none">
-              <span className="material-symbols-outlined text-fintech-mint text-[72px] animate-bounce">check_circle</span>
-              <h2 className="text-xl font-bold text-cloud-white">Top Up Successful!</h2>
-              <p className="text-sm text-cloud-white/60">
+            <div className="flex flex-col items-center text-center gap-3 py-3 animate-fade-in select-none">
+              <span className="material-symbols-outlined text-fintech-mint text-[56px] animate-bounce">check_circle</span>
+              <h2 className="text-lg font-bold text-cloud-white">Top Up Successful!</h2>
+              <p className="text-xs text-cloud-white/60">
                 Your payment session was processed successfully. Your updated balance of 
-                <strong className="text-fintech-mint block text-lg font-mono mt-1">R {mongooseUser.walletBalance.toFixed(2)}</strong> 
+                <strong className="text-fintech-mint block text-base font-mono mt-1">R {mongooseUser.walletBalance.toFixed(2)}</strong> 
                 has been credited.
               </p>
-              <Link href="/" className="mt-4 px-8 py-3.5 bg-fintech-mint hover:bg-fintech-mint/90 text-midnight-boma rounded-xl font-bold transition-all text-xs active:scale-95 shadow-lg">
+              <Link href="/" className="mt-2 px-6 py-2.5 bg-fintech-mint hover:bg-fintech-mint/90 text-midnight-boma rounded-[0.625rem] font-bold transition-all text-xs active:scale-95 shadow-lg">
                 Go back to Feed
               </Link>
             </div>
@@ -153,23 +153,23 @@ function DepositContent() {
             // Deposit checkout Form State
             <>
               <div className="text-center select-none">
-                <span className="material-symbols-outlined text-toka-flare text-[48px] mb-2">account_balance_wallet</span>
-                <h2 className="text-xl font-black tracking-tight text-cloud-white">Top Up Wallet</h2>
-                <p className="text-xs text-cloud-white/50 mt-1">Secure deposits powered by Paystack.</p>
+                <span className="material-symbols-outlined text-toka-flare text-[36px] mb-1">account_balance_wallet</span>
+                <h2 className="text-base font-black tracking-tight text-cloud-white">Top Up Wallet</h2>
+                <p className="text-[11px] text-cloud-white/50 mt-0.5">Secure deposits powered by Paystack.</p>
               </div>
 
               {errorMsg && (
-                <div className="bg-red-500/10 border border-red-500/35 text-red-500 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2 select-none">
+                <div className="bg-red-500/10 border border-red-500/35 text-red-500 text-xs font-bold px-3.5 py-2.5 rounded-[0.625rem] flex items-center gap-2 select-none">
                   <span className="material-symbols-outlined text-[16px]">error</span>
                   <span>{errorMsg}</span>
                 </div>
               )}
 
-              <form onSubmit={handleDeposit} className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="amount-input" className="text-xs font-bold text-cloud-white/50 uppercase select-none">Amount (ZAR)</label>
-                  <div className="relative flex items-center bg-black/40 border border-white/10 rounded-2xl overflow-hidden focus-within:border-toka-flare transition-colors">
-                    <span className="pl-5 text-cloud-white/60 font-semibold font-mono text-sm">R</span>
+              <form onSubmit={handleDeposit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="amount-input" className="text-[10px] font-bold text-cloud-white/50 uppercase select-none">Amount (ZAR)</label>
+                  <div className="relative flex items-center bg-[#18181B]/60 border border-white/10 rounded-[0.625rem] overflow-hidden focus-within:border-toka-flare transition-colors">
+                    <span className="pl-4 text-cloud-white/40 font-bold font-mono text-xs">R</span>
                     <input
                       id="amount-input"
                       type="number"
@@ -178,33 +178,36 @@ function DepositContent() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full bg-transparent py-4 pl-2 pr-5 text-cloud-white font-bold font-mono text-lg outline-none placeholder:text-cloud-white/20"
+                      className="w-full bg-transparent py-3 pl-2 pr-4 text-cloud-white font-bold font-mono text-base outline-none placeholder:text-cloud-white/20"
                     />
                   </div>
                 </div>
 
-                {/* Preset Amount buttons */}
-                <div className="grid grid-cols-3 gap-3 select-none">
-                  {['20', '50', '100'].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setAmount(val)}
-                      className={`py-3.5 rounded-xl border text-xs font-mono font-bold transition-all ${
-                        amount === val
-                          ? 'bg-toka-flare border-toka-flare text-cloud-white shadow-[0_0_12px_rgba(255,79,0,0.25)]'
-                          : 'bg-black/20 hover:bg-black/40 border-white/10 text-cloud-white/70 hover:text-cloud-white'
-                      }`}
-                    >
-                      R {val}
-                    </button>
-                  ))}
+                {/* Recessed Segmented Preset Amount buttons */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-cloud-white/50 uppercase select-none">Quick Amounts</span>
+                  <div className="grid grid-cols-3 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/10 text-xs font-medium gap-1 select-none">
+                    {['20', '50', '100'].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setAmount(val)}
+                        className={`py-2 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                          amount === val
+                            ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                            : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        R {val}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loadingCheckout}
-                  className="w-full bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-4 rounded-xl font-bold transition-all text-xs active:scale-95 shadow-[0_4px_20px_rgba(255,79,0,0.3)] flex justify-center items-center gap-2 select-none"
+                  className="w-full bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-3 rounded-[0.625rem] font-bold transition-all text-xs active:scale-[0.98] shadow-lg shadow-toka-flare/20 flex justify-center items-center gap-2 select-none cursor-pointer mt-1"
                 >
                   {loadingCheckout ? (
                     <>
@@ -213,15 +216,15 @@ function DepositContent() {
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[18px]">credit_card</span>
+                      <span className="material-symbols-outlined text-[16px]">credit_card</span>
                       <span>Initialize Deposit Checkout</span>
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="flex justify-center items-center gap-2 select-none text-[10px] text-cloud-white/40 border-t border-white/5 pt-4">
-                <span className="material-symbols-outlined text-[14px]">shield</span>
+              <div className="flex justify-center items-center gap-1.5 select-none text-[10px] text-cloud-white/40 border-t border-white/5 pt-3">
+                <span className="material-symbols-outlined text-[13px]">shield</span>
                 <span>Fully encrypted connection and data storage.</span>
               </div>
             </>

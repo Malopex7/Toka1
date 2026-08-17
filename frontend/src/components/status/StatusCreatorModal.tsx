@@ -191,49 +191,49 @@ export default function StatusCreatorModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none overflow-y-auto">
-      <audio ref={audioPreviewRef} onEnded={() => setPlayingAudioUrl(null)} />
-
-      <div className="relative w-full max-w-lg bg-midnight-boma rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex flex-col my-auto max-h-[95vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in select-none">
+      <div className="relative w-full max-w-md bg-[#09090B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-shaded-canopy/60">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#18181B]/50">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-toka-flare" />
-            <h2 className="text-sm font-bold text-cloud-white">Create 24h Status Update</h2>
+            <h2 className="text-sm font-bold text-cloud-white">Create 24h Story</h2>
           </div>
           <button
             onClick={closeCreator}
-            className="p-1 rounded-full text-cloud-white/70 hover:text-cloud-white hover:bg-white/10"
+            className="w-7 h-7 rounded-full text-cloud-white/60 hover:text-cloud-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Mode Switch Tabs */}
-        <div className="flex items-center justify-center p-2 bg-midnight-boma border-b border-white/5 gap-2">
-          <button
-            onClick={() => setMode('text')}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              mode === 'text'
-                ? 'bg-toka-flare text-white shadow-md'
-                : 'bg-white/5 text-cloud-white/70 hover:bg-white/10'
-            }`}
-          >
-            <Type className="w-3.5 h-3.5" />
-            <span>Text Status</span>
-          </button>
-          <button
-            onClick={() => setMode('media')}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              mode === 'media'
-                ? 'bg-toka-flare text-white shadow-md'
-                : 'bg-white/5 text-cloud-white/70 hover:bg-white/10'
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Photo / Video</span>
-          </button>
+        {/* Recessed Segmented Mode Switch Track */}
+        <div className="p-2.5 bg-[#09090B] border-b border-white/10">
+          <div className="grid grid-cols-2 bg-[#18181B] p-1 rounded-[0.625rem] border border-white/5 gap-1">
+            <button
+              onClick={() => setMode('text')}
+              className={`py-1.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                mode === 'text'
+                  ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                  : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Type className="w-3.5 h-3.5" />
+              <span>Text Story</span>
+            </button>
+            <button
+              onClick={() => setMode('media')}
+              className={`py-1.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                mode === 'media'
+                  ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                  : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Photo / Video</span>
+            </button>
+          </div>
         </div>
 
         {/* --- Live Preview Stage (9:16 Aspect Ratio) --- */}
@@ -345,33 +345,33 @@ export default function StatusCreatorModal() {
 
               {/* Typography Styles */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 bg-midnight-boma p-1 rounded-lg border border-white/5 text-xs">
+                <div className="flex items-center gap-1 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/5 text-xs">
                   <button
                     onClick={() => setFontFamily('sans')}
-                    className={`px-2 py-1 rounded ${fontFamily === 'sans' ? 'bg-white/15 text-white font-bold' : 'text-white/60'}`}
+                    className={`px-2 py-1 rounded-md transition-all cursor-pointer ${fontFamily === 'sans' ? 'bg-toka-flare text-white font-bold' : 'text-white/60 hover:text-white'}`}
                   >
                     Sans
                   </button>
                   <button
                     onClick={() => setFontFamily('serif')}
-                    className={`px-2 py-1 rounded font-serif ${fontFamily === 'serif' ? 'bg-white/15 text-white font-bold' : 'text-white/60'}`}
+                    className={`px-2 py-1 rounded-md font-serif transition-all cursor-pointer ${fontFamily === 'serif' ? 'bg-toka-flare text-white font-bold' : 'text-white/60 hover:text-white'}`}
                   >
                     Serif
                   </button>
                   <button
                     onClick={() => setFontFamily('mono')}
-                    className={`px-2 py-1 rounded font-mono ${fontFamily === 'mono' ? 'bg-white/15 text-white font-bold' : 'text-white/60'}`}
+                    className={`px-2 py-1 rounded-md font-mono transition-all cursor-pointer ${fontFamily === 'mono' ? 'bg-toka-flare text-white font-bold' : 'text-white/60 hover:text-white'}`}
                   >
                     Mono
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1 bg-midnight-boma p-1 rounded-lg border border-white/5 text-xs">
+                <div className="flex items-center gap-1 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/5 text-xs">
                   {(['left', 'center', 'right'] as const).map((align) => (
                     <button
                       key={align}
                       onClick={() => setAlignment(align)}
-                      className={`px-2 py-1 rounded capitalize ${alignment === align ? 'bg-white/15 text-white font-bold' : 'text-white/60'}`}
+                      className={`px-2 py-1 rounded-md capitalize transition-all cursor-pointer ${alignment === align ? 'bg-toka-flare text-white font-bold' : 'text-white/60 hover:text-white'}`}
                     >
                       {align}
                     </button>
@@ -390,12 +390,12 @@ export default function StatusCreatorModal() {
                 onChange={(e) => setCaption(e.target.value)}
                 maxLength={150}
                 placeholder="Add a caption..."
-                className="w-full bg-midnight-boma px-3 py-2 rounded-xl text-xs text-cloud-white placeholder-cloud-white/40 border border-white/10 outline-none focus:border-toka-flare"
+                className="w-full bg-[#09090B] px-3 py-2 rounded-[0.625rem] text-xs text-cloud-white placeholder-cloud-white/40 border border-white/10 outline-none focus:border-toka-flare"
               />
               {mediaPreviewUrl && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-xs text-toka-flare hover:underline font-medium"
+                  className="text-xs text-toka-flare hover:underline font-medium cursor-pointer"
                 >
                   Change media file
                 </button>
@@ -492,7 +492,7 @@ export default function StatusCreatorModal() {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3 border-t border-white/10 bg-midnight-boma flex items-center justify-between">
+        <div className="p-3 border-t border-white/10 bg-[#18181B]/50 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] text-cloud-white/60">
             <span className="w-2 h-2 rounded-full bg-fintech-mint" />
             <span>Followers only • 24h</span>
@@ -501,14 +501,14 @@ export default function StatusCreatorModal() {
           <div className="flex items-center gap-2">
             <button
               onClick={closeCreator}
-              className="px-3.5 py-2 rounded-xl text-xs font-medium text-cloud-white/70 hover:bg-white/10"
+              className="px-3.5 py-1.5 rounded-[0.625rem] text-xs font-medium text-cloud-white/70 hover:bg-white/10 cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handlePublish}
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-toka-flare to-amber-500 hover:from-toka-flare hover:to-orange-600 active:scale-95 text-white text-xs font-bold shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5"
+              className="px-4 py-1.5 rounded-[0.625rem] bg-toka-flare hover:bg-toka-flare/90 active:scale-95 text-white text-xs font-bold shadow-lg shadow-toka-flare/20 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -516,7 +516,7 @@ export default function StatusCreatorModal() {
                   <span>Publishing...</span>
                 </>
               ) : (
-                <span>Publish Status</span>
+                <span>Publish Story</span>
               )}
             </button>
           </div>

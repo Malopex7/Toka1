@@ -129,15 +129,15 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
   };
 
   return (
-    <div className="bg-shaded-canopy/95 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl">
+    <div className="bg-[#09090B] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-toka-flare text-[20px]">group_add</span>
-          <h3 className="text-cloud-white font-bold text-sm">Invite Co-Host</h3>
+          <span className="material-symbols-outlined text-toka-flare text-[18px]">group_add</span>
+          <h3 className="text-cloud-white font-bold text-xs">Invite Co-Host</h3>
         </div>
         {searching && (
-          <span className="text-[11px] text-cloud-white/50 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-toka-flare animate-ping" /> Searching...
+          <span className="text-[10px] text-cloud-white/50 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-toka-flare animate-ping" /> Searching...
           </span>
         )}
       </div>
@@ -149,17 +149,17 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Search by @username..."
-            className="w-full bg-black/50 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-cloud-white placeholder-cloud-white/40 focus:outline-none focus:border-toka-flare/60 transition-colors"
+            className="w-full bg-[#18181B]/60 border border-white/10 rounded-[0.625rem] px-3 py-2 text-xs text-cloud-white placeholder-cloud-white/40 focus:outline-none focus:border-toka-flare transition-colors"
             autoFocus
           />
         </div>
         <button
           type="submit"
           disabled={!query.trim() || !!invitingUsername}
-          className="bg-toka-flare hover:bg-toka-flare/80 text-white rounded-xl px-4 text-sm font-bold transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center min-w-[70px]"
+          className="bg-toka-flare hover:bg-toka-flare/90 text-white rounded-[0.625rem] px-3.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center min-w-[64px]"
         >
           {invitingUsername ? (
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             'Invite'
           )}
@@ -168,15 +168,15 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
 
       {/* Real-time search results dropdown */}
       {searchResults.length > 0 && (
-        <div className="bg-black/80 border border-white/10 rounded-xl overflow-hidden divide-y divide-white/5 max-h-48 overflow-y-auto">
+        <div className="bg-[#18181B] border border-white/10 rounded-[0.625rem] overflow-hidden divide-y divide-white/5 max-h-48 overflow-y-auto">
           {searchResults.map((user) => (
             <div
               key={user._id}
-              className="flex items-center justify-between px-3 py-2 hover:bg-white/10 transition-colors"
+              className="flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 toka-rainbow-halo p-[1.5px] shrink-0">
-                  <div className="toka-rainbow-halo-inner text-xs font-bold text-cloud-white">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 toka-rainbow-halo p-[1px] shrink-0">
+                  <div className="toka-rainbow-halo-inner text-[10px] font-bold text-cloud-white">
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -190,11 +190,11 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
                       @{user.username}
                     </span>
                     {user.isBrandSafeVerified && (
-                      <span className="material-symbols-outlined text-toka-flare text-[14px]">verified</span>
+                      <span className="material-symbols-outlined text-fintech-mint text-[13px]">verified</span>
                     )}
                   </div>
                   {user.role && (
-                    <span className="text-[10px] text-cloud-white/40 capitalize">{user.role}</span>
+                    <span className="text-[9px] text-cloud-white/40 capitalize">{user.role}</span>
                   )}
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
               <button
                 onClick={() => sendInvite(user.username)}
                 disabled={invitingUsername === user.username}
-                className="bg-white/10 hover:bg-toka-flare text-cloud-white hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ml-2 shrink-0"
+                className="bg-white/10 hover:bg-toka-flare text-cloud-white hover:text-white text-[11px] font-bold px-2.5 py-1 rounded-md transition-all active:scale-95 cursor-pointer ml-2 shrink-0"
               >
                 {invitingUsername === user.username ? 'Sending...' : 'Invite'}
               </button>
@@ -218,13 +218,13 @@ export default function CohostInvitePanel({ roomId }: CohostInvitePanelProps) {
       )}
 
       {message && (
-        <div className="flex items-center gap-1.5 text-fintech-mint text-xs font-semibold bg-fintech-mint/10 border border-fintech-mint/20 rounded-xl px-3 py-2">
+        <div className="flex items-center gap-1.5 text-fintech-mint text-xs font-semibold bg-fintech-mint/10 border border-fintech-mint/20 rounded-[0.625rem] px-3 py-2">
           <span>{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-1.5 text-red-400 text-xs font-semibold bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+        <div className="flex items-center gap-1.5 text-red-400 text-xs font-semibold bg-red-500/10 border border-red-500/20 rounded-[0.625rem] px-3 py-2">
           <span>{error}</span>
         </div>
       )}

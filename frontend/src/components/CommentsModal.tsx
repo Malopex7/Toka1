@@ -562,7 +562,7 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
     return (
       <form
         onSubmit={(e) => handleInlineReply(e, targetCommentId, rootCommentId, targetUsername)}
-        className="flex items-center gap-2 bg-black/25 border border-toka-flare/30 rounded-xl p-1.5 mt-1.5 focus-within:border-toka-flare transition-all"
+        className="flex items-center gap-2 bg-[#18181B] border border-white/10 rounded-[0.625rem] p-1.5 mt-1.5 focus-within:border-toka-flare transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-1">
@@ -573,21 +573,21 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
             value={inlineInputText}
             onChange={(val) => setInlineInputText(val)}
             maxLength={500}
-            className="w-full bg-transparent px-2 py-1.5 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/30"
+            className="w-full bg-transparent px-2 py-1 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/30"
             popoverPlacement="top"
           />
         </div>
         <button
           type="button"
           onClick={handleCancelReply}
-          className="text-[9px] font-bold text-cloud-white/40 hover:text-red-400 px-1 transition-colors"
+          className="text-[9px] font-bold text-cloud-white/40 hover:text-red-400 px-1 transition-colors cursor-pointer"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting || !inlineInputText.trim()}
-          className="px-3 py-1.5 bg-toka-flare hover:bg-toka-flare/90 disabled:bg-white/5 disabled:text-white/20 text-cloud-white rounded-lg text-[10px] font-bold transition-all active:scale-95 shrink-0"
+          className="px-3 py-1.5 bg-toka-flare hover:bg-toka-flare/90 disabled:bg-white/5 disabled:text-white/20 text-cloud-white rounded-[0.625rem] text-[10px] font-bold transition-all active:scale-95 shrink-0 cursor-pointer"
         >
           {submitting ? '...' : 'Post'}
         </button>
@@ -733,29 +733,29 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end md:items-center md:justify-center">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex justify-end md:items-center md:justify-center">
       {/* Click outside overlay to close */}
       <div className="absolute inset-0" onClick={onClose}></div>
 
       {/* Sheet panel container */}
-      <div className="relative w-full md:w-[460px] h-[75vh] md:h-[600px] bg-midnight-boma border-t md:border border-white/10 rounded-t-3xl md:rounded-3xl flex flex-col mt-auto md:mt-0 shadow-2xl z-10 overflow-hidden font-sans">
+      <div className="relative w-full md:w-[460px] h-[75vh] md:h-[600px] bg-[#09090B] border-t md:border border-white/10 rounded-t-3xl md:rounded-2xl flex flex-col mt-auto md:mt-0 shadow-2xl z-10 overflow-hidden font-sans">
 
         {/* Drag handle for mobile */}
-        <div className="w-12 h-1 bg-white/15 rounded-full mx-auto my-3 md:hidden"></div>
+        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto my-2.5 md:hidden"></div>
 
         {/* Header */}
-        <header className="px-6 pb-4 pt-2 md:pt-4 border-b border-white/5 flex items-center justify-between">
+        <header className="px-5 py-3 border-b border-white/10 bg-[#18181B]/50 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-cloud-white">Comments</h2>
+            <h2 className="text-sm font-bold text-cloud-white">Comments</h2>
             <p className="text-[10px] text-cloud-white/40 font-semibold uppercase tracking-wider mt-0.5 font-mono">
               {comments.length + comments.reduce((acc, c) => acc + (c.replies?.length || 0), 0)} total
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-cloud-white transition-colors"
+            className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-cloud-white transition-colors cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
         </header>
 
@@ -920,9 +920,9 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
         </div>
 
         {/* Footer: only for new top-level comments */}
-        <footer className="p-4 bg-shaded-canopy/60 border-t border-white/5">
+        <footer className="p-3 bg-[#18181B]/50 border-t border-white/10">
           {isAuthenticated ? (
-            <form onSubmit={handleSubmitComment} className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-2xl p-1.5 focus-within:border-toka-flare transition-all">
+            <form onSubmit={handleSubmitComment} className="flex items-center gap-2 bg-[#09090B] border border-white/10 rounded-[0.625rem] p-1 focus-within:border-toka-flare transition-all">
               <div className="flex-1">
                 <MentionInput
                   as="input"
@@ -930,14 +930,14 @@ export default function CommentsModal({ isOpen, onClose, videoId, creatorId, hig
                   value={inputText}
                   onChange={(val) => setInputText(val)}
                   maxLength={500}
-                  className="w-full bg-transparent px-3 py-2 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/40"
+                  className="w-full bg-transparent px-3 py-1.5 text-xs text-cloud-white focus:outline-none placeholder-cloud-white/40"
                   popoverPlacement="top"
                 />
               </div>
               <button
                 type="submit"
                 disabled={submitting || !inputText.trim()}
-                className="px-4 py-2 bg-toka-flare hover:bg-toka-flare/90 disabled:bg-white/5 disabled:text-white/20 text-cloud-white rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
+                className="px-3.5 py-1.5 bg-toka-flare hover:bg-toka-flare/90 disabled:bg-white/5 disabled:text-white/20 text-cloud-white rounded-[0.625rem] text-xs font-bold transition-all active:scale-95 shrink-0 cursor-pointer"
               >
                 {submitting ? 'Posting...' : 'Post'}
               </button>

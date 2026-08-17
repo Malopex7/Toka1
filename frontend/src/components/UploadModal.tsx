@@ -261,51 +261,51 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans select-none animate-fade-in">
-      <div className="bg-shaded-canopy border border-white/10 rounded-3xl w-full max-w-lg p-8 shadow-2xl flex flex-col gap-5 relative">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans select-none animate-fade-in">
+      <div className="bg-[#09090B] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-4 relative max-h-[90vh] overflow-y-auto">
         
         {/* Close Button */}
         <button 
           onClick={handleClose} 
-          className="absolute top-5 right-5 text-cloud-white/40 hover:text-cloud-white transition-colors"
+          className="absolute top-5 right-5 text-cloud-white/40 hover:text-cloud-white transition-colors cursor-pointer"
         >
-          <span className="material-symbols-outlined text-[22px]">close</span>
+          <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         {successMessage ? (
           // Success Feedback View
-          <div className="flex flex-col items-center text-center gap-4 py-8 animate-scale-up">
-            <span className="material-symbols-outlined text-fintech-mint text-[64px] animate-bounce">check_circle</span>
-            <h3 className="text-xl font-bold text-cloud-white">Upload Completed!</h3>
-            <p className="text-sm text-cloud-white/60 max-w-sm">{successMessage}</p>
+          <div className="flex flex-col items-center text-center gap-3 py-8 animate-scale-up">
+            <span className="material-symbols-outlined text-fintech-mint text-[56px] animate-bounce">check_circle</span>
+            <h3 className="text-lg font-bold text-cloud-white">Upload Completed!</h3>
+            <p className="text-xs text-cloud-white/60 max-w-sm">{successMessage}</p>
           </div>
         ) : (
           // Form View
           <>
             <div>
-              <h2 className="text-lg font-black tracking-tight text-cloud-white flex items-center gap-2">
+              <h2 className="text-base font-black tracking-tight text-cloud-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-toka-flare">video_call</span>
                 Share a Video
               </h2>
-              <p className="text-xs text-cloud-white/50 mt-0.5">Direct client-side direct uploads to Cloud Storage.</p>
+              <p className="text-[11px] text-cloud-white/50 mt-0.5">Direct client-side uploads to Cloud Storage.</p>
             </div>
 
             {errorMessage && (
-              <div className="bg-red-500/10 border border-red-500/35 text-red-500 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+              <div className="bg-red-500/10 border border-red-500/35 text-red-500 text-xs font-bold px-3.5 py-2.5 rounded-[0.625rem] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">error</span>
                 <span>{errorMessage}</span>
               </div>
             )}
 
-            <form onSubmit={handleUpload} className="flex flex-col gap-4">
+            <form onSubmit={handleUpload} className="flex flex-col gap-3.5">
               
               {/* Drag and Drop Zone */}
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                className={`border-2 border-dashed rounded-[0.625rem] p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                   selectedFile 
                     ? 'border-fintech-mint/45 bg-fintech-mint/5' 
-                    : 'border-white/10 hover:border-white/20 bg-black/10'
+                    : 'border-white/10 hover:border-white/20 bg-[#18181B]/40'
                 }`}
               >
                 <input 
@@ -317,16 +317,16 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                 />
                 
                 {selectedFile ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined text-fintech-mint text-[36px]">movie</span>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="material-symbols-outlined text-fintech-mint text-[32px]">movie</span>
                     <span className="text-xs font-bold text-cloud-white truncate max-w-[250px]">{selectedFile.name}</span>
                     <span className="text-[10px] text-cloud-white/40 font-mono">
                       Original: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined text-toka-flare text-[36px]">cloud_upload</span>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="material-symbols-outlined text-toka-flare text-[32px]">cloud_upload</span>
                     <span className="text-xs font-bold text-cloud-white">Click to browse video file</span>
                     <span className="text-[9px] text-cloud-white/40 font-mono">Supports MP4, WebM, MOV (Max 15MB)</span>
                   </div>
@@ -335,7 +335,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
               {/* Compression loader */}
               {isCompressing && (
-                <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-2">
+                <div className="bg-[#18181B] border border-white/10 p-3.5 rounded-[0.625rem] flex flex-col gap-2">
                   <div className="flex justify-between items-center text-[10px] font-bold">
                     <span className="text-toka-flare flex items-center gap-1.5">
                       <span className="w-3 h-3 border border-toka-flare border-t-transparent rounded-full animate-spin"></span>
@@ -351,16 +351,16 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
               {/* Compression feedback */}
               {compressionRatio && (
-                <div className="bg-fintech-mint/10 border border-fintech-mint/35 text-fintech-mint text-[10px] font-bold px-3 py-2 rounded-xl flex items-center gap-1.5">
+                <div className="bg-fintech-mint/10 border border-fintech-mint/35 text-fintech-mint text-[10px] font-bold px-3 py-2 rounded-[0.625rem] flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[14px]">bolt</span>
                   <span>{compressionRatio}</span>
                 </div>
               )}
 
               {/* Input Title */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-cloud-white/40 uppercase">Video Title & Description</label>
+                  <label className="text-[10px] font-bold text-cloud-white/50 uppercase">Video Title &amp; Description</label>
                   <span className="text-[9px] text-cloud-white/30 font-mono">Type @ to tag creators</span>
                 </div>
                 <MentionInput 
@@ -368,45 +368,43 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                   value={title}
                   onChange={(val) => setTitle(val)}
                   placeholder="Give your video a title or tag creators with @..." 
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                  className="w-full bg-[#18181B]/60 border border-white/10 rounded-[0.625rem] py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
                   popoverPlacement="bottom"
                 />
               </div>
 
-              {/* Input Tier Select */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-cloud-white/40 uppercase">Advertising Tier</label>
-                <div className="grid grid-cols-2 gap-3">
+              {/* Recessed Segmented Advertising Tier Select */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-cloud-white/50 uppercase">Advertising Tier</label>
+                <div className="grid grid-cols-2 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/10 text-xs font-medium gap-1">
                   <button
                     type="button"
                     onClick={() => setTier('fan_funded')}
-                    className={`py-3.5 rounded-xl border text-xs font-bold transition-all text-center flex flex-col gap-0.5 justify-center items-center ${
+                    className={`py-2 rounded-md font-bold text-xs transition-all cursor-pointer ${
                       tier === 'fan_funded'
-                        ? 'bg-toka-flare border-toka-flare text-cloud-white shadow-[0_0_12px_rgba(255,79,0,0.25)]'
-                        : 'bg-black/20 border-white/10 text-cloud-white/70 hover:text-cloud-white'
+                        ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                        : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <span>Fan Funded Only</span>
-                    <span className="text-[9px] font-normal opacity-60">Allows tipping, no brand rules</span>
+                    Fan Funded Only
                   </button>
                   <button
                     type="button"
                     onClick={() => setTier('brand_safe')}
-                    className={`py-3.5 rounded-xl border text-xs font-bold transition-all text-center flex flex-col gap-0.5 justify-center items-center ${
+                    className={`py-2 rounded-md font-bold text-xs transition-all cursor-pointer ${
                       tier === 'brand_safe'
-                        ? 'bg-toka-flare border-toka-flare text-cloud-white shadow-[0_0_12px_rgba(255,79,0,0.25)]'
-                        : 'bg-black/20 border-white/10 text-cloud-white/70 hover:text-cloud-white'
+                        ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                        : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <span>Brand Sponsorship</span>
-                    <span className="text-[9px] font-normal opacity-60">AI safety checked & brand approved</span>
+                    Brand Sponsorship
                   </button>
                 </div>
               </div>
 
               {/* Brand Sponsorship Tagging (Only for verified creators) */}
               {mongooseUser?.isBrandSafeVerified && (
-                <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-3">
+                <div className="bg-[#18181B] border border-white/10 p-3.5 rounded-[0.625rem] flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 cursor-pointer select-none">
                       <input 
@@ -417,18 +415,18 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                       />
                       Request Brand Sponsorship
                     </label>
-                    <span className="bg-fintech-mint/10 text-fintech-mint text-[9px] font-black px-2 py-0.5 rounded-full border border-fintech-mint/20">Verified Creator Only</span>
+                    <span className="bg-fintech-mint/10 text-fintech-mint text-[9px] font-bold px-2 py-0.5 rounded-full border border-fintech-mint/20">Verified Only</span>
                   </div>
 
                   {isSponsorshipRequested && (
-                    <div className="flex flex-col gap-3 mt-1.5 border-t border-white/5 pt-3 animate-scale-up">
+                    <div className="flex flex-col gap-2.5 mt-1 border-t border-white/5 pt-2.5 animate-scale-up">
                       <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Select Target Brand</label>
                         <select
                           required
                           value={selectedBrandId}
                           onChange={(e) => setSelectedBrandId(e.target.value)}
-                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                          className="bg-[#09090B] border border-white/10 rounded-[0.625rem] py-2 px-2.5 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
                         >
                           <option value="">-- Choose a Brand --</option>
                           {verifiedBrands.map(b => (
@@ -446,18 +444,18 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                           value={sponsorshipAmount}
                           onChange={(e) => setSponsorshipAmount(e.target.value)}
                           placeholder="e.g. 500" 
-                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors"
+                          className="bg-[#09090B] border border-white/10 rounded-[0.625rem] py-2 px-2.5 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors font-mono"
                         />
                       </div>
 
                       <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Pitch & Sponsorship Terms</label>
+                        <label className="text-[9px] font-bold text-cloud-white/40 uppercase">Pitch &amp; Sponsorship Terms</label>
                         <textarea
                           value={sponsorshipTerms}
                           onChange={(e) => setSponsorshipTerms(e.target.value)}
                           placeholder="Provide details about deliverables, integrations, or your pitch..." 
                           rows={2}
-                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors resize-none"
+                          className="bg-[#09090B] border border-white/10 rounded-[0.625rem] py-2 px-2.5 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors resize-none"
                         />
                       </div>
                     </div>
@@ -466,7 +464,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
               )}
 
               {/* Co-Authors & Collaborative Posting Section */}
-              <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-3">
+              <div className="bg-[#18181B] border border-white/10 p-3.5 rounded-[0.625rem] flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 cursor-pointer select-none">
                     <input 
@@ -486,14 +484,14 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                 </div>
 
                 {isCoAuthorEnabled && (
-                  <div className="flex flex-col gap-2.5 mt-1 border-t border-white/5 pt-3 animate-scale-up">
+                  <div className="flex flex-col gap-2.5 mt-1 border-t border-white/5 pt-2.5 animate-scale-up">
                     <p className="text-[10px] text-cloud-white/50 leading-relaxed">
-                      Invited co-authors will receive an invitation. Once accepted, the video will appear on both creators&apos; profile feeds.
+                      Invited co-authors will receive an invitation. Once accepted, the video appears on both creators&apos; feeds.
                     </p>
 
                     {selectedCoAuthor ? (
                       <div className="flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between bg-toka-flare/10 border border-toka-flare/30 rounded-xl p-2.5">
+                        <div className="flex items-center justify-between bg-toka-flare/10 border border-toka-flare/30 rounded-[0.625rem] p-2.5">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white">
                               {selectedCoAuthor.username.charAt(0).toUpperCase()}
@@ -508,22 +506,22 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                           <button
                             type="button"
                             onClick={() => setSelectedCoAuthor(null)}
-                            className="text-[10px] font-bold text-cloud-white/40 hover:text-red-400 px-2 py-1 transition-colors"
+                            className="text-[10px] font-bold text-cloud-white/40 hover:text-red-400 px-2 py-1 transition-colors cursor-pointer"
                           >
                             Remove
                           </button>
                         </div>
 
-                        {/* Revenue Split Ratio Selector */}
-                        <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                        {/* Recessed Segmented Revenue Split Ratio Selector */}
+                        <div className="bg-[#09090B] border border-white/10 rounded-[0.625rem] p-2.5 flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-cloud-white/70 uppercase tracking-wider">Revenue &amp; Tip Split</span>
+                            <span className="text-[10px] font-bold text-cloud-white/70 uppercase tracking-wider">Revenue Split</span>
                             <span className="text-xs font-mono font-black text-fintech-mint">
                               You: {100 - coAuthorSplitPercentage}% / @{selectedCoAuthor.username}: {coAuthorSplitPercentage}%
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-4 gap-1.5 mt-1">
+                          <div className="grid grid-cols-4 bg-[#18181B] p-1 rounded-[0.625rem] border border-white/5 text-xs font-medium gap-1 mt-1">
                             {[
                               { label: '50/50', pct: 50 },
                               { label: '60/40', pct: 40 },
@@ -534,10 +532,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                                 key={preset.pct}
                                 type="button"
                                 onClick={() => setCoAuthorSplitPercentage(preset.pct)}
-                                className={`py-1.5 rounded-lg text-[10px] font-bold font-mono transition-all ${
+                                className={`py-1.5 rounded-md text-[10px] font-bold font-mono transition-all cursor-pointer ${
                                   coAuthorSplitPercentage === preset.pct
-                                    ? 'bg-toka-flare text-cloud-white shadow-sm'
-                                    : 'bg-white/5 hover:bg-white/10 text-cloud-white/60'
+                                    ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                                    : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
                                 }`}
                               >
                                 {preset.label}
@@ -553,10 +551,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                           value={coAuthorQuery}
                           onChange={(e) => setCoAuthorQuery(e.target.value)}
                           placeholder="Search mutual followers by @username..."
-                          className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors placeholder-cloud-white/30"
+                          className="bg-[#09090B] border border-white/10 rounded-[0.625rem] py-2 px-3 text-xs font-medium text-cloud-white outline-none focus:border-toka-flare transition-colors placeholder-cloud-white/30"
                         />
 
-                        <div className="flex flex-col gap-1 max-h-36 overflow-y-auto no-scrollbar bg-black/30 rounded-xl border border-white/5 p-1">
+                        <div className="flex flex-col gap-1 max-h-36 overflow-y-auto no-scrollbar bg-[#09090B] rounded-[0.625rem] border border-white/5 p-1">
                           {isSearchingMutual ? (
                             <div className="py-3 text-center text-xs text-cloud-white/40 font-mono">
                               Searching mutual follows...
@@ -571,7 +569,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                                 key={user._id}
                                 type="button"
                                 onClick={() => setSelectedCoAuthor(user)}
-                                className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-left hover:bg-white/5 text-cloud-white/80 transition-colors"
+                                className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-left hover:bg-white/5 text-cloud-white/80 transition-colors cursor-pointer"
                               >
                                 <div className="flex items-center gap-2">
                                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-[9px] text-cloud-white">
@@ -595,7 +593,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
               {/* Upload progress indicator */}
               {isUploading && (
-                <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex flex-col gap-2">
+                <div className="bg-[#18181B] border border-white/10 p-3.5 rounded-[0.625rem] flex flex-col gap-2">
                   <div className="flex justify-between items-center text-[10px] font-bold">
                     <span className="text-fintech-mint flex items-center gap-1.5">
                       <span className="w-3 h-3 border border-fintech-mint border-t-transparent rounded-full animate-spin"></span>
@@ -613,10 +611,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
               <button
                 type="submit"
                 disabled={isUploading || isCompressing || !selectedFile || !title || (isSponsorshipRequested && (!selectedBrandId || !sponsorshipAmount))}
-                className="w-full bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-3.5 rounded-xl font-bold transition-all text-xs active:scale-95 shadow-[0_4px_15px_rgba(255,79,0,0.25)] flex justify-center items-center gap-2 mt-2"
+                className="w-full bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-3 rounded-[0.625rem] font-bold transition-all text-xs active:scale-[0.98] shadow-lg shadow-toka-flare/20 flex justify-center items-center gap-2 cursor-pointer mt-1"
               >
                 <span className="material-symbols-outlined text-[18px]">publish</span>
-                <span>Confirm & Upload Video</span>
+                <span>Confirm &amp; Upload Video</span>
               </button>
 
             </form>

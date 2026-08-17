@@ -1252,41 +1252,41 @@ function ProfileContent() {
         {/* Pro Architecture: Settings & Privacy Modal */}
         {isOwnProfile && targetUser && isSettingsOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in font-sans">
-            <div className="relative w-full max-w-lg max-h-[90vh] bg-[#18181B] border border-white/10 rounded-3xl p-6 shadow-2xl overflow-y-auto flex flex-col gap-6 animate-scale-up select-none">
+            <div className="relative w-full max-w-md max-h-[90vh] bg-[#09090B] border border-white/10 rounded-2xl p-5 shadow-2xl overflow-y-auto flex flex-col gap-4 animate-scale-up select-none">
               
               {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-toka-flare/15 flex items-center justify-center text-toka-flare border border-toka-flare/30 shadow-inner">
-                    <span className="material-symbols-outlined text-[22px]">settings</span>
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-[0.625rem] bg-toka-flare/15 flex items-center justify-center text-toka-flare border border-toka-flare/30 shadow-inner">
+                    <span className="material-symbols-outlined text-[18px]">settings</span>
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-cloud-white tracking-tight">Settings &amp; Privacy</h3>
-                    <p className="text-xs text-cloud-white/50">Manage permissions, security &amp; creator status</p>
+                    <h3 className="text-sm font-bold text-cloud-white tracking-tight">Settings &amp; Privacy</h3>
+                    <p className="text-[11px] text-cloud-white/50">Manage permissions, security &amp; creator status</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsSettingsOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-cloud-white/60 hover:text-cloud-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 text-cloud-white/60 hover:text-cloud-white flex items-center justify-center transition-colors cursor-pointer"
                   title="Close Settings"
                 >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
+                  <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
               </div>
 
               {/* SECTION 1: PRIVACY */}
-              <div className="flex flex-col gap-2.5">
-                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Privacy</h4>
+              <div className="flex flex-col gap-2">
+                <h4 className="text-[10px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-0.5">Privacy</h4>
                 
                 {/* Unified Privacy Container */}
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-4">
+                <div className="bg-[#18181B] border border-white/10 rounded-[0.625rem] p-3.5 flex flex-col gap-3.5">
                   
                   {/* Row 1: Tagging & Mentions */}
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <h5 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions</h5>
-                        <p className="text-[11px] text-cloud-white/50">Who can tag you in videos</p>
+                        <p className="text-[10px] text-cloud-white/50">Who can tag you in videos</p>
                       </div>
                       {isUpdatingSettings && (
                         <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
@@ -1294,7 +1294,7 @@ function ProfileContent() {
                     </div>
                     
                     {/* Single Recessed Segmented Slider Track */}
-                    <div className="grid grid-cols-3 bg-black/60 p-1 rounded-xl border border-white/5 gap-1 select-none">
+                    <div className="grid grid-cols-3 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/5 gap-1 select-none">
                       {[
                         { id: 'allow_all', label: 'Allow All' },
                         { id: 'require_approval', label: 'Review' },
@@ -1306,10 +1306,10 @@ function ProfileContent() {
                             key={opt.id}
                             type="button"
                             onClick={() => handleUpdateTaggingPermission(opt.id)}
-                            className={`py-1.5 px-3 rounded-lg text-center text-xs font-bold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded-md text-center text-xs font-semibold transition-all cursor-pointer ${
                               isActive
-                                ? 'bg-white/15 text-white shadow-md font-black'
-                                : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.04]'
+                                ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                                : 'text-cloud-white/60 hover:text-white hover:bg-white/[0.04]'
                             }`}
                           >
                             {opt.label}
@@ -1323,11 +1323,11 @@ function ProfileContent() {
                   <div className="border-t border-white/5" />
 
                   {/* Row 2: Followers List */}
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <h5 className="text-xs font-bold text-cloud-white">Followers List</h5>
-                        <p className="text-[11px] text-cloud-white/50">Who can see your following list</p>
+                        <p className="text-[10px] text-cloud-white/50">Who can see your following list</p>
                       </div>
                       {isUpdatingSettings && (
                         <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
@@ -1335,7 +1335,7 @@ function ProfileContent() {
                     </div>
 
                     {/* Single Recessed Segmented Slider Track */}
-                    <div className="grid grid-cols-3 bg-black/60 p-1 rounded-xl border border-white/5 gap-1 select-none">
+                    <div className="grid grid-cols-3 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/5 gap-1 select-none">
                       {[
                         { id: 'everyone', label: 'Everyone' },
                         { id: 'followers_only', label: 'Followers' },
@@ -1347,10 +1347,10 @@ function ProfileContent() {
                             key={opt.id}
                             type="button"
                             onClick={() => handleUpdateFollowListPrivacy(opt.id)}
-                            className={`py-1.5 px-3 rounded-lg text-center text-xs font-bold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded-md text-center text-xs font-semibold transition-all cursor-pointer ${
                               isActive
-                                ? 'bg-white/15 text-white shadow-md font-black'
-                                : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.04]'
+                                ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                                : 'text-cloud-white/60 hover:text-white hover:bg-white/[0.04]'
                             }`}
                           >
                             {opt.label}
@@ -1364,17 +1364,17 @@ function ProfileContent() {
               </div>
 
               {/* SECTION 2: CREATOR HUB */}
-              <div className="flex flex-col gap-2.5">
-                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Creator Hub</h4>
+              <div className="flex flex-col gap-2">
+                <h4 className="text-[10px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-0.5">Creator Hub</h4>
                 
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint shrink-0">
-                      <IconVerifiedCheck className="w-5 h-5" />
+                <div className="bg-[#18181B] border border-white/10 rounded-[0.625rem] p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-[0.625rem] bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint shrink-0">
+                      <IconVerifiedCheck className="w-4 h-4" />
                     </div>
                     <div>
                       <h5 className="text-xs font-bold text-cloud-white">Brand Safe Verified</h5>
-                      <p className="text-[11px] text-cloud-white/50">Eligible for direct brand sponsorships</p>
+                      <p className="text-[10px] text-cloud-white/50">Eligible for direct brand sponsorships</p>
                     </div>
                   </div>
 
@@ -1382,20 +1382,20 @@ function ProfileContent() {
                     <Link
                       href="/sponsorships"
                       onClick={() => setIsSettingsOpen(false)}
-                      className="px-3.5 py-1.5 bg-fintech-mint/15 hover:bg-fintech-mint/25 border border-fintech-mint/30 text-fintech-mint text-xs font-bold rounded-xl transition-all flex items-center gap-1 shrink-0"
+                      className="px-3 py-1 bg-fintech-mint/15 hover:bg-fintech-mint/25 border border-fintech-mint/30 text-fintech-mint text-xs font-bold rounded-[0.625rem] transition-all flex items-center gap-1 shrink-0"
                     >
                       <span>Manage</span>
                       <span>→</span>
                     </Link>
                   ) : targetUser.verificationRequestStatus === 'pending' ? (
-                    <span className="text-[11px] font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2.5 py-1 rounded-xl">
+                    <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded-[0.625rem]">
                       Pending
                     </span>
                   ) : (
                     <button
                       disabled={verificationLoading}
                       onClick={handleRequestVerification}
-                      className="px-3.5 py-1.5 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
+                      className="px-3 py-1 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white text-xs font-bold rounded-[0.625rem] transition-all disabled:opacity-50 shrink-0 cursor-pointer"
                     >
                       {verificationLoading ? '...' : 'Apply'}
                     </button>
@@ -1404,10 +1404,10 @@ function ProfileContent() {
               </div>
 
               {/* SECTION 3: ACCOUNT */}
-              <div className="flex flex-col gap-2.5">
-                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Account</h4>
+              <div className="flex flex-col gap-2">
+                <h4 className="text-[10px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-0.5">Account</h4>
                 
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
+                <div className="bg-[#18181B] border border-white/10 rounded-[0.625rem] p-3 flex items-center justify-between gap-3">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-cloud-white">{firebaseUser?.email || mongooseUser?.email || 'Logged in'}</span>
                     <span className="text-[10px] text-cloud-white/40">Active Session</span>
@@ -1418,9 +1418,9 @@ function ProfileContent() {
                       setIsSettingsOpen(false);
                       logout();
                     }}
-                    className="py-1.5 px-3.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    className="py-1 px-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-[0.625rem] transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[14px]">logout</span>
+                    <span className="material-symbols-outlined text-[13px]">logout</span>
                     <span>Sign Out</span>
                   </button>
                 </div>

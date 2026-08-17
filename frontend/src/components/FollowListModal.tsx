@@ -154,49 +154,55 @@ export default function FollowListModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in font-sans select-none">
-      <div className="relative w-full max-w-[420px] bg-shaded-canopy border border-white/10 rounded-3xl p-5 shadow-2xl overflow-hidden flex flex-col gap-4 max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in font-sans select-none">
+      <div className="relative w-full max-w-[420px] bg-[#09090B] border border-white/10 rounded-2xl p-5 shadow-2xl overflow-hidden flex flex-col gap-3.5 max-h-[85vh]">
 
         {/* Header with Title and Close */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-toka-flare text-[22px]">group</span>
-            <h2 className="text-base font-black text-cloud-white tracking-tight">@{targetUsername}</h2>
+            <span className="material-symbols-outlined text-toka-flare text-[20px]">group</span>
+            <h2 className="text-sm font-bold text-cloud-white tracking-tight">@{targetUsername}</h2>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/70 hover:text-cloud-white flex items-center justify-center transition-all cursor-pointer"
+            className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/70 hover:text-cloud-white flex items-center justify-center transition-all cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-2 bg-black/40 p-1 rounded-2xl border border-white/5">
+        {/* Recessed Segmented Tab Switcher */}
+        <div className="grid grid-cols-2 bg-[#09090B] p-1 rounded-[0.625rem] border border-white/10 text-xs font-medium gap-1">
           <button
+            type="button"
             onClick={() => { setActiveTab('followers'); setSearchQuery(''); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === 'followers'
-                ? 'bg-toka-flare text-cloud-white shadow-md'
-                : 'text-cloud-white/60 hover:text-cloud-white'
-              }`}
+            className={`py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'followers'
+                ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
+            }`}
           >
             <span>Followers</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'followers' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
-              }`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              activeTab === 'followers' ? 'bg-black/20 text-white' : 'bg-white/10 text-cloud-white/60'
+            }`}>
               {followersCount}
             </span>
           </button>
 
           <button
+            type="button"
             onClick={() => { setActiveTab('following'); setSearchQuery(''); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === 'following'
-                ? 'bg-toka-flare text-cloud-white shadow-md'
-                : 'text-cloud-white/60 hover:text-cloud-white'
-              }`}
+            className={`py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'following'
+                ? 'bg-toka-flare text-white shadow-sm font-semibold'
+                : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
+            }`}
           >
             <span>Following</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'following' ? 'bg-black/20 text-cloud-white' : 'bg-white/10 text-cloud-white/60'
-              }`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              activeTab === 'following' ? 'bg-black/20 text-white' : 'bg-white/10 text-cloud-white/60'
+            }`}>
               {followingCount}
             </span>
           </button>
@@ -205,7 +211,7 @@ export default function FollowListModal({
         {/* Search Bar */}
         {!isPrivate && (
           <div className="relative flex items-center">
-            <span className="material-symbols-outlined absolute left-3 text-cloud-white/40 text-[18px] pointer-events-none">
+            <span className="material-symbols-outlined absolute left-3 text-cloud-white/40 text-[16px] pointer-events-none">
               search
             </span>
             <input
@@ -213,14 +219,14 @@ export default function FollowListModal({
               placeholder={`Search ${activeTab}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 bg-black/30 border border-white/10 rounded-xl text-xs text-cloud-white placeholder-cloud-white/40 focus:outline-none focus:border-toka-flare transition-all"
+              className="w-full pl-8 pr-8 py-2 bg-[#18181B]/60 border border-white/10 rounded-[0.625rem] text-xs text-cloud-white placeholder-cloud-white/40 focus:outline-none focus:border-toka-flare transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 text-cloud-white/40 hover:text-cloud-white cursor-pointer flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                <span className="material-symbols-outlined text-[15px]">cancel</span>
               </button>
             )}
           </div>
@@ -230,22 +236,22 @@ export default function FollowListModal({
         <div className="flex-1 overflow-y-auto min-h-[220px] max-h-[360px] flex flex-col gap-2 no-scrollbar pr-0.5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-cloud-white/50">
-              <span className="w-6 h-6 border-2 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+              <span className="w-5 h-5 border-2 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
               <p className="text-[11px] font-medium">Loading {activeTab}...</p>
             </div>
           ) : isPrivate ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-4">
-              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/40">
-                <span className="material-symbols-outlined text-[24px]">lock</span>
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-2.5 bg-[#18181B] border border-white/10 rounded-[0.625rem] p-4">
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/40">
+                <span className="material-symbols-outlined text-[20px]">lock</span>
               </div>
               <h4 className="text-xs font-bold text-cloud-white">Private List</h4>
-              <p className="text-[11px] text-cloud-white/50 max-w-xs leading-relaxed">
+              <p className="text-[10px] text-cloud-white/50 max-w-xs leading-relaxed">
                 {privateMsg || `@${targetUsername} has set their ${activeTab} list to private.`}
               </p>
             </div>
           ) : users.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center gap-2 bg-black/10 border border-white/5 rounded-2xl">
-              <span className="material-symbols-outlined text-cloud-white/20 text-[36px]">
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-2 bg-[#18181B] border border-white/10 rounded-[0.625rem]">
+              <span className="material-symbols-outlined text-cloud-white/20 text-[32px]">
                 {searchQuery ? 'person_search' : 'group_off'}
               </span>
               <p className="text-xs font-bold text-cloud-white/60">
@@ -261,16 +267,16 @@ export default function FollowListModal({
               return (
                 <div
                   key={user._id}
-                  className="flex items-center justify-between p-2.5 bg-black/20 hover:bg-black/35 border border-white/5 hover:border-white/10 rounded-2xl transition-all"
+                  className="flex items-center justify-between p-2.5 bg-[#18181B] hover:bg-[#18181B]/80 border border-white/10 rounded-[0.625rem] transition-all"
                 >
                   <Link
                     href={`/profile?username=${user.username}`}
                     onClick={onClose}
-                    className="flex items-center gap-3 flex-1 min-w-0 group cursor-pointer"
+                    className="flex items-center gap-2.5 flex-1 min-w-0 group cursor-pointer"
                   >
                     {/* User Avatar */}
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-sm text-cloud-white overflow-hidden border border-white/10 shadow-sm">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center font-bold text-xs text-cloud-white overflow-hidden border border-white/10 shadow-sm">
                         {user.avatarUrl ? (
                           <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
                         ) : (
@@ -304,10 +310,11 @@ export default function FollowListModal({
                     <button
                       disabled={isLoadingAction}
                       onClick={() => handleFollowToggle(user._id, user.username)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 ${isFollowingThisUser
+                      className={`px-3 py-1.5 rounded-[0.625rem] text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 ${
+                        isFollowingThisUser
                           ? 'bg-white/10 hover:bg-red-500/20 text-cloud-white hover:text-red-400 border border-white/15'
                           : 'bg-toka-flare hover:bg-toka-flare/90 text-cloud-white shadow-sm'
-                        }`}
+                      }`}
                     >
                       {isLoadingAction ? (
                         <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
