@@ -16,6 +16,7 @@ import MentionText from './MentionText';
 import StatusTray from './status/StatusTray';
 import StatusViewerModal from './status/StatusViewerModal';
 import StatusCreatorModal from './status/StatusCreatorModal';
+import { useStatusStore } from '@/store/useStatusStore';
 import LiveDiscoveryPage from './live/LiveDiscoveryPage';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -144,6 +145,9 @@ export default function VideoFeed() {
 
   const { videos, currentIndex, setCurrentIndex, isLoading, feedType, setFeedType, setCreatorFilter, isMuted, toggleMute, notifications, markNotificationsAsRead, fetchNotifications } = useFeedStore();
   const { mongooseUser, isAuthenticated, logout, firebaseUser } = useAuth();
+  const { stories } = useStatusStore();
+  const [isStatusTrayOpen, setIsStatusTrayOpen] = useState(false);
+  const hasActiveStories = stories.length > 0;
   const { showAlert } = useModalStore();
   const [activeTipVideoId, setActiveTipVideoId] = useState<string | null>(null);
   const [activeCommentsVideoId, setActiveCommentsVideoId] = useState<string | null>(null);
@@ -318,6 +322,10 @@ export default function VideoFeed() {
     const index = Math.round(container.scrollTop / container.clientHeight);
     if (index !== currentIndex && index >= 0 && index < videos.length) {
       setCurrentIndex(index);
+      // Auto-collapse story drawer when scrolling through feed
+      if (isStatusTrayOpen) {
+        setIsStatusTrayOpen(false);
+      }
     }
   };
 
@@ -654,17 +662,32 @@ export default function VideoFeed() {
             {!creatorParam && (
               <div className="pointer-events-auto flex gap-6 items-center select-none">
                 <button
-                  onClick={() => requireAuth(() => setFeedType('following'))}
-                  className={`text-sm transition-all relative pb-1 ${feedType === 'following' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  onClick={() => {
+                    requireAuth(() => {
+                      if (feedType === 'following') {
+                        setIsStatusTrayOpen(prev => !prev);
+                      } else {
+                        setFeedType('following');
+                        setIsStatusTrayOpen(false);
+                      }
+                    });
+                  }}
+                  className={`text-sm transition-all relative pb-1 flex items-center gap-1.5 ${feedType === 'following' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
-                  Following
+                  <span>Following</span>
+                  {hasActiveStories && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-toka-flare shadow-[0_0_6px_rgba(255,79,0,0.9)] animate-pulse" />
+                  )}
                   {feedType === 'following' && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-toka-flare rounded-full" />
                   )}
                 </button>
                 <button
-                  onClick={() => setFeedType('foryou')}
+                  onClick={() => {
+                    setFeedType('foryou');
+                    setIsStatusTrayOpen(false);
+                  }}
                   className={`text-sm transition-all relative pb-1 ${feedType === 'foryou' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
@@ -757,13 +780,35 @@ export default function VideoFeed() {
             </div>
           </header>
 
-          {/* Top Status Updates Carousel - Only shown when in 'following' feed tab */}
-          {feedType === 'following' && (
-            <div className={`absolute top-16 left-0 right-0 z-35 pointer-events-auto transition-all duration-300 ${
-              isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-            }`}>
+          {/* Auto-Collapsing Pull-to-Reveal Dedicated Stories Drawer (Only on Following Feed when opened) */}
+          {feedType === 'following' && isStatusTrayOpen && (
+            <div className="absolute top-16 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-2xl border-b border-white/10 p-3 shadow-2xl animate-fade-in pointer-events-auto select-none">
+              <div className="flex items-center justify-between px-2 pb-2 mb-1 border-b border-white/5">
+                <span className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 font-mono">
+                  <span className="material-symbols-outlined text-[15px] text-toka-flare">auto_awesome</span>
+                  24H CREATOR STORIES
+                </span>
+                <button
+                  onClick={() => setIsStatusTrayOpen(false)}
+                  className="text-[10px] font-bold text-cloud-white/50 hover:text-cloud-white px-2 py-0.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
               <StatusTray />
             </div>
+          )}
+
+          {/* Subtle Pull/Reveal Indicator for Stories on Following Feed */}
+          {feedType === 'following' && currentIndex === 0 && !isStatusTrayOpen && hasActiveStories && !isCleanMode && (
+            <button
+              onClick={() => setIsStatusTrayOpen(true)}
+              className="absolute top-18 left-1/2 -translate-x-1/2 z-30 pointer-events-auto px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/15 text-[10px] font-bold text-cloud-white/90 flex items-center gap-1.5 shadow-lg active:scale-95 transition-all animate-fade-in cursor-pointer"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-toka-flare animate-pulse" />
+              <span>Stories</span>
+              <span className="material-symbols-outlined text-[14px] text-cloud-white/60">expand_more</span>
+            </button>
           )}
 
           {/* Content: Live Streams Discovery or Videos Snapping Container */}
