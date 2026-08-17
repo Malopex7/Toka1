@@ -628,10 +628,11 @@ export default function VideoFeed() {
         {/* Mobile Viewport Wrapper */}
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
 
-          {/* Top Translucent Navigation Bar Overlay */}
-          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-6 h-16 pointer-events-none transition-all duration-300 ease-out ${
+          {/* Top Translucent Navigation Bar Overlay (Clean 3-Point Header) */}
+          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-4 h-16 pointer-events-none transition-all duration-300 ease-out ${
             isCleanMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
           }`}>
+            {/* Left Point: Search Icon */}
             {creatorParam ? (
               <Link
                 href={`/profile?username=${creatorParam}`}
@@ -641,148 +642,130 @@ export default function VideoFeed() {
                 <span>@{creatorParam}&apos;s Videos</span>
               </Link>
             ) : (
-              <Link href="/discover" className="pointer-events-auto flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-cloud-white">search</span>
+              <Link 
+                href="/discover" 
+                className="pointer-events-auto w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/15 flex items-center justify-center text-cloud-white transition-all shadow-md active:scale-95"
+                title="Search"
+              >
+                <span className="material-symbols-outlined text-[20px]">search</span>
               </Link>
             )}
 
+            {/* Center Point: Following | For You Toggle */}
             {!creatorParam && (
-              <div className="pointer-events-auto flex gap-5 items-center">
+              <div className="pointer-events-auto flex gap-6 items-center select-none">
                 <button
                   onClick={() => requireAuth(() => setFeedType('following'))}
-                  className={`text-sm transition-colors ${feedType === 'following' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  className={`text-sm transition-all relative pb-1 ${feedType === 'following' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
                   Following
+                  {feedType === 'following' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-toka-flare rounded-full" />
+                  )}
                 </button>
                 <button
                   onClick={() => setFeedType('foryou')}
-                  className={`text-sm transition-colors ${feedType === 'foryou' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  className={`text-sm transition-all relative pb-1 ${feedType === 'foryou' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
                   For You
-                </button>
-                <button
-                  onClick={() => setFeedType('live')}
-                  className={`text-sm transition-colors flex items-center gap-1.5 ${feedType === 'live' ? 'text-cloud-white font-bold border-b-2 border-toka-flare pb-1' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
-                    }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  Live
+                  {feedType === 'foryou' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-toka-flare rounded-full" />
+                  )}
                 </button>
               </div>
             )}
-            <div className="pointer-events-auto flex items-center gap-3 select-none relative">
+
+            {/* Right Point: Notifications Bell */}
+            <div className="pointer-events-auto flex items-center gap-2 select-none relative">
               {isAuthenticated ? (
-                <>
-                  <div className="relative" ref={notificationsRef}>
-                    <button
-                      onClick={() => {
-                        setIsNotificationsOpen(prev => !prev);
-                      }}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-cloud-white"
-                      title="Notifications"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">notifications</span>
-                    </button>
-
-                    {/* Unread dot indicator */}
-                    {notifications.some(n => !n.read) && !isNotificationsOpen && (
-                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-toka-flare rounded-full border border-midnight-boma animate-pulse"></span>
-                    )}
-
-                    {/* Notifications Dropdown Panel */}
-                    {isNotificationsOpen && (
-                      <div className="fixed md:absolute top-16 md:top-10 left-4 right-4 md:left-auto md:right-0 w-auto md:w-80 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-xs font-bold text-cloud-white">Notifications</span>
-                          <button
-                            onClick={() => setIsNotificationsOpen(false)}
-                            className="text-[10px] font-bold text-cloud-white/40 hover:text-cloud-white transition-colors"
-                          >
-                            Close
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar max-h-56">
-                          {notifications.length === 0 ? (
-                            <div className="text-center py-6">
-                              <span className="material-symbols-outlined text-cloud-white/10 text-3xl">notifications_off</span>
-                              <p className="text-[10px] text-cloud-white/40 mt-1">No new notifications</p>
-                            </div>
-                          ) : (
-                            notifications.map((notif) => (
-                              <button
-                                key={notif.id}
-                                onClick={() => handleNotificationClick(notif)}
-                                className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${!notif.read
-                                    ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
-                                    : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
-                                  }`}
-                              >
-                                <div className="flex items-center justify-between gap-2 w-full">
-                                  <span className={`text-[10px] font-bold transition-colors ${!notif.read ? 'text-cloud-white group-hover:text-toka-flare' : 'text-cloud-white/60 group-hover:text-cloud-white'
-                                    }`}>
-                                    {notif.title}
-                                  </span>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <span className="text-[8px] text-cloud-white/30 font-mono">{formatNotificationTime(notif.createdAt)}</span>
-                                    {!notif.read && (
-                                      <span className="w-1.5 h-1.5 bg-toka-flare rounded-full shadow-[0_0_6px_rgba(255,79,0,0.8)] animate-pulse"></span>
-                                    )}
-                                  </div>
-                                </div>
-                                <p className={`text-[10px] leading-normal transition-colors ${!notif.read ? 'text-cloud-white/90' : 'text-cloud-white/50'
-                                  }`}>
-                                  {notif.body}
-                                </p>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <Link
-                    href="/profile"
-                    className="cursor-pointer hover:opacity-90 transition-opacity select-none relative block"
-                    title={`@${mongooseUser?.username} Profile`}
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    onClick={() => {
+                      setIsNotificationsOpen(prev => !prev);
+                    }}
+                    className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/15 active:scale-95 transition-all flex items-center justify-center text-cloud-white shadow-md"
+                    title="Notifications"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-toka-flare to-orange-700 flex items-center justify-center shadow-md text-lg font-black text-cloud-white overflow-hidden border border-white/10">
-                      {mongooseUser?.avatarUrl ? (
-                        <img src={mongooseUser.avatarUrl} alt={mongooseUser.username} className="w-full h-full object-cover" />
-                      ) : (
-                        mongooseUser?.username ? mongooseUser.username.charAt(0).toUpperCase() : ''
-                      )}
-                    </div>
-                    {mongooseUser?.isBrandSafeVerified && (
-                      <div className="absolute -bottom-1 -right-1 bg-midnight-boma rounded-full p-[2px] flex items-center justify-center z-20 shadow-md">
-                        <span 
-                          className="material-symbols-outlined text-fintech-mint block select-none" 
-                          style={{ fontSize: '13px', width: '13px', height: '13px', lineHeight: '1' }}
+                    <span className="material-symbols-outlined text-[20px]">notifications</span>
+                  </button>
+
+                  {/* Unread dot indicator */}
+                  {notifications.some(n => !n.read) && !isNotificationsOpen && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-toka-flare rounded-full border border-midnight-boma animate-pulse"></span>
+                  )}
+
+                  {/* Notifications Dropdown Panel */}
+                  {isNotificationsOpen && (
+                    <div className="fixed md:absolute top-16 md:top-10 left-4 right-4 md:left-auto md:right-0 w-auto md:w-80 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
+                      <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span className="text-xs font-bold text-cloud-white">Notifications</span>
+                        <button
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-[10px] font-bold text-cloud-white/40 hover:text-cloud-white transition-colors"
                         >
-                          verified
-                        </span>
+                          Close
+                        </button>
                       </div>
-                    )}
-                  </Link>
-                </>
+                      <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar max-h-56">
+                        {notifications.length === 0 ? (
+                          <div className="text-center py-6">
+                            <span className="material-symbols-outlined text-cloud-white/10 text-3xl">notifications_off</span>
+                            <p className="text-[10px] text-cloud-white/40 mt-1">No new notifications</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <button
+                              key={notif.id}
+                              onClick={() => handleNotificationClick(notif)}
+                              className={`flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0 text-left p-1.5 rounded-lg transition-all w-full cursor-pointer group ${!notif.read
+                                  ? 'bg-toka-flare/8 border-l-[3px] border-toka-flare pl-2 shadow-sm'
+                                  : 'hover:bg-white/5 border-l-[3px] border-transparent pl-2'
+                                }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 w-full">
+                                <span className={`text-[10px] font-bold transition-colors ${!notif.read ? 'text-cloud-white group-hover:text-toka-flare' : 'text-cloud-white/60 group-hover:text-cloud-white'
+                                  }`}>
+                                  {notif.title}
+                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[8px] text-cloud-white/30 font-mono">{formatNotificationTime(notif.createdAt)}</span>
+                                  {!notif.read && (
+                                    <span className="w-1.5 h-1.5 bg-toka-flare rounded-full shadow-[0_0_6px_rgba(255,79,0,0.8)] animate-pulse"></span>
+                                  )}
+                                </div>
+                              </div>
+                              <p className={`text-[10px] leading-normal transition-colors ${!notif.read ? 'text-cloud-white/90' : 'text-cloud-white/50'
+                                }`}>
+                                {notif.body}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="px-3 py-1 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-full text-xs font-bold active:scale-95 transition-all shadow-md"
+                  className="px-3.5 py-1.5 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-full text-xs font-bold active:scale-95 transition-all shadow-md"
                 >
-                  Login
+                  Sign In
                 </button>
               )}
             </div>
           </header>
 
-          {/* Top Status Updates Carousel (Followers-Only Ephemeral Tray) */}
-          <div className={`absolute top-16 left-0 right-0 z-35 pointer-events-auto transition-all duration-300 ${
-            isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-          }`}>
-            <StatusTray />
-          </div>
+          {/* Top Status Updates Carousel - Only shown when in 'following' feed tab */}
+          {feedType === 'following' && (
+            <div className={`absolute top-16 left-0 right-0 z-35 pointer-events-auto transition-all duration-300 ${
+              isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+            }`}>
+              <StatusTray />
+            </div>
+          )}
 
           {/* Content: Live Streams Discovery or Videos Snapping Container */}
           {feedType === 'live' ? (
@@ -923,15 +906,18 @@ export default function VideoFeed() {
                       </span>
                     </button>
 
-                    {/* Tip Action (Prominent Toka Flare) */}
+                    {/* Tip Action (Sleek Fintech Mint Native Stack) */}
                     <button
                       onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
                       className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
+                      title="Send a Tip"
                     >
-                      <div className="sidebar-tip-btn w-12 h-12 rounded-full bg-toka-flare flex items-center justify-center shadow-[0_0_15px_rgba(255,79,0,0.5)] hover:scale-105 transition-all">
-                        <TokaTipIcon size={26} className="text-cloud-white" />
+                      <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-fintech-mint/30 hover:border-fintech-mint flex items-center justify-center transition-all group-hover:scale-105 group-hover:bg-fintech-mint/15 shadow-md">
+                        <TokaTipIcon size={22} className="text-fintech-mint" />
                       </div>
-                      <span className="font-mono text-[10px] font-bold text-toka-flare drop-shadow-md uppercase tracking-wider">Tip ZAR</span>
+                      <span className="font-mono text-[10px] font-bold text-fintech-mint drop-shadow-md">
+                        Tip
+                      </span>
                     </button>
 
                     {/* Share Action */}
@@ -1043,44 +1029,39 @@ export default function VideoFeed() {
                     </div>
                   </aside>
 
+                  {/* Soft Bottom Gradient Scrim behind captions */}
+                  <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#09090B]/95 via-[#09090B]/40 to-transparent pointer-events-none z-10" />
+
+                  {/* Top-Right Synced Mute / Unmute Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMute();
+                    }}
+                    className="absolute top-16 right-4 z-30 pointer-events-auto w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-white transition-all shadow-md active:scale-95"
+                    title={isMuted ? "Unmute" : "Mute"}
+                  >
+                    {isMuted ? (
+                      <VolumeX className="w-4 h-4 text-white" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-white animate-pulse" />
+                    )}
+                  </button>
+
                   {/* Bottom Left Info Overlay */}
-                  <div className={`absolute bottom-24 left-4 z-30 flex flex-col gap-2 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
+                  <div className={`absolute bottom-6 left-4 z-30 flex flex-col gap-1.5 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
                     isCleanMode ? 'translate-y-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
                   }`}>
 
-                    {/* Synced Mute / Unmute Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleMute();
-                      }}
-                      className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 text-white hover:bg-black/60 hover:scale-105 active:scale-95 transition-all mb-1 w-fit pointer-events-auto shadow-lg"
-                      title={isMuted ? "Unmute" : "Mute"}
-                    >
-                      {isMuted ? (
-                        <VolumeX className="w-4.5 h-4.5 text-white" />
-                      ) : (
-                        <Volume2 className="w-4.5 h-4.5 text-white animate-pulse" />
-                      )}
-                    </button>
-
-                    {/* Repost Badge with Swipe-to-Dismiss */}
+                    {/* Repost Micro-Label */}
                     {video.isReposted && !dismissedRepostBadges.has(video.id) && (
-                      <SwipeableRepostBadge
-                        videoId={video.id}
-                        onDismiss={handleDismissRepostBadge}
-                      />
-                    )}
-
-                    {/* Brand Safe Badge */}
-                    {video.vettingStatus === 'approved' && (
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-fintech-mint/10 border border-fintech-mint/30 w-fit backdrop-blur-sm shadow-sm">
-                        <span className="material-symbols-outlined text-fintech-mint text-[14px]">verified_user</span>
-                        <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-fintech-mint">Brand Safe</span>
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 w-fit backdrop-blur-md">
+                        <span className="material-symbols-outlined text-amber-400 text-[12px]">repeat</span>
+                        <span className="font-mono text-[9px] font-bold uppercase text-amber-300">Reposted</span>
                       </div>
                     )}
 
-                    {/* Username & Verification (Supports Dual Authorship / Co-Authors) */}
+                    {/* Creator Handle + Integrated Brand Safe Shield */}
                     {(() => {
                       const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted')?.user;
                       if (acceptedCoAuthor) {
@@ -1088,23 +1069,30 @@ export default function VideoFeed() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Link
                               href={`/profile?username=${video.creatorName.replace('@', '')}`}
-                              className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                              className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
                             >
                               {video.creatorName}
+                              {video.vettingStatus === 'approved' && (
+                                <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
+                                  verified_user
+                                </span>
+                              )}
                               {video.isVerified && (
-                                <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
+                                <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
                               )}
                             </Link>
-                            <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1.5 py-0.5 rounded border border-white/10">
+                            <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1 py-0.5 rounded border border-white/10">
                               &amp;
                             </span>
                             <Link
                               href={`/profile?username=${acceptedCoAuthor.username}`}
-                              className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
+                              className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
                             >
                               @{acceptedCoAuthor.username}
                               {acceptedCoAuthor.isBrandSafeVerified && (
-                                <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
+                                <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
+                                  verified_user
+                                </span>
                               )}
                             </Link>
                           </div>
@@ -1115,20 +1103,25 @@ export default function VideoFeed() {
                         <div className="flex items-center gap-1.5">
                           <Link
                             href={`/profile?username=${video.creatorName.replace('@', '')}`}
-                            className="font-bold text-base text-cloud-white drop-shadow-md hover:underline cursor-pointer"
+                            className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
                           >
                             {video.creatorName}
+                            {video.vettingStatus === 'approved' && (
+                              <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
+                                verified_user
+                              </span>
+                            )}
+                            {video.isVerified && (
+                              <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
+                            )}
                           </Link>
-                          {video.isVerified && (
-                            <span className="material-symbols-outlined text-toka-flare text-[18px]">verified</span>
-                          )}
                         </div>
                       );
                     })()}
 
                     {/* Description Caption */}
-                    <p className="text-sm text-cloud-white/90 drop-shadow-md leading-snug line-clamp-2">
-                      <MentionText text={video.description} />
+                    <p className="text-xs text-cloud-white/90 drop-shadow-md leading-relaxed line-clamp-2">
+                      <MentionText text={video.description || video.title} />
                     </p>
 
                     {/* Audio track info with marquee effect */}
