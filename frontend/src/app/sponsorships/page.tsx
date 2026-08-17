@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import PageHeader from '@/components/PageHeader';
 
 interface UserInfo {
   _id: string;
@@ -37,47 +37,8 @@ interface SponsorshipRequest {
 type CreatorTab = 'sent' | 'directory';
 type BrandTab = 'inbox' | 'history';
 
-// Sleek Nano-style Minimalist Icons
-function IconHandshake({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2-2" />
-      <path d="m18 10 3.3-3.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0L14 6" />
-      <path d="m2 14 6 6a2 2 0 0 0 2.8 0L15 16" />
-      <path d="m7 9 5-5a2 2 0 0 1 2.8 0l1.4 1.4" />
-    </svg>
-  );
-}
-
-function IconShieldCheck({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-
-function IconWallet({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="20" height="14" x="2" y="5" rx="3" />
-      <line x1="2" x2="22" y1="10" y2="10" />
-      <circle cx="17" cy="14" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function IconLockEscrow({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
 export default function SponsorshipsPage() {
+  const router = useRouter();
   const { isAuthenticated, mongooseUser, firebaseUser, isLoading, refreshProfile } = useAuth();
   
   const [nowTime] = useState(() => Date.now());
@@ -185,55 +146,47 @@ export default function SponsorshipsPage() {
     }
   };
 
-  const getStatusBadge = (status: string, escrow: string) => {
+  const getStatusBadge = (status: string, escrow: string, releaseAt: string | null) => {
     if (status === 'approved' && escrow === 'held') {
+      const days = releaseAt ? Math.max(1, Math.ceil((new Date(releaseAt).getTime() - nowTime) / (1000 * 60 * 60 * 24))) : 7;
       return (
-        <span className="inline-flex items-center gap-1 bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(168,85,247,0.15)] font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-          Escrow Held
+        <span className="inline-flex items-center gap-1 text-purple-400 font-mono text-xs font-semibold">
+          <span>🔒</span> Escrow ({days}d)
         </span>
       );
     }
     if (status === 'completed') {
       return (
-        <span className="inline-flex items-center gap-1 bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider font-mono">
-          ✓ Completed
+        <span className="inline-flex items-center gap-1 text-fintech-mint font-mono text-xs font-semibold">
+          <span>✓</span> Completed
         </span>
       );
     }
     if (status === 'pending') {
       return (
-        <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider font-mono">
-          ⏳ Pending
+        <span className="inline-flex items-center gap-1 text-amber-400 font-mono text-xs font-semibold">
+          <span>⏳</span> Pending
         </span>
       );
     }
     if (status === 'disputed') {
       return (
-        <span className="inline-flex items-center gap-1 bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider font-mono">
-          ⚠️ Disputed
+        <span className="inline-flex items-center gap-1 text-red-400 font-mono text-xs font-semibold">
+          <span>⚠️</span> Disputed
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 bg-white/10 text-cloud-white/60 border border-white/10 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider font-mono">
+      <span className="text-cloud-white/40 font-mono text-xs font-semibold uppercase">
         {status}
       </span>
     );
   };
 
-  const getRemainingDays = (dateStr: string | null) => {
-    if (!dateStr) return '';
-    const diff = new Date(dateStr).getTime() - nowTime;
-    if (diff <= 0) return 'Payout processing...';
-    const days = Math.ceil(diff / (1024 * 60 * 60 * 24));
-    return `${days} ${days === 1 ? 'day' : 'days'} left in escrow`;
-  };
-
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-midnight-boma text-cloud-white font-sans">
-        <span className="w-10 h-10 border-4 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+        <span className="w-8 h-8 border-3 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
       </div>
     );
   }
@@ -241,12 +194,12 @@ export default function SponsorshipsPage() {
   if (!isAuthenticated || !mongooseUser?.isBrandSafeVerified) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-midnight-boma text-cloud-white gap-4 font-sans px-6 text-center select-none">
-        <span className="material-symbols-outlined text-[64px] text-toka-flare animate-pulse">lock</span>
-        <h1 className="text-2xl font-black tracking-tight">Access Restricted</h1>
-        <p className="text-sm text-cloud-white/60 max-w-sm">
-          Sponsorship requests and escrow features are restricted to verified accounts. Please request verification from your profile settings.
+        <span className="material-symbols-outlined text-[48px] text-toka-flare">lock</span>
+        <h1 className="text-xl font-bold tracking-tight">Access Restricted</h1>
+        <p className="text-xs text-cloud-white/60 max-w-sm">
+          Sponsorship requests and escrow features are restricted to verified accounts.
         </p>
-        <Link href="/" className="px-6 py-3 bg-toka-flare hover:bg-toka-flare/90 rounded-xl font-bold transition-all text-xs active:scale-95 shadow-lg">
+        <Link href="/" className="px-5 py-2.5 bg-toka-flare hover:bg-toka-flare/90 rounded-xl font-bold transition-all text-xs active:scale-95 shadow-md">
           Return to Feed
         </Link>
       </div>
@@ -258,527 +211,411 @@ export default function SponsorshipsPage() {
     .filter(r => r.status === 'approved' && r.escrowStatus === 'held')
     .reduce((sum, r) => sum + r.amount, 0);
 
+  const activeDealsCount = isBrand ? brandRequests.length : sentRequests.length;
+  const availablePayout = mongooseUser.walletBalance;
+
   return (
-    <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans select-none pb-24">
-      <PageHeader title="Sponsorships" />
+    <div className="min-h-screen bg-midnight-boma text-cloud-white font-sans antialiased select-none pb-24">
       
-      <main className="max-w-7xl mx-auto flex flex-col gap-8 p-4 md:p-8 w-full">
+      <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6 w-full">
         
-        {/* Pro Hero Dashboard Banner */}
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-shaded-canopy shadow-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-toka-flare/10 blur-[100px] rounded-full pointer-events-none"></div>
-          
-          <div className="flex items-center gap-4 z-10">
-            <div className="w-14 h-14 rounded-2xl bg-toka-flare/15 border border-toka-flare/30 flex items-center justify-center text-toka-flare shadow-inner shrink-0">
-              <IconHandshake className="w-8 h-8" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-cloud-white">
-                  Sponsorship Dashboard
-                </h1>
-                <span className="bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-2.5 py-0.5 rounded-full text-xs font-bold font-mono">
-                  Brand Safe
-                </span>
-              </div>
-              <p className="text-xs text-cloud-white/50 mt-1 max-w-xl">
-                Secure direct brand deals with automated smart escrow, automated media verification, and instant ZAR payouts.
-              </p>
-            </div>
+        {/* Back Link */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 text-xs text-cloud-white/50 hover:text-cloud-white transition-colors w-fit cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>Back</span>
+        </button>
+
+        {/* Clean Typography Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-cloud-white">
+              Sponsorships
+            </h1>
+            <p className="text-xs text-cloud-white/50 mt-1">
+              Manage brand deals and escrow
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-black/40 border border-white/10 px-5 py-3 rounded-2xl z-10 shrink-0 shadow-lg">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-cloud-white/40 uppercase font-mono tracking-wider">Wallet Balance</span>
-              <span className="text-lg font-black text-fintech-mint font-mono">
-                ZAR {mongooseUser.walletBalance.toFixed(2)}
+          <div className="flex items-center gap-3">
+            <div className="text-left sm:text-right">
+              <span className="text-[10px] text-cloud-white/40 uppercase font-mono block">Available Payout</span>
+              <span className="text-base font-bold font-mono text-cloud-white">
+                ZAR {availablePayout.toFixed(2)}
               </span>
             </div>
-            <Link 
-              href="/deposit" 
-              className="bg-toka-flare hover:bg-toka-flare/90 text-cloud-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-[0_2px_12px_rgba(255,79,0,0.25)] active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            <Link
+              href="/deposit"
+              className="px-3.5 py-1.5 bg-white/10 hover:bg-white/15 text-cloud-white text-xs font-semibold rounded-xl border border-white/10 transition-all active:scale-95 cursor-pointer font-mono"
             >
-              <IconWallet className="w-4 h-4" />
-              <span>Top Up</span>
+              Withdraw
             </Link>
           </div>
         </div>
 
-        {/* 4 Elevated KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+        {/* Seamless Linear Metric Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 border-y border-white/10 py-5 my-1 gap-4 md:gap-0">
           
-          <div className="bg-shaded-canopy/90 border border-white/10 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg">
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Active Deals</span>
-              <div className="w-8 h-8 rounded-xl bg-toka-flare/10 border border-toka-flare/20 flex items-center justify-center text-toka-flare">
-                <IconHandshake className="w-4 h-4" />
-              </div>
-            </div>
-            <span className="text-2xl md:text-3xl font-black font-mono text-cloud-white tracking-tight">
-              {isBrand ? brandRequests.length : sentRequests.length}
-            </span>
-            <span className="text-[10px] text-cloud-white/40">Registered sponsorships</span>
+          <div className="flex flex-col gap-1 md:pr-6 md:border-r border-white/10">
+            <span className="text-xs text-cloud-white/50 font-medium">Active Deals</span>
+            <span className="text-2xl font-black font-mono text-cloud-white">{activeDealsCount}</span>
           </div>
 
-          <div className="bg-shaded-canopy/90 border border-white/10 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg">
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider font-mono">Escrow Held</span>
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <IconLockEscrow className="w-4 h-4" />
-              </div>
-            </div>
-            <span className="text-2xl md:text-3xl font-black font-mono text-purple-300 tracking-tight">
+          <div className="flex flex-col gap-1 md:px-6 md:border-r border-white/10">
+            <span className="text-xs text-cloud-white/50 font-medium">In Escrow</span>
+            <span className="text-2xl font-black font-mono text-cloud-white">
               ZAR {totalEscrowHeld.toFixed(2)}
             </span>
-            <span className="text-[10px] text-purple-400/60">Protected in 7-day escrow</span>
           </div>
 
-          <Link
-            href="/deposit"
-            className="bg-shaded-canopy/90 hover:bg-fintech-mint/5 border border-white/10 hover:border-fintech-mint/30 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg transition-all active:scale-98 cursor-pointer group"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold text-fintech-mint/70 uppercase tracking-wider font-mono">Available Payout</span>
-              <div className="w-8 h-8 rounded-xl bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint">
-                <IconWallet className="w-4 h-4" />
-              </div>
-            </div>
-            <span className="text-2xl md:text-3xl font-black font-mono text-fintech-mint tracking-tight">
-              ZAR {mongooseUser.walletBalance.toFixed(2)}
+          <div className="flex flex-col gap-1 md:px-6 md:border-r border-white/10">
+            <span className="text-xs text-cloud-white/50 font-medium">Available</span>
+            <span className="text-2xl font-black font-mono text-fintech-mint">
+              ZAR {availablePayout.toFixed(2)}
             </span>
-            <span className="text-[10px] text-fintech-mint/60">Instant Top Up &amp; Withdraw</span>
-          </Link>
+          </div>
 
-          <div className="bg-shaded-canopy/90 border border-white/10 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg">
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Platform Trust</span>
-              <div className="w-8 h-8 rounded-xl bg-fintech-mint/10 border border-fintech-mint/20 flex items-center justify-center text-fintech-mint">
-                <IconShieldCheck className="w-4 h-4" />
-              </div>
-            </div>
-            <span className="text-2xl md:text-3xl font-black font-mono text-cloud-white tracking-tight">100%</span>
-            <span className="text-[10px] text-fintech-mint font-bold">Brand Safe Guaranteed</span>
+          <div className="flex flex-col gap-1 md:pl-6">
+            <span className="text-xs text-cloud-white/50 font-medium">Trust</span>
+            <span className="text-2xl font-black font-mono text-cloud-white flex items-center gap-1.5">
+              100% <span className="text-base">🛡️</span>
+            </span>
           </div>
 
         </div>
 
         {/* Global Feedback message */}
         {message && (
-          <div className={`border px-5 py-4 rounded-2xl flex items-center gap-3 animate-fade-in ${
+          <div className={`px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
             message.type === 'success'
-              ? 'bg-fintech-mint/10 border-fintech-mint/35 text-fintech-mint'
-              : 'bg-red-500/10 border-red-500/35 text-red-400'
+              ? 'bg-fintech-mint/10 text-fintech-mint border border-fintech-mint/30'
+              : 'bg-red-500/10 text-red-400 border border-red-500/30'
           }`}>
-            <span className="material-symbols-outlined text-[20px]">
-              {message.type === 'success' ? 'check_circle' : 'error'}
-            </span>
-            <span className="text-xs font-bold">{message.text}</span>
+            <span>{message.type === 'success' ? '✓' : '⚠️'}</span>
+            <span>{message.text}</span>
           </div>
         )}
 
-        {/* Dashboard Content */}
-        {isBrand ? (
-          /* BRAND VIEW */
-          <div className="flex flex-col gap-6">
-            
-            {/* Unified Segmented Slider Track for Tabs */}
-            <div className="w-fit bg-black/50 p-1.5 rounded-2xl border border-white/10 flex items-center gap-1 select-none">
+        {/* Linear Minimalist Tab Switcher */}
+        <div className="flex items-center gap-3 border-b border-white/10 pb-3 mt-1">
+          {isBrand ? (
+            <>
               <button
                 onClick={() => setBrandTab('inbox')}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
                   brandTab === 'inbox'
-                    ? 'bg-white/15 text-white shadow-md font-black'
-                    : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.03]'
+                    ? 'text-cloud-white border-b-2 border-toka-flare'
+                    : 'text-cloud-white/40 hover:text-cloud-white/70'
                 }`}
               >
-                Pending Requests ({brandRequests.length})
+                Requests ({brandRequests.length})
               </button>
               <button
                 onClick={() => setBrandTab('history')}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
                   brandTab === 'history'
-                    ? 'bg-white/15 text-white shadow-md font-black'
-                    : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.03]'
+                    ? 'text-cloud-white border-b-2 border-toka-flare'
+                    : 'text-cloud-white/40 hover:text-cloud-white/70'
                 }`}
               >
-                Sponsorship History
+                History ({sentRequests.length})
               </button>
-            </div>
-
-            {fetching ? (
-              <div className="flex justify-center py-16">
-                <span className="w-10 h-10 border-4 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
-              </div>
-            ) : brandTab === 'inbox' ? (
-              brandRequests.length === 0 ? (
-                <div className="bg-shaded-canopy/60 border border-white/10 rounded-3xl p-16 text-center flex flex-col items-center gap-3 shadow-xl">
-                  <span className="material-symbols-outlined text-[54px] text-cloud-white/20">mail_outline</span>
-                  <h3 className="font-bold text-cloud-white/80 text-base">Inbox is empty</h3>
-                  <p className="text-xs text-cloud-white/40 max-w-xs leading-relaxed">
-                    Verified creators will tag your brand in sponsorship pitches and video deals here.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {brandRequests.map((req) => {
-                    const balanceError = mongooseUser.walletBalance < req.amount;
-                    return (
-                      <div key={req._id} className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-xl transition-all relative overflow-hidden">
-                        
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-toka-flare to-amber-500 p-0.5 shadow-md shrink-0">
-                              <div className="w-full h-full rounded-full bg-midnight-boma flex items-center justify-center font-black text-sm text-cloud-white uppercase">
-                                {req.creatorId.username.charAt(0)}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-base font-black text-cloud-white">@{req.creatorId.username}</h4>
-                                <span className="bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-2 py-0.2 rounded-full text-[9px] font-bold">
-                                  Verified
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-cloud-white/40 mt-0.5">
-                                Requested on {new Date(req.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className="text-lg font-black font-mono text-fintech-mint">
-                              ZAR {req.amount.toFixed(2)}
-                            </span>
-                            <div className="mt-1">{getStatusBadge(req.status, req.escrowStatus)}</div>
-                          </div>
-                        </div>
-
-                        {/* Video Info Container */}
-                        <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex flex-col gap-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-cloud-white/40 font-mono text-[11px]">Video Post:</span>
-                            <span className="font-bold text-cloud-white truncate max-w-[280px]">
-                              &quot;{req.videoId?.title || 'Creator Video'}&quot;
-                            </span>
-                          </div>
-
-                          {req.terms && (
-                            <div className="text-xs text-cloud-white/70 bg-black/40 border border-white/5 p-3 rounded-xl mt-1 leading-relaxed">
-                              <span className="text-cloud-white/40 font-mono text-[10px] block uppercase">Deal Terms</span>
-                              {req.terms}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-white/5">
-                          <button
-                            onClick={() => {
-                              setPreviewVideoUrl(req.videoId.videoUrl);
-                              setPreviewVideoTitle(req.videoId.title);
-                            }}
-                            className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-cloud-white py-2.5 rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-1.5 cursor-pointer active:scale-95"
-                          >
-                            <span className="material-symbols-outlined text-[16px] text-toka-flare">play_circle</span>
-                            <span>Review Video</span>
-                          </button>
-                          
-                          <button
-                            disabled={actionLoadingId !== null || balanceError}
-                            onClick={() => handleAction(req._id, 'approve')}
-                            className="flex-1 bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_2px_12px_rgba(255,79,0,0.25)] active:scale-95 flex justify-center items-center gap-1 cursor-pointer"
-                          >
-                            {actionLoadingId === req._id ? (
-                              <span className="w-4 h-4 border-2 border-cloud-white border-t-transparent rounded-full animate-spin"></span>
-                            ) : (
-                              <>
-                                <span className="material-symbols-outlined text-[16px]">check</span>
-                                <span>Approve &amp; Pay</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          <button
-                            disabled={actionLoadingId !== null}
-                            onClick={() => handleAction(req._id, 'reject')}
-                            className="bg-white/5 border border-white/10 hover:bg-red-500/15 hover:border-red-500/30 text-cloud-white/60 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-95"
-                            title="Decline Request"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">close</span>
-                          </button>
-                        </div>
-
-                        {balanceError && (
-                          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold p-3 rounded-xl flex items-center gap-2 select-none">
-                            <span className="material-symbols-outlined text-[16px]">warning</span>
-                            <span>Insufficient wallet balance. Top up to approve.</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            ) : (
-              /* Brand History */
-              sentRequests.length === 0 ? (
-                <div className="bg-shaded-canopy/60 border border-white/10 rounded-3xl p-16 text-center flex flex-col items-center gap-3 shadow-xl">
-                  <span className="material-symbols-outlined text-[54px] text-cloud-white/20">history</span>
-                  <h3 className="font-bold text-cloud-white/80 text-base">No sponsorship history</h3>
-                  <p className="text-xs text-cloud-white/40 max-w-xs leading-relaxed">
-                    Completed, ongoing, and archived brand deals will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {sentRequests.map((req) => {
-                    const isDisputable = req.status === 'approved' && req.escrowStatus === 'held';
-                    return (
-                      <div key={req._id} className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-3xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl transition-all">
-                        
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-black text-base text-toka-flare font-mono shrink-0">
-                            {req.creatorId.username.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2.5">
-                              <h4 className="text-base font-black text-cloud-white">@{req.creatorId.username}</h4>
-                              {getStatusBadge(req.status, req.escrowStatus)}
-                            </div>
-                            <p className="text-xs text-cloud-white/50 mt-1 truncate max-w-md">
-                              Video: &quot;{req.videoId?.title || 'Creator Video'}&quot;
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col md:items-end gap-1.5">
-                          <span className="text-lg font-black text-fintech-mint font-mono">
-                            ZAR {req.amount.toFixed(2)}
-                          </span>
-                          {req.escrowStatus === 'held' && req.escrowReleaseAt && (
-                            <span className="text-[11px] text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px]">schedule</span>
-                              {getRemainingDays(req.escrowReleaseAt)}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                          <button
-                            onClick={() => {
-                              setPreviewVideoUrl(req.videoId.videoUrl);
-                              setPreviewVideoTitle(req.videoId.title);
-                            }}
-                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 justify-center flex-1 md:flex-none cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[16px] text-toka-flare">play_circle</span>
-                            <span>View Video</span>
-                          </button>
-                          
-                          {isDisputable && (
-                            <button
-                              disabled={actionLoadingId !== null}
-                              onClick={() => handleAction(req._id, 'dispute')}
-                              className="bg-red-500/15 border border-red-500/30 hover:bg-red-500 hover:text-cloud-white text-red-400 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 justify-center flex-1 md:flex-none active:scale-95 cursor-pointer"
-                            >
-                              {actionLoadingId === req._id ? (
-                                <span className="w-4 h-4 border-2 border-cloud-white border-t-transparent rounded-full animate-spin"></span>
-                              ) : (
-                                <>
-                                  <span className="material-symbols-outlined text-[16px]">gavel</span>
-                                  <span>Dispute Payout</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            )}
-          </div>
-        ) : (
-          /* CREATOR VIEW */
-          <div className="flex flex-col gap-6">
-            
-            {/* Unified Segmented Slider Track for Tabs */}
-            <div className="w-fit bg-black/50 p-1.5 rounded-2xl border border-white/10 flex items-center gap-1 select-none">
+            </>
+          ) : (
+            <>
               <button
                 onClick={() => setCreatorTab('sent')}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
                   creatorTab === 'sent'
-                    ? 'bg-white/15 text-white shadow-md font-black'
-                    : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.03]'
+                    ? 'text-cloud-white border-b-2 border-toka-flare'
+                    : 'text-cloud-white/40 hover:text-cloud-white/70'
                 }`}
               >
-                My Requests ({sentRequests.length})
+                Requests ({sentRequests.length})
               </button>
               <button
                 onClick={() => setCreatorTab('directory')}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`text-xs font-bold uppercase tracking-wider pb-1 transition-all cursor-pointer ${
                   creatorTab === 'directory'
-                    ? 'bg-white/15 text-white shadow-md font-black'
-                    : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.03]'
+                    ? 'text-cloud-white border-b-2 border-toka-flare'
+                    : 'text-cloud-white/40 hover:text-cloud-white/70'
                 }`}
               >
                 Verified Brands ({directoryUsers.length})
               </button>
-            </div>
+            </>
+          )}
+        </div>
 
-            {fetching ? (
-              <div className="flex justify-center py-16">
-                <span className="w-10 h-10 border-4 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+        {/* Content Section */}
+        {fetching ? (
+          <div className="flex justify-center py-16">
+            <span className="w-8 h-8 border-3 border-toka-flare border-t-transparent rounded-full animate-spin"></span>
+          </div>
+        ) : isBrand ? (
+          /* BRAND VIEW */
+          brandTab === 'inbox' ? (
+            brandRequests.length === 0 ? (
+              <div className="py-16 text-center text-cloud-white/40 text-xs">
+                No pending requests. Verified creators will pitch deals here.
               </div>
-            ) : creatorTab === 'sent' ? (
-              sentRequests.length === 0 ? (
-                <div className="bg-shaded-canopy/60 border border-white/10 rounded-3xl p-16 text-center flex flex-col items-center gap-3 shadow-xl">
-                  <span className="material-symbols-outlined text-[54px] text-cloud-white/20">outbox</span>
-                  <h3 className="font-bold text-cloud-white/80 text-base">No requests sent yet</h3>
-                  <p className="text-xs text-cloud-white/40 max-w-sm leading-relaxed">
-                    Upload a video and toggle &quot;Request Brand Sponsorship&quot; to pitch your content to verified brands.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {sentRequests.map((req) => {
-                    const isPending = req.status === 'pending';
-                    return (
-                      <div key={req._id} className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-3xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 shadow-xl transition-all">
-                        
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-toka-flare to-orange-700 p-0.5 shadow-md shrink-0">
-                            <div className="w-full h-full rounded-full bg-midnight-boma flex items-center justify-center font-black text-sm text-cloud-white uppercase">
-                              {req.brandId.username.charAt(0)}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2.5">
-                              <h4 className="text-base font-black text-cloud-white">@{req.brandId.username}</h4>
-                              {getStatusBadge(req.status, req.escrowStatus)}
-                            </div>
-                            <p className="text-xs text-cloud-white/50 mt-1 truncate max-w-md">
-                              Video: &quot;{req.videoId?.title || 'Creator Video'}&quot;
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col md:items-end gap-1.5">
-                          <span className="text-lg font-black text-fintech-mint font-mono">
-                            ZAR {req.amount.toFixed(2)}
-                          </span>
-                          {req.escrowStatus === 'held' && req.escrowReleaseAt && (
-                            <span className="text-[11px] text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px]">schedule</span>
-                              {getRemainingDays(req.escrowReleaseAt)}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                          <button
-                            onClick={() => {
-                              setPreviewVideoUrl(req.videoId.videoUrl);
-                              setPreviewVideoTitle(req.videoId.title);
-                            }}
-                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 justify-center flex-1 md:flex-none cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[16px] text-toka-flare">play_circle</span>
-                            <span>View Video</span>
-                          </button>
-
-                          {isPending && (
-                            <button
-                              disabled={actionLoadingId !== null}
-                              onClick={() => handleAction(req._id, 'withdraw')}
-                              className="w-full md:w-auto bg-white/5 border border-white/10 hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 justify-center active:scale-95 cursor-pointer"
-                            >
-                              {actionLoadingId === req._id ? (
-                                <span className="w-4 h-4 border-2 border-cloud-white border-t-transparent rounded-full animate-spin"></span>
-                              ) : (
-                                <>
-                                  <span className="material-symbols-outlined text-[16px]">cancel</span>
-                                  <span>Withdraw</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
             ) : (
-              /* Verified Brands Directory */
-              directoryUsers.length === 0 ? (
-                <div className="bg-shaded-canopy/60 border border-white/10 rounded-3xl p-16 text-center flex flex-col items-center gap-3 shadow-xl">
-                  <span className="material-symbols-outlined text-[54px] text-cloud-white/20">search</span>
-                  <h3 className="font-bold text-cloud-white/80 text-base">No brands found</h3>
-                  <p className="text-xs text-cloud-white/40 max-w-xs leading-relaxed">
-                    There are currently no verified brand accounts in the platform directory.
-                  </p>
+              <div className="flex flex-col">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 text-[10px] font-mono uppercase font-bold text-cloud-white/40 border-b border-white/10 pb-2 px-3">
+                  <div className="col-span-5">Creator &amp; Campaign</div>
+                  <div className="col-span-3">Status</div>
+                  <div className="col-span-2 text-right">Budget</div>
+                  <div className="col-span-2 text-right">Action</div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {directoryUsers.map((user) => (
-                    <div key={user._id} className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-3xl p-6 flex flex-col gap-4 items-center text-center shadow-xl transition-all group">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-toka-flare to-amber-500 p-0.5 shadow-md">
-                        <div className="w-full h-full rounded-full bg-midnight-boma flex items-center justify-center font-black text-xl text-cloud-white uppercase">
-                          {user.username.charAt(0)}
+
+                {/* Rows */}
+                {brandRequests.map((req) => {
+                  const balanceError = mongooseUser.walletBalance < req.amount;
+                  return (
+                    <div
+                      key={req._id}
+                      className="grid grid-cols-12 items-center border-b border-white/5 hover:bg-white/[0.02] py-4 px-3 transition-colors text-xs"
+                    >
+                      <div className="col-span-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-toka-flare shrink-0 font-mono">
+                          {req.creatorId.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col truncate pr-2">
+                          <span className="font-bold text-cloud-white">@{req.creatorId.username}</span>
+                          <span className="text-[11px] text-cloud-white/50 truncate">
+                            Video: &quot;{req.videoId?.title || 'Creator Video'}&quot;
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <h4 className="text-base font-black text-cloud-white">@{user.username}</h4>
-                        <span className="inline-flex items-center gap-1 bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-2 py-0.2 rounded-full text-[10px] font-bold font-mono mt-1">
-                          <IconShieldCheck className="w-3 h-3" />
-                          Verified Brand
+
+                      <div className="col-span-3">
+                        {getStatusBadge(req.status, req.escrowStatus, req.escrowReleaseAt)}
+                      </div>
+
+                      <div className="col-span-2 text-right font-mono font-bold text-cloud-white">
+                        ZAR {req.amount.toFixed(2)}
+                      </div>
+
+                      <div className="col-span-2 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setPreviewVideoUrl(req.videoId.videoUrl);
+                            setPreviewVideoTitle(req.videoId.title);
+                          }}
+                          className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-cloud-white rounded-lg text-xs font-medium transition-all cursor-pointer"
+                        >
+                          View
+                        </button>
+                        <button
+                          disabled={actionLoadingId !== null || balanceError}
+                          onClick={() => handleAction(req._id, 'approve')}
+                          className="px-2.5 py-1 bg-toka-flare hover:bg-toka-flare/90 disabled:opacity-50 text-cloud-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            /* History */
+            sentRequests.length === 0 ? (
+              <div className="py-16 text-center text-cloud-white/40 text-xs">
+                No sponsorship history found.
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <div className="grid grid-cols-12 text-[10px] font-mono uppercase font-bold text-cloud-white/40 border-b border-white/10 pb-2 px-3">
+                  <div className="col-span-5">Creator &amp; Campaign</div>
+                  <div className="col-span-3">Status</div>
+                  <div className="col-span-2 text-right">Amount</div>
+                  <div className="col-span-2 text-right">Action</div>
+                </div>
+
+                {sentRequests.map((req) => (
+                  <div
+                    key={req._id}
+                    className="grid grid-cols-12 items-center border-b border-white/5 hover:bg-white/[0.02] py-4 px-3 transition-colors text-xs"
+                  >
+                    <div className="col-span-5 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-toka-flare shrink-0 font-mono">
+                        {req.creatorId.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col truncate pr-2">
+                        <span className="font-bold text-cloud-white">@{req.creatorId.username}</span>
+                        <span className="text-[11px] text-cloud-white/50 truncate">
+                          Video: &quot;{req.videoId?.title || 'Creator Video'}&quot;
                         </span>
                       </div>
-                      <Link 
-                        href={`/profile?username=${encodeURIComponent(user.username)}`}
-                        className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white py-2.5 rounded-xl text-xs font-bold transition-all text-center mt-2 group-hover:border-white/25 active:scale-95"
+                    </div>
+
+                    <div className="col-span-3">
+                      {getStatusBadge(req.status, req.escrowStatus, req.escrowReleaseAt)}
+                    </div>
+
+                    <div className="col-span-2 text-right font-mono font-bold text-cloud-white">
+                      ZAR {req.amount.toFixed(2)}
+                    </div>
+
+                    <div className="col-span-2 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setPreviewVideoUrl(req.videoId.videoUrl);
+                          setPreviewVideoTitle(req.videoId.title);
+                        }}
+                        className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-cloud-white rounded-lg text-xs font-medium transition-all cursor-pointer"
                       >
-                        View Brand Profile
+                        View
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )
+        ) : (
+          /* CREATOR VIEW */
+          creatorTab === 'sent' ? (
+            sentRequests.length === 0 ? (
+              <div className="py-16 text-center text-cloud-white/40 text-xs">
+                No requests sent yet. Pitch a brand sponsorship when uploading a video.
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 text-[10px] font-mono uppercase font-bold text-cloud-white/40 border-b border-white/10 pb-2 px-3">
+                  <div className="col-span-5">Brand &amp; Campaign</div>
+                  <div className="col-span-3">Status</div>
+                  <div className="col-span-2 text-right">Payout</div>
+                  <div className="col-span-2 text-right">Action</div>
+                </div>
+
+                {/* Table Rows */}
+                {sentRequests.map((req) => {
+                  const isPending = req.status === 'pending';
+                  return (
+                    <div
+                      key={req._id}
+                      className="grid grid-cols-12 items-center border-b border-white/5 hover:bg-white/[0.02] py-4 px-3 transition-colors text-xs"
+                    >
+                      <div className="col-span-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-toka-flare shrink-0 font-mono">
+                          {req.brandId.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col truncate pr-2">
+                          <span className="font-bold text-cloud-white">@{req.brandId.username}</span>
+                          <span className="text-[11px] text-cloud-white/50 truncate">
+                            Video: &quot;{req.videoId?.title || 'Creator Video'}&quot;
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="col-span-3">
+                        {getStatusBadge(req.status, req.escrowStatus, req.escrowReleaseAt)}
+                      </div>
+
+                      <div className="col-span-2 text-right font-mono font-bold text-cloud-white">
+                        ZAR {req.amount.toFixed(2)}
+                      </div>
+
+                      <div className="col-span-2 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setPreviewVideoUrl(req.videoId.videoUrl);
+                            setPreviewVideoTitle(req.videoId.title);
+                          }}
+                          className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-cloud-white rounded-lg text-xs font-medium transition-all cursor-pointer"
+                        >
+                          View
+                        </button>
+                        {isPending && (
+                          <button
+                            disabled={actionLoadingId !== null}
+                            onClick={() => handleAction(req._id, 'withdraw')}
+                            className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Withdraw
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            /* Verified Brands Directory */
+            directoryUsers.length === 0 ? (
+              <div className="py-16 text-center text-cloud-white/40 text-xs">
+                No verified brand accounts found in directory.
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <div className="grid grid-cols-12 text-[10px] font-mono uppercase font-bold text-cloud-white/40 border-b border-white/10 pb-2 px-3">
+                  <div className="col-span-6">Brand Account</div>
+                  <div className="col-span-3">Verification</div>
+                  <div className="col-span-3 text-right">Profile</div>
+                </div>
+
+                {directoryUsers.map((user) => (
+                  <div
+                    key={user._id}
+                    className="grid grid-cols-12 items-center border-b border-white/5 hover:bg-white/[0.02] py-4 px-3 transition-colors text-xs"
+                  >
+                    <div className="col-span-6 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-toka-flare shrink-0 font-mono">
+                        {user.username.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-bold text-cloud-white">@{user.username}</span>
+                    </div>
+
+                    <div className="col-span-3">
+                      <span className="text-fintech-mint font-mono text-xs font-medium">🛡️ Verified Brand</span>
+                    </div>
+
+                    <div className="col-span-3 text-right">
+                      <Link
+                        href={`/profile?username=${encodeURIComponent(user.username)}`}
+                        className="px-3 py-1 bg-white/5 hover:bg-white/10 text-cloud-white rounded-lg text-xs font-medium transition-all inline-block"
+                      >
+                        View Profile
                       </Link>
                     </div>
-                  ))}
-                </div>
-              )
-            )}
-          </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )
         )}
       </main>
 
       {/* Video Preview Modal */}
       {previewVideoUrl && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-shaded-canopy border border-white/10 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col relative max-h-[90vh]">
+          <div className="bg-[#18181B] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col relative max-h-[85vh]">
             
-            <button 
-              onClick={() => setPreviewVideoUrl(null)} 
-              className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-cloud-white p-2 rounded-full transition-all z-10 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px] block">close</span>
-            </button>
-
-            <div className="p-5 border-b border-white/10 bg-black/20">
-              <h3 className="text-sm font-bold text-cloud-white truncate pr-10">Reviewing Post: &quot;{previewVideoTitle}&quot;</h3>
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-cloud-white truncate pr-4">&quot;{previewVideoTitle}&quot;</h3>
+              <button 
+                onClick={() => setPreviewVideoUrl(null)} 
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
             </div>
 
-            <div className="flex-1 bg-black flex items-center justify-center min-h-[300px] overflow-hidden">
+            <div className="flex-1 bg-black flex items-center justify-center min-h-[260px] overflow-hidden">
               <video 
                 src={previewVideoUrl} 
                 controls 
                 autoPlay
-                className="max-h-[60vh] w-full object-contain"
+                className="max-h-[55vh] w-full object-contain"
               />
-            </div>
-            
-            <div className="p-4 border-t border-white/10 bg-black/20 text-center text-[10px] text-cloud-white/40 font-mono select-none">
-              Streamed securely from media buckets. Video will be visible to public upon approval.
             </div>
           </div>
         </div>
