@@ -115,11 +115,11 @@ function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps)
         transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
         touchAction: 'pan-y'
       }}
-      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-xl border border-amber-400/30 hover:border-amber-400/60 w-fit shadow-xl select-none cursor-grab active:cursor-grabbing group transition-all animate-fade-in"
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-xl border border-white/15 hover:border-white/30 w-fit shadow-xl select-none cursor-grab active:cursor-grabbing group transition-all animate-fade-in"
       title="You reposted this video (swipe to dismiss)"
     >
-      <TokaRepostIcon size={14} className="text-amber-400 pointer-events-none shrink-0" />
-      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300 pointer-events-none">
+      <TokaRepostIcon size={14} className="text-cloud-white/80 pointer-events-none shrink-0" />
+      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-cloud-white/90 pointer-events-none">
         Reposted
       </span>
       <button
@@ -131,7 +131,7 @@ function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps)
         className="opacity-40 group-hover:opacity-100 hover:text-white ml-1 p-0.5 rounded-full transition-opacity cursor-pointer flex items-center justify-center"
         title="Dismiss badge"
       >
-        <span className="material-symbols-outlined text-[13px] text-amber-400">close</span>
+        <span className="material-symbols-outlined text-[13px] text-cloud-white/50 group-hover:text-white">close</span>
       </button>
     </div>
   );
@@ -935,8 +935,8 @@ export default function VideoFeed() {
                       {/* Creator Avatar & Follow Button */}
                       <div className="relative mb-3 group select-none">
                         <Link href={`/profile?username=${video.creatorName.replace('@', '')}`} className="block cursor-pointer">
-                          <div className="sidebar-creator-avatar toka-rainbow-halo w-12 h-12 hover:scale-105 transition-transform">
-                            <div className="toka-rainbow-halo-inner">
+                          <div className="sidebar-creator-avatar w-12 h-12 rounded-full overflow-hidden border-2 border-white/90 shadow-lg hover:scale-105 transition-transform flex items-center justify-center bg-black/60 p-[1.5px]">
+                            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-midnight-boma">
                               {video.creatorAvatar ? (
                                 <img
                                   src={video.creatorAvatar}
@@ -964,7 +964,7 @@ export default function VideoFeed() {
                         )}
                       </div>
 
-                      {/* Like Action */}
+                      {/* Like Action (White when unliked, Red when liked) */}
                       <button
                         onClick={(e) => handleLikeToggle(video.id, e)}
                         className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
@@ -972,7 +972,7 @@ export default function VideoFeed() {
                         <TokaHeartIcon
                           size={44}
                           filled={video.isLiked}
-                          className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
+                          className={`transition-all duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] ${video.isLiked ? 'text-red-500 scale-110' : 'text-cloud-white group-hover:text-white/80'
                             }`}
                         />
                         <span className="font-mono text-xs font-medium text-cloud-white drop-shadow-md">
@@ -994,16 +994,16 @@ export default function VideoFeed() {
                         </span>
                       </button>
 
-                      {/* Tip Action (Sleek Fintech Mint Native Stack) */}
+                      {/* Tip Action (Monochromatic Translucent Backing with Pure White Icon) */}
                       <button
                         onClick={() => requireAuth(() => setActiveTipVideoId(video.id))}
                         className="flex flex-col items-center gap-1 group active:scale-90 transition-transform select-none cursor-pointer"
                         title="Send a Tip"
                       >
-                        <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-fintech-mint/30 hover:border-fintech-mint flex items-center justify-center transition-all group-hover:scale-105 group-hover:bg-fintech-mint/15 shadow-md">
-                          <TokaTipIcon size={22} className="text-fintech-mint" />
+                        <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 hover:border-fintech-mint flex items-center justify-center transition-all group-hover:scale-105 group-hover:bg-fintech-mint/15 shadow-md">
+                          <TokaTipIcon size={22} className="text-cloud-white group-hover:text-fintech-mint transition-colors" />
                         </div>
-                        <span className="font-mono text-[10px] font-bold text-fintech-mint drop-shadow-md">
+                        <span className="font-mono text-[10px] font-bold text-cloud-white/80 group-hover:text-fintech-mint drop-shadow-md">
                           Tip
                         </span>
                       </button>
@@ -1147,7 +1147,7 @@ export default function VideoFeed() {
                         />
                       )}
 
-                      {/* Creator Handle + Integrated Brand Safe Shield */}
+                      {/* Creator Handle + Single Clean Verified Badge */}
                       {(() => {
                         const acceptedCoAuthor = video.coAuthors?.find(ca => ca.status === 'accepted')?.user;
                         if (acceptedCoAuthor) {
@@ -1158,13 +1158,10 @@ export default function VideoFeed() {
                                 className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
                               >
                                 {video.creatorName}
-                                {video.vettingStatus === 'approved' && (
-                                  <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
-                                    verified_user
+                                {(video.isVerified || video.vettingStatus === 'approved') && (
+                                  <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Verified Creator">
+                                    verified
                                   </span>
-                                )}
-                                {video.isVerified && (
-                                  <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
                                 )}
                               </Link>
                               <span className="text-cloud-white/60 font-black text-xs uppercase bg-black/40 px-1 py-0.5 rounded border border-white/10">
@@ -1177,7 +1174,7 @@ export default function VideoFeed() {
                                 @{acceptedCoAuthor.username}
                                 {acceptedCoAuthor.isBrandSafeVerified && (
                                   <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
-                                    verified_user
+                                    verified
                                   </span>
                                 )}
                               </Link>
@@ -1192,13 +1189,10 @@ export default function VideoFeed() {
                               className="font-bold text-sm text-cloud-white drop-shadow-md hover:underline cursor-pointer flex items-center gap-1"
                             >
                               {video.creatorName}
-                              {video.vettingStatus === 'approved' && (
-                                <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Brand Safe Verified">
-                                  verified_user
+                              {(video.isVerified || video.vettingStatus === 'approved') && (
+                                <span className="material-symbols-outlined text-fintech-mint text-[15px]" title="Verified Creator">
+                                  verified
                                 </span>
-                              )}
-                              {video.isVerified && (
-                                <span className="material-symbols-outlined text-toka-flare text-[15px]">verified</span>
                               )}
                             </Link>
                           </div>
@@ -1210,10 +1204,10 @@ export default function VideoFeed() {
                         <MentionText text={video.description || video.title} />
                       </p>
 
-                      {/* Audio track info with marquee effect */}
+                      {/* Audio track info with marquee effect (Pure White music note) */}
                       {video.audioName && (
                         <div className="flex items-center gap-1.5 mt-1 text-cloud-white/80 w-[200px] overflow-hidden select-none shrink-0">
-                          <span className="material-symbols-outlined text-toka-flare text-[16px] animate-pulse shrink-0">music_note</span>
+                          <span className="material-symbols-outlined text-cloud-white/70 text-[16px] shrink-0">music_note</span>
                           <div className="overflow-hidden w-full relative h-4 flex items-center">
                             <div className="animate-marquee gap-8">
                               <span>{video.audioName}</span>
