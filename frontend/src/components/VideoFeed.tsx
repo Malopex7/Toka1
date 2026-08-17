@@ -679,31 +679,58 @@ export default function VideoFeed() {
         {/* Mobile Viewport Wrapper */}
         <div className="relative w-full max-w-[450px] md:max-w-[400px] h-[100dvh] md:h-[92vh] md:rounded-[36px] md:border-8 md:border-neutral-800 overflow-hidden shadow-2xl bg-black">
 
-          {/* Top Translucent Navigation Bar Overlay (Clean 3-Point Header) */}
-          <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-4 h-16 pointer-events-none transition-all duration-300 ease-out ${isCleanMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-            }`}>
-            {/* Left Point: Search Icon */}
+          {/* Top Translucent Navigation Bar Overlay (Clean 3-Point Header with Persistent Stories Button) */}
+          <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-4 h-16 pointer-events-none select-none">
+            {/* Left Point: Search + Stories (Stories PERSISTS during tap & fullscreen) */}
             {creatorParam ? (
               <Link
                 href={`/profile?username=${creatorParam}`}
-                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-bold text-cloud-white hover:bg-black/80 transition-all shadow-md active:scale-95"
+                className={`pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-bold text-cloud-white hover:bg-black/80 transition-all duration-300 ease-out shadow-md active:scale-95 ${
+                  isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+                }`}
               >
                 <span className="material-symbols-outlined text-[16px] text-toka-flare">arrow_back</span>
                 <span>@{creatorParam}&apos;s Videos</span>
               </Link>
             ) : (
-              <Link
-                href="/discover"
-                className="pointer-events-auto w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/15 flex items-center justify-center text-cloud-white transition-all shadow-md active:scale-95"
-                title="Search"
-              >
-                <span className="material-symbols-outlined text-[20px]">search</span>
-              </Link>
+              <div className="pointer-events-auto flex items-center gap-2">
+                {/* Search button (hides smoothly on clean mode) */}
+                <Link 
+                  href="/discover" 
+                  className={`w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/15 flex items-center justify-center text-cloud-white transition-all duration-300 ease-out shadow-md active:scale-95 ${
+                    isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+                  }`}
+                  title="Search"
+                >
+                  <span className="material-symbols-outlined text-[20px]">search</span>
+                </Link>
+
+                {/* Prominent Stories Button - PERSISTS even with tap & fullscreen! */}
+                <button
+                  onClick={() => requireAuth(() => setIsStatusTrayOpen(prev => !prev))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border transition-all shadow-md active:scale-95 cursor-pointer select-none ${
+                    isStatusTrayOpen
+                      ? 'bg-toka-flare text-white border-toka-flare shadow-[0_0_12px_rgba(255,79,0,0.5)] scale-105'
+                      : 'bg-black/40 border-white/15 hover:border-amber-400/60 hover:bg-white/10 text-cloud-white'
+                  }`}
+                  title="24h Creator Stories & Updates"
+                >
+                  <span className={`material-symbols-outlined text-[16px] ${isStatusTrayOpen ? 'text-white' : 'text-amber-400'}`}>
+                    auto_awesome
+                  </span>
+                  <span className="text-[11px] font-bold font-mono tracking-tight">Stories</span>
+                  {hasActiveStories && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-toka-flare shadow-[0_0_6px_rgba(255,79,0,0.9)] animate-pulse" />
+                  )}
+                </button>
+              </div>
             )}
 
             {/* Center Point: Following | For You Toggle */}
             {!creatorParam && (
-              <div className="pointer-events-auto flex gap-6 items-center select-none">
+              <div className={`pointer-events-auto flex gap-6 items-center select-none transition-all duration-300 ease-out ${
+                isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+              }`}>
                 <button
                   onClick={() => {
                     requireAuth(() => {
@@ -739,7 +766,9 @@ export default function VideoFeed() {
             )}
 
             {/* Right Point: Notifications Bell */}
-            <div className="pointer-events-auto flex items-center gap-2 select-none relative">
+            <div className={`pointer-events-auto flex items-center gap-2 select-none relative transition-all duration-300 ease-out ${
+              isCleanMode ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+            }`}>
               {isAuthenticated ? (
                 <div className="relative" ref={notificationsRef}>
                   <button
@@ -819,12 +848,12 @@ export default function VideoFeed() {
             </div>
           </header>
 
-          {/* Auto-Collapsing Pull-to-Reveal Dedicated Stories Drawer (Only on Following Feed when opened) */}
-          {feedType === 'following' && isStatusTrayOpen && (
+          {/* Dedicated Stories Drawer (Accessible from both For You and Following) */}
+          {isStatusTrayOpen && (
             <div className="absolute top-16 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-2xl border-b border-white/10 p-3 shadow-2xl animate-fade-in pointer-events-auto select-none">
               <div className="flex items-center justify-between px-2 pb-2 mb-1 border-b border-white/5">
                 <span className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 font-mono">
-                  <span className="material-symbols-outlined text-[15px] text-toka-flare">auto_awesome</span>
+                  <span className="material-symbols-outlined text-[15px] text-amber-400">auto_awesome</span>
                   24H CREATOR STORIES
                 </span>
                 <button
