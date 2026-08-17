@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStatusStore } from '@/store/useStatusStore';
 import { useLiveStore } from '@/store/useLiveStore';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +12,8 @@ interface StatusTrayProps {
 }
 
 export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
-  const { mongooseUser, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { mongooseUser, isAuthenticated, getIdToken } = useAuth();
   const { openGoLive } = useLiveStore();
   const {
     stories,
@@ -30,6 +32,25 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
 
   if (!isAuthenticated) return null;
 
+  const handleGoLive = async () => {
+    try {
+      const token = await getIdToken();
+      if (token) {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/live/user/my-active`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.status === 'success' && data.data?.stream) {
+          router.push(`/live/${data.data.stream._id}`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to check active stream:', err);
+    }
+    openGoLive();
+  };
+
   // Find self story group if exists
   const selfStoryGroupIndex = stories.findIndex((s) => s.isSelf);
   const otherStories = stories.filter((s) => !s.isSelf);
@@ -40,7 +61,7 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
         
         {/* Go Live Action */}
         <div
-          onClick={() => openGoLive()}
+          onClick={handleGoLive}
           className="flex flex-col items-center gap-1 cursor-pointer group"
         >
           <div className="w-11 h-11 flex items-center justify-center transition-all transform group-active:scale-90 group-hover:scale-105">

@@ -33,7 +33,13 @@ function mintToken(roomName, participantName, participantId, canPublish = false)
 // GET /api/live/my-active
 export const getMyActiveStream = async (req, res, next) => {
   try {
-    const stream = await LiveStream.findOne({ hostId: req.user._id, status: 'live' }).lean();
+    const stream = await LiveStream.findOne({
+      $or: [
+        { hostId: req.user._id },
+        { cohosts: req.user._id }
+      ],
+      status: 'live'
+    }).lean();
     res.json({ status: 'success', data: { stream: stream || null } });
   } catch (err) {
     next(err);

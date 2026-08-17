@@ -42,12 +42,15 @@ export default function GoLiveOverlay({ onClose }: GoLiveOverlayProps) {
     const checkActiveStream = async () => {
       try {
         const token = await getIdToken();
+        if (!token) return;
         const res = await fetch(`${BACKEND_URL}/api/live/user/my-active`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (isMounted && data.status === 'success' && data.data.stream) {
-          setActiveStream(data.data.stream);
+          onClose();
+          router.push(`/live/${data.data.stream._id}`);
+          return;
         }
       } catch (err) {
         console.warn('Failed to check active stream status:', err);
@@ -57,7 +60,7 @@ export default function GoLiveOverlay({ onClose }: GoLiveOverlayProps) {
     };
     checkActiveStream();
     return () => { isMounted = false; };
-  }, [getIdToken]);
+  }, [getIdToken, onClose, router]);
 
   const handlePrivacyToggle = (value: 'public' | 'private') => {
     setPrivacy(value);
