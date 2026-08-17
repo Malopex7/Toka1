@@ -763,7 +763,7 @@ export default function VideoFeed() {
 
                   {/* Notifications Dropdown Panel */}
                   {isNotificationsOpen && (
-                    <div className="fixed md:absolute top-16 md:top-10 left-4 right-4 md:left-auto md:right-0 w-auto md:w-80 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
+                    <div className="absolute top-12 right-0 w-[calc(100vw-2rem)] max-w-[320px] md:w-80 bg-midnight-boma border border-white/10 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans max-h-80 overflow-hidden">
                       <div className="flex justify-between items-center border-b border-white/5 pb-2">
                         <span className="text-xs font-bold text-cloud-white">Notifications</span>
                         <button
