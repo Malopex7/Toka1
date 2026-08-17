@@ -75,7 +75,6 @@ function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps)
     const diffX = clientX - touchStartXRef.current;
     const diffY = clientY - touchStartYRef.current;
 
-    // Favor horizontal drag
     if (Math.abs(diffX) > Math.abs(diffY)) {
       setDragOffset(diffX);
     }
@@ -115,12 +114,12 @@ function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps)
         transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
         touchAction: 'pan-y'
       }}
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit backdrop-blur-md shadow-sm select-none cursor-grab active:cursor-grabbing group hover:bg-amber-500/30 transition-colors animate-fade-in"
-      title="Swipe left or right to dismiss"
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-xl border border-amber-400/30 hover:border-amber-400/60 w-fit shadow-xl select-none cursor-grab active:cursor-grabbing group transition-all animate-fade-in"
+      title="You reposted this video (swipe to dismiss)"
     >
-      <span className="material-symbols-outlined text-amber-400 text-[13px] pointer-events-none">repeat</span>
-      <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-amber-300 pointer-events-none">
-        You Reposted
+      <TokaRepostIcon size={14} className="text-amber-400 pointer-events-none shrink-0" />
+      <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300 pointer-events-none">
+        Reposted
       </span>
       <button
         onClick={(e) => {
@@ -128,10 +127,10 @@ function SwipeableRepostBadge({ videoId, onDismiss }: SwipeableRepostBadgeProps)
           setIsDismissing(true);
           setTimeout(() => onDismiss(videoId), 200);
         }}
-        className="opacity-40 group-hover:opacity-100 hover:text-amber-200 ml-0.5 p-0.5 rounded-full transition-opacity cursor-pointer flex items-center justify-center"
-        title="Dismiss"
+        className="opacity-40 group-hover:opacity-100 hover:text-white ml-1 p-0.5 rounded-full transition-opacity cursor-pointer flex items-center justify-center"
+        title="Dismiss badge"
       >
-        <span className="material-symbols-outlined text-[11px] text-amber-400">close</span>
+        <span className="material-symbols-outlined text-[13px] text-amber-400">close</span>
       </button>
     </div>
   );
@@ -1048,17 +1047,17 @@ export default function VideoFeed() {
                     )}
                   </button>
 
-                  {/* Bottom Left Info Overlay */}
-                  <div className={`absolute bottom-6 left-4 z-30 flex flex-col gap-1.5 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
+                  {/* Bottom Left Info Overlay - Positioned above bottom navigation bar */}
+                  <div className={`absolute bottom-24 left-4 z-30 flex flex-col gap-1.5 max-w-[75%] pointer-events-auto select-none transition-all duration-300 ease-out ${
                     isCleanMode ? 'translate-y-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
                   }`}>
 
-                    {/* Repost Micro-Label */}
+                    {/* Repost Badge */}
                     {video.isReposted && !dismissedRepostBadges.has(video.id) && (
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 w-fit backdrop-blur-md">
-                        <span className="material-symbols-outlined text-amber-400 text-[12px]">repeat</span>
-                        <span className="font-mono text-[9px] font-bold uppercase text-amber-300">Reposted</span>
-                      </div>
+                      <SwipeableRepostBadge
+                        videoId={video.id}
+                        onDismiss={handleDismissRepostBadge}
+                      />
                     )}
 
                     {/* Creator Handle + Integrated Brand Safe Shield */}
