@@ -188,17 +188,54 @@ export default function VideoFeed() {
     }
   }, [creatorParam, setCreatorFilter]);
 
-  // Auto-scroll to videoId if provided in query params
+  const switchFeedTab = (type: 'foryou' | 'following' | 'live') => {
+    setFeedType(type);
+    setIsStatusTrayOpen(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('toka_active_feed_tab', type);
+      const url = new URL(window.location.href);
+      if (type === 'foryou') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', type);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  // Persist and restore active feed tab from URL or localStorage
+  const hasRestoredTabRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || hasRestoredTabRef.current) return;
+    hasRestoredTabRef.current = true;
+
+    const urlTab = searchParams?.get('tab');
+    const savedTab = localStorage.getItem('toka_active_feed_tab');
+    const targetTab = (urlTab === 'following' || urlTab === 'live' || urlTab === 'foryou')
+      ? urlTab
+      : (savedTab === 'following' || savedTab === 'live' || savedTab === 'foryou')
+      ? savedTab
+      : 'foryou';
+
+    if (targetTab && targetTab !== feedType && !creatorParam) {
+      setFeedType(targetTab as 'foryou' | 'following' | 'live');
+    }
+  }, [searchParams, creatorParam, feedType, setFeedType]);
+
+  // Auto-scroll to videoId if provided in query params or localStorage
   const hasScrolledToInitialVideoRef = useRef(false);
   useEffect(() => {
-    if (videoIdParam && videos.length > 0 && !hasScrolledToInitialVideoRef.current) {
-      const targetIndex = videos.findIndex(v => v.id === videoIdParam);
-      if (targetIndex !== -1 && containerRef.current) {
-        hasScrolledToInitialVideoRef.current = true;
-        setCurrentIndex(targetIndex);
-        const targetElement = containerRef.current.children[targetIndex] as HTMLElement;
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'instant', block: 'start' });
+    if (videos.length > 0 && !hasScrolledToInitialVideoRef.current) {
+      const targetVideoId = videoIdParam || (typeof window !== 'undefined' ? localStorage.getItem('toka_last_video_id') : null);
+      if (targetVideoId) {
+        const targetIndex = videos.findIndex(v => v.id === targetVideoId);
+        if (targetIndex !== -1 && containerRef.current) {
+          hasScrolledToInitialVideoRef.current = true;
+          setCurrentIndex(targetIndex);
+          const targetElement = containerRef.current.children[targetIndex] as HTMLElement;
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'instant', block: 'start' });
+          }
         }
       }
     }
@@ -325,6 +362,13 @@ export default function VideoFeed() {
       // Auto-collapse story drawer when scrolling through feed
       if (isStatusTrayOpen) {
         setIsStatusTrayOpen(false);
+      }
+      const activeVid = videos[index];
+      if (activeVid && typeof window !== 'undefined' && !creatorParam) {
+        localStorage.setItem('toka_last_video_id', activeVid.id);
+        const url = new URL(window.location.href);
+        url.searchParams.set('videoId', activeVid.id);
+        window.history.replaceState({}, '', url.toString());
       }
     }
   };
@@ -667,8 +711,7 @@ export default function VideoFeed() {
                       if (feedType === 'following') {
                         setIsStatusTrayOpen(prev => !prev);
                       } else {
-                        setFeedType('following');
-                        setIsStatusTrayOpen(false);
+                        switchFeedTab('following');
                       }
                     });
                   }}
@@ -684,10 +727,7 @@ export default function VideoFeed() {
                   )}
                 </button>
                 <button
-                  onClick={() => {
-                    setFeedType('foryou');
-                    setIsStatusTrayOpen(false);
-                  }}
+                  onClick={() => switchFeedTab('foryou')}
                   className={`text-sm transition-all relative pb-1 ${feedType === 'foryou' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
