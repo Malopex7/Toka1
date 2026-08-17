@@ -43,21 +43,12 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
           onClick={() => openGoLive()}
           className="flex flex-col items-center gap-1 cursor-pointer group"
         >
-          <div className="relative">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openGoLive();
-              }}
-              className="w-11 h-11 rounded-full bg-red-500/10 hover:bg-red-500/20 border-2 border-red-500 flex items-center justify-center transition-all transform group-active:scale-95 group-hover:scale-105 shadow-[0_0_12px_rgba(239,68,68,0.35)] cursor-pointer p-2"
-              title="Go Live Now"
-            >
-              <TokaLiveIcon size={20} className="text-red-500 shrink-0" />
-            </button>
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-midnight-boma animate-pulse" />
+          <div className="w-11 h-11 toka-rainbow-halo p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center cursor-pointer opacity-90 group-hover:opacity-100">
+            <div className="toka-rainbow-halo-inner flex items-center justify-center bg-black/80">
+              <TokaLiveIcon size={24} className="shrink-0" />
+            </div>
           </div>
-          <span className="text-[10px] font-bold text-red-400 max-w-[50px] truncate">
+          <span className="text-[10px] font-medium text-cloud-white/80 max-w-[50px] truncate">
             Go Live
           </span>
         </div>
