@@ -845,15 +845,15 @@ export default function VideoFeed() {
             </div>
           )}
 
-          {/* Centered Stories Pill Dropdown Button (Kept and Persistent as requested) */}
+          {/* Centered Stories Pill Dropdown Button (Aligned with Mute Button at top-16 h-8) */}
           {!isStatusTrayOpen && (
             <button
               onClick={() => requireAuth(() => setIsStatusTrayOpen(true))}
-              className="absolute top-18 left-1/2 -translate-x-1/2 z-30 pointer-events-auto px-3.5 py-1 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/15 text-[11px] font-bold text-cloud-white/90 flex items-center gap-1.5 shadow-lg active:scale-95 transition-all animate-fade-in cursor-pointer select-none"
+              className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-auto h-8 px-3.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-cloud-white/90 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all animate-fade-in cursor-pointer select-none"
               title="24h Creator Stories"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-toka-flare shadow-[0_0_6px_rgba(255,79,0,0.9)] animate-pulse shrink-0" />
-              <span>Stories</span>
+              <span className="font-mono tracking-tight">Stories</span>
               <span className="material-symbols-outlined text-[14px] text-cloud-white/60">expand_more</span>
             </button>
           )}
