@@ -38,15 +38,13 @@ export default function StatusTray({ onOpenProfileStory }: StatusTrayProps) {
     <div className="w-full overflow-x-auto no-scrollbar py-1 px-2.5 z-30 transition-all select-none">
       <div className="flex items-center gap-3 min-w-max">
         
-        {/* Go Live Action Bubble */}
+        {/* Go Live Action */}
         <div
           onClick={() => openGoLive()}
           className="flex flex-col items-center gap-1 cursor-pointer group"
         >
-          <div className="w-11 h-11 toka-rainbow-halo p-[2px] transition-all transform group-active:scale-95 flex items-center justify-center cursor-pointer opacity-90 group-hover:opacity-100">
-            <div className="toka-rainbow-halo-inner flex items-center justify-center bg-black/80">
-              <TokaLiveIcon size={24} className="shrink-0" />
-            </div>
+          <div className="w-11 h-11 flex items-center justify-center transition-all transform group-active:scale-90 group-hover:scale-105">
+            <TokaLiveIcon size={36} className="shrink-0" />
           </div>
           <span className="text-[10px] font-medium text-cloud-white/80 max-w-[50px] truncate">
             Go Live
