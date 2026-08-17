@@ -1,10 +1,11 @@
 // Toka Service Worker with offline caching & FCM push support
-const CACHE_NAME = 'toka-pwa-v1';
+const CACHE_NAME = 'toka-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/icons/icon-maskable-512x512.png',
   '/images/logo/logo.png',
   '/images/audio-album.jpg',
   '/favicon.ico'
