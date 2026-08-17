@@ -827,8 +827,7 @@ export default function VideoFeed() {
           {isStatusTrayOpen && (
             <div className="absolute top-16 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-2xl border-b border-white/10 p-3 shadow-2xl animate-fade-in pointer-events-auto select-none">
               <div className="flex items-center justify-between px-2 pb-2 mb-1 border-b border-white/5">
-                <span className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 font-mono">
-                  <span className="material-symbols-outlined text-[15px] text-amber-400">auto_awesome</span>
+                <span className="text-[11px] font-bold text-cloud-white/80 flex items-center gap-1.5 font-mono tracking-wider">
                   24H CREATOR STORIES
                 </span>
                 <button
