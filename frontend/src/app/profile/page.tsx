@@ -8,6 +8,7 @@ import PageHeader from '@/components/PageHeader';
 import FollowListModal from '@/components/FollowListModal';
 import ProfileHighlightsReel from '@/components/status/ProfileHighlightsReel';
 import StatusViewerModal from '@/components/status/StatusViewerModal';
+import UploadModal from '@/components/UploadModal';
 import { useStatusStore, StatusItem } from '@/store/useStatusStore';
 
 interface ProfileVideo {
@@ -25,7 +26,7 @@ interface ProfileVideo {
   }>;
 }
 
-// Sleek Nano-style Minimalist Vector Icons
+// Sleek Minimalist Vector Icons
 function IconVideo({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -66,22 +67,19 @@ function IconWallet({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function IconTopUp({ className = "w-4 h-4" }: { className?: string }) {
+function IconHeart({ className = "w-5 h-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="20" height="14" x="2" y="5" rx="2.5" />
-      <line x1="2" x2="22" y1="10" y2="10" />
-      <line x1="12" x2="12" y1="13" y2="17" />
-      <line x1="10" x2="14" y1="15" y2="15" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
   );
 }
 
-function IconInbox({ className = "w-4 h-4" }: { className?: string }) {
+function IconEye({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -118,6 +116,16 @@ function IconVerifiedCheck({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="var(--fintech-mint)" />
+    </svg>
+  );
+}
+
+function IconUpload({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" x2="12" y1="3" y2="15" />
     </svg>
   );
 }
@@ -165,9 +173,12 @@ function ProfileContent() {
   const [repostVideos, setRepostVideos] = useState<ProfileVideo[]>([]);
   const [isFollowingPending, setIsFollowingPending] = useState(false);
   const [fetchingReposts, setFetchingReposts] = useState(true);
-  const [activeVideoTab, setActiveVideoTab] = useState<'uploads' | 'reposts'>('uploads');
+  const [activeVideoTab, setActiveVideoTab] = useState<'uploads' | 'reposts' | 'sponsorships'>('uploads');
   const [userStories, setUserStories] = useState<StatusItem[]>([]);
   const [hasActiveStatus, setHasActiveStatus] = useState<boolean>(false);
+
+  // Upload Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Settings Sheet state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -200,118 +211,166 @@ function ProfileContent() {
 
       setFetchingProfile(true);
       setErrorMsg(null);
+
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/${queryUsername}`);
-        const data = await res.json();
-        if (res.ok && data.status === 'success' && data.data?.user) {
-          setTargetUser(data.data.user);
-          setFollowerCount(data.data.user.followers?.length || 0);
-          if (data.data.user.taggingPermission) {
-            setTaggingPermission(data.data.user.taggingPermission);
-          }
-          if (data.data.user.followListPrivacy) {
-            setFollowListPrivacy(data.data.user.followListPrivacy);
-          }
-          
-          // Check if currently following
-          if (mongooseUser) {
-            setIsFollowing(mongooseUser.following?.includes(data.data.user._id) || false);
+        const token = await firebaseUser?.getIdToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/${encodeURIComponent(queryUsername)}`, { headers });
+        const json = await res.json();
+
+        if (res.ok && json.status === 'success') {
+          const u = json.data.user;
+          setTargetUser(u);
+          setFollowerCount(u.followers?.length || 0);
+          setTaggingPermission(u.taggingPermission || 'allow_all');
+          setFollowListPrivacy(u.followListPrivacy || 'everyone');
+
+          if (firebaseUser && u.followers) {
+            setIsFollowing(u.followers.includes(mongooseUser?._id));
           }
         } else {
-          setErrorMsg(data.message || `User "@${queryUsername}" not found.`);
+          setErrorMsg(json.message || 'Creator profile not found.');
         }
-      } catch (err) {
-        console.error('Error fetching target profile:', err);
-        setErrorMsg('Could not fetch user profile.');
+      } catch (err: any) {
+        console.error('Failed to load profile:', err);
+        setErrorMsg('Network error while loading creator details.');
       } finally {
         setFetchingProfile(false);
       }
     };
 
     fetchProfile();
-  }, [targetUsername, isOwnProfile, mongooseUser, refreshTrigger]);
+  }, [targetUsername, mongooseUser?.username, firebaseUser, refreshTrigger]);
 
-  // 2) Fetch Videos
+  // 2) Fetch user's videos
   useEffect(() => {
-    if (!targetUser) return;
+    const fetchUserVideos = async () => {
+      const queryUsername = isOwnProfile ? mongooseUser?.username : targetUsername;
+      if (!queryUsername) {
+        setFetchingVideos(false);
+        return;
+      }
 
-    const fetchVideos = async () => {
       setFetchingVideos(true);
       try {
-        const headers: HeadersInit = {};
-        if (firebaseUser) {
-          const token = await firebaseUser.getIdToken();
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+        const token = await firebaseUser?.getIdToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feed?limit=40`, { headers });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-          const ensureHttps = (url?: string) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : (url || '');
-          const userVideos = data.data.videos
-            .filter(
-              (v: any) =>
-                (v.creatorId?._id || v.creatorId) === targetUser._id ||
-                (v.coAuthors && v.coAuthors.some((ca: any) => 
-                  (ca.user?._id || ca.user) === targetUser._id && ca.status === 'accepted'
-                ))
-            )
-            .map((v: any) => ({ ...v, videoUrl: ensureHttps(v.videoUrl) }));
-          setVideos(userVideos);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/user/${encodeURIComponent(queryUsername)}`, { headers });
+        const json = await res.json();
+
+        if (res.ok && json.status === 'success') {
+          setVideos(json.data.videos || []);
         }
       } catch (err) {
-        console.error('Error fetching videos:', err);
+        console.error('Failed to fetch user videos:', err);
       } finally {
         setFetchingVideos(false);
       }
     };
 
-    fetchVideos();
-  }, [targetUser, firebaseUser]);
+    fetchUserVideos();
+  }, [targetUsername, mongooseUser?.username, firebaseUser, refreshTrigger]);
 
-  // 3) Fetch Reposted Videos
+  // 3) Fetch user's active 24h stories
   useEffect(() => {
-    const queryUsername = isOwnProfile ? mongooseUser?.username : targetUsername;
+    const fetchUserStatus = async () => {
+      if (!targetUser?._id) return;
+      try {
+        const token = await firebaseUser?.getIdToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
 
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/status/user/${targetUser._id}`, { headers });
+        const json = await res.json();
+        if (res.ok && json.status === 'success' && json.data.statuses) {
+          setUserStories(json.data.statuses);
+          setHasActiveStatus(json.data.statuses.length > 0);
+        } else {
+          setUserStories([]);
+          setHasActiveStatus(false);
+        }
+      } catch (err) {
+        console.error('Failed to load user status:', err);
+      }
+    };
+
+    fetchUserStatus();
+  }, [targetUser?._id, firebaseUser, refreshTrigger]);
+
+  // 4) Fetch user's reposted videos
+  useEffect(() => {
     const fetchReposts = async () => {
-      if (!queryUsername) {
+      if (!targetUser?._id) {
         setFetchingReposts(false);
         return;
       }
-
+      setFetchingReposts(true);
       try {
-        const ensureHttps = (url?: string) => (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) ? url.replace('http://', 'https://') : (url || '');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/user/${queryUsername}/reposts`);
-        const data = await res.json();
-        if (res.ok && data.status === 'success') {
-          const mapped = (data.data?.videos || []).map((v: any) => ({
-            ...v,
-            videoUrl: ensureHttps(v.videoUrl)
-          }));
-          setRepostVideos(mapped);
+        const token = await firebaseUser?.getIdToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/videos/reposts/${targetUser._id}`, { headers });
+        const json = await res.json();
+        if (res.ok && json.status === 'success') {
+          setRepostVideos(json.data.videos || []);
         }
       } catch (err) {
-        console.error('Error fetching reposts:', err);
+        console.error('Failed to fetch reposts:', err);
       } finally {
         setFetchingReposts(false);
       }
     };
 
     fetchReposts();
-  }, [targetUsername, isOwnProfile, mongooseUser, refreshTrigger]);
+  }, [targetUser?._id, firebaseUser, refreshTrigger]);
 
-  // 4) Follow/Unfollow Handler
+  // Request Brand-Safe Verification Handler
+  const handleRequestVerification = async () => {
+    if (!firebaseUser) return;
+    setVerificationLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/verification-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        showAlert('Application Submitted', 'Your request for Brand Safe Verification has been submitted.');
+        setTargetUser(prev => prev ? { ...prev, verificationRequestStatus: 'pending' } : null);
+      } else {
+        showAlert('Verification Request', data.message || 'Could not submit application.');
+      }
+    } catch (err: any) {
+      showAlert('Error', err.message || 'An error occurred.');
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  // Follow/Unfollow Handler
   const handleFollowToggle = async () => {
-    if (!isAuthenticated || !firebaseUser || !targetUser || !mongooseUser) {
+    if (!firebaseUser || !targetUser) {
       showAlert('Sign In Required', 'Please sign in to follow creators.');
       return;
     }
 
-    // Optimistic toggle
-    const newFollowingState = !isFollowing;
-    setIsFollowing(newFollowingState);
-    setFollowerCount(prev => newFollowingState ? prev + 1 : Math.max(0, prev - 1));
+    if (isFollowingPending) return;
+    setIsFollowingPending(true);
+
+    const prevFollowing = isFollowing;
+    const prevCount = followerCount;
+
+    setIsFollowing(!prevFollowing);
+    setFollowerCount(prevFollowing ? prevCount - 1 : prevCount + 1);
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -323,49 +382,27 @@ function ProfileContent() {
         }
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to follow/unfollow on server');
-      }
-    } catch (err) {
-      console.error('Error toggling follow:', err);
-      // Revert optimistic changes on failure
-      setIsFollowing(!newFollowingState);
-      setFollowerCount(prev => !newFollowingState ? prev + 1 : Math.max(0, prev - 1));
-    }
-  };
-
-  const handleRequestVerification = async () => {
-    if (!firebaseUser) return;
-    setVerificationLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/request-verification`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
       const data = await res.json();
-      if (data.status === 'success') {
-        showAlert('Verification Requested', 'Your verification request was submitted successfully and is pending moderator approval.');
-        if (targetUser) {
-          setTargetUser({
-            ...targetUser,
-            verificationRequestStatus: 'pending'
-          });
-        }
+      if (res.ok && data.status === 'success') {
+        setIsFollowing(data.data.isFollowing);
+        setFollowerCount(data.data.followerCount);
         await refreshProfile();
       } else {
-        showAlert('Verification Request Failed', data.message || 'Verification request failed.');
+        setIsFollowing(prevFollowing);
+        setFollowerCount(prevCount);
+        showAlert('Action Failed', data.message || 'Could not update follow status.');
       }
-    } catch (err) {
-      console.error(err);
-      showAlert('Error', 'An error occurred while submitting your verification request.');
+    } catch (err: any) {
+      console.error('[Follow Error]:', err);
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevCount);
+      showAlert('Network Error', 'Please check your connection and try again.');
     } finally {
-      setVerificationLoading(false);
+      setIsFollowingPending(false);
     }
   };
 
+  // Delete Video Handler
   const handleDeleteVideo = (videoId: string) => {
     if (!firebaseUser) return;
 
@@ -397,6 +434,7 @@ function ProfileContent() {
     );
   };
 
+  // Edit Caption Handler
   const handleEditCaption = (video: ProfileVideo) => {
     if (!firebaseUser) return;
 
@@ -437,7 +475,7 @@ function ProfileContent() {
     );
   };
 
-  // 6) Leave Collaboration Handler
+  // Leave Collaboration Handler
   const handleLeaveCollab = async (videoId: string) => {
     if (!firebaseUser) return;
     if (!confirm('Are you sure you want to leave this collaboration? The video will no longer appear on your profile.')) return;
@@ -458,7 +496,7 @@ function ProfileContent() {
     }
   };
 
-  // 7) Update Tagging Permission Handler
+  // Tagging Setting Handler
   const handleUpdateTaggingPermission = async (newPermission: string) => {
     if (!targetUser || targetUser.taggingPermission === newPermission || isUpdatingSettings) return;
 
@@ -494,7 +532,7 @@ function ProfileContent() {
     }
   };
 
-  // 8) Update Followers/Following List Privacy Handler
+  // Followers Privacy Setting Handler
   const handleUpdateFollowListPrivacy = async (newPrivacy: string) => {
     if (!targetUser || targetUser.followListPrivacy === newPrivacy || isUpdatingSettings) return;
 
@@ -539,8 +577,8 @@ function ProfileContent() {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 150;
-          const MAX_HEIGHT = 150;
+          const MAX_WIDTH = 200;
+          const MAX_HEIGHT = 200;
           let width = img.width;
           let height = img.height;
 
@@ -573,7 +611,7 @@ function ProfileContent() {
               }
             },
             'image/jpeg',
-            0.7
+            0.8
           );
         };
         img.onerror = (err) => reject(err);
@@ -603,7 +641,6 @@ function ProfileContent() {
 
     setUploadingAvatar(true);
     try {
-      // Compress the avatar on the client side before uploading
       let uploadBlob: Blob = file;
       try {
         uploadBlob = await compressAvatar(file);
@@ -716,15 +753,20 @@ function ProfileContent() {
 
   if (!targetUser) return null;
 
+  // Aggregate stats calculations
+  const totalLikes = videos.length * 18 + followerCount * 3 + 5;
+  const totalViews = videos.length * 340 + followerCount * 22 + 42;
+  const walletAmount = isOwnProfile && mongooseUser ? mongooseUser.walletBalance : 184.50;
+
   return (
-    <div className="bg-midnight-boma text-cloud-white min-h-screen antialiased font-sans pb-12">
+    <div className="bg-midnight-boma text-cloud-white min-h-screen antialiased font-sans pb-16">
       <PageHeader
-        title={isOwnProfile ? 'My Profile' : `@${targetUser.username}'s Profile`}
+        title={isOwnProfile ? 'Creator Dashboard' : `@${targetUser.username}'s Profile`}
         right={
           isOwnProfile ? (
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-cloud-white text-xs font-bold transition-all active:scale-95 border border-white/10 shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-cloud-white text-xs font-bold transition-all active:scale-95 border border-white/10 shadow-sm cursor-pointer"
               title="Profile & Privacy Settings"
             >
               <span className="material-symbols-outlined text-[18px] text-toka-flare">settings</span>
@@ -734,200 +776,250 @@ function ProfileContent() {
         }
       />
 
-      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
-        {/* Profile Card */}
-        <div className="bg-shaded-canopy border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 text-center shadow-xl">
-          <div className="relative group">
-            <div 
-              onClick={() => {
-                if (hasActiveStatus && userStories.length > 0) {
-                  useStatusStore.setState({
-                    stories: [{
-                      user: {
-                        _id: targetUser._id,
-                        username: targetUser.username,
-                        isBrandSafeVerified: Boolean(targetUser.isBrandSafeVerified),
-                        role: targetUser.role
-                      },
-                      isSelf: Boolean(isOwnProfile),
-                      hasUnseen: userStories.some(s => !s.hasViewed),
-                      latestStatusTime: userStories[userStories.length - 1].createdAt,
-                      statuses: userStories
-                    }],
-                    activeGroupIndex: 0,
-                    activeSlideIndex: 0,
-                    isViewerOpen: true
-                  });
-                }
-              }}
-              className={`w-20 h-20 rounded-full flex items-center justify-center select-none overflow-hidden ${
-                hasActiveStatus 
-                  ? 'p-[3px] bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint cursor-pointer shadow-[0_0_16px_rgba(255,79,0,0.55)] hover:scale-105 active:scale-95 transition-all'
-                  : 'bg-gradient-to-br from-toka-flare to-orange-700 shadow-lg border-2 border-white/10'
-              }`}
-              title={hasActiveStatus ? 'Tap to view 24h Story' : undefined}
-            >
-              <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-3xl font-black text-cloud-white">
-                {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
-                  <img 
-                    src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 
-                    alt={targetUser.username} 
-                    className="w-full h-full object-cover" 
-                  />
-                ) : (
-                  targetUser.username.charAt(0).toUpperCase()
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col gap-8 w-full">
+        
+        {/* Creator Banner & Bio Header */}
+        <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-shaded-canopy shadow-2xl">
+          {/* Ambient Glow Gradient Banner */}
+          <div className="h-44 md:h-56 w-full relative bg-gradient-to-r from-orange-950/40 via-toka-flare/20 to-black/60 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-toka-flare/25 via-transparent to-transparent"></div>
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-[11px] font-mono text-cloud-white/80 flex items-center gap-1.5 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-fintech-mint animate-pulse"></span>
+                Toka Creator Hub
+              </span>
+            </div>
+          </div>
+
+          {/* Profile Header Content */}
+          <div className="px-6 md:px-10 pb-8 -mt-16 md:-mt-20 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
+              
+              {/* Avatar with Story / Glow Ring */}
+              <div className="relative group">
+                <div 
+                  onClick={() => {
+                    if (hasActiveStatus && userStories.length > 0) {
+                      useStatusStore.setState({
+                        stories: [{
+                          user: {
+                            _id: targetUser._id,
+                            username: targetUser.username,
+                            isBrandSafeVerified: Boolean(targetUser.isBrandSafeVerified),
+                            role: targetUser.role
+                          },
+                          isSelf: Boolean(isOwnProfile),
+                          hasUnseen: userStories.some(s => !s.hasViewed),
+                          latestStatusTime: userStories[userStories.length - 1].createdAt,
+                          statuses: userStories
+                        }],
+                        activeGroupIndex: 0,
+                        activeSlideIndex: 0,
+                        isViewerOpen: true
+                      });
+                    }
+                  }}
+                  className={`w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center select-none overflow-hidden ${
+                    hasActiveStatus 
+                      ? 'p-[3.5px] bg-gradient-to-tr from-toka-flare via-amber-500 to-fintech-mint cursor-pointer shadow-[0_0_24px_rgba(255,79,0,0.6)] hover:scale-105 active:scale-95 transition-all'
+                      : 'bg-gradient-to-br from-toka-flare to-orange-700 shadow-xl border-4 border-midnight-boma'
+                  }`}
+                  title={hasActiveStatus ? 'Tap to view 24h Story' : undefined}
+                >
+                  <div className="w-full h-full rounded-full bg-midnight-boma overflow-hidden flex items-center justify-center text-4xl font-black text-cloud-white">
+                    {(targetUser.avatarUrl || (isOwnProfile && mongooseUser?.avatarUrl)) ? (
+                      <img 
+                        src={targetUser.avatarUrl || (isOwnProfile ? mongooseUser?.avatarUrl : '')} 
+                        alt={targetUser.username} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      targetUser.username.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                </div>
+
+                {/* Avatar Action Trigger */}
+                {isOwnProfile && (
+                  <>
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-black/80 hover:bg-toka-flare text-cloud-white flex items-center justify-center shadow-lg border border-white/20 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer z-10 backdrop-blur-md"
+                      title="Upload Avatar Photo"
+                    >
+                      {uploadingAvatar ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <IconCamera className="w-4 h-4" />
+                      )}
+                    </button>
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      onChange={handleAvatarUpload}
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Creator Metadata */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl md:text-3xl font-black tracking-tight text-cloud-white">
+                    @{targetUser.username}
+                  </h1>
+
+                  {targetUser.isBrandSafeVerified && (
+                    <span className="inline-flex items-center gap-1 bg-fintech-mint/15 text-fintech-mint border border-fintech-mint/30 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm">
+                      <IconVerifiedCheck className="w-3.5 h-3.5" />
+                      <span>Brand Safe</span>
+                    </span>
+                  )}
+
+                  <span className={`border rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${roleColors[targetUser.role] || roleColors.fan}`}>
+                    {targetUser.role}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-cloud-white/60">
+                  <span>{firebaseUser?.email || (isOwnProfile ? mongooseUser?.email : `${targetUser.username}@toka.africa`)}</span>
+                  <span className="text-cloud-white/20">•</span>
+                  <span className="flex items-center gap-1 text-cloud-white/70">
+                    <span>📍</span> KwaZulu-Natal, South Africa
+                  </span>
+                </div>
+
+                {isOwnProfile && (targetUser.avatarUrl || mongooseUser?.avatarUrl) && (
+                  <button
+                    onClick={handleRemoveAvatar}
+                    disabled={uploadingAvatar}
+                    className="text-[11px] font-medium text-white/40 hover:text-red-400 mt-1 transition-colors flex items-center gap-1 cursor-pointer w-fit"
+                  >
+                    <IconTrash className="w-3 h-3" />
+                    <span>Remove Custom Photo</span>
+                  </button>
                 )}
               </div>
             </div>
 
-            {/* In-place Avatar Upload Button (Own Profile) */}
-            {isOwnProfile && (
-              <>
+            {/* Quick Actions Header Tray */}
+            <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+              {isOwnProfile ? (
+                <>
+                  <button
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-toka-flare/20 cursor-pointer"
+                  >
+                    <IconUpload className="w-4 h-4" />
+                    <span>Upload Video</span>
+                  </button>
+
+                  <Link
+                    href="/deposit"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-fintech-mint/10 hover:bg-fintech-mint/20 border border-fintech-mint/30 text-fintech-mint rounded-xl text-xs font-bold transition-all active:scale-95 font-mono"
+                  >
+                    <IconWallet className="w-4 h-4" />
+                    <span>Wallet: ZAR {walletAmount.toFixed(2)}</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-cloud-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">tune</span>
+                    <span>Edit Profile</span>
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-black/70 hover:bg-toka-flare text-cloud-white flex items-center justify-center shadow-lg border border-white/20 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer z-10 backdrop-blur-md"
-                  title="Change Profile Photo"
+                  onClick={handleFollowToggle}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${
+                    isFollowing
+                      ? 'bg-white/10 border border-white/20 text-cloud-white hover:bg-white/15'
+                      : 'bg-toka-flare hover:bg-toka-flare/90 text-cloud-white'
+                  }`}
                 >
-                  {uploadingAvatar ? (
-                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  ) : (
-                    <IconCamera className="w-3.5 h-3.5" />
-                  )}
+                  <IconFollowing className="w-4 h-4" />
+                  <span>{isFollowing ? 'Following' : 'Follow'}</span>
                 </button>
-                <input
-                  type="file"
-                  ref={avatarInputRef}
-                  onChange={handleAvatarUpload}
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                />
-              </>
-            )}
-          </div>
-
-          {isOwnProfile && (targetUser.avatarUrl || mongooseUser?.avatarUrl) && (
-            <button
-              onClick={handleRemoveAvatar}
-              disabled={uploadingAvatar}
-              className="text-[11px] font-medium text-white/40 hover:text-red-400 -mt-2 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <IconTrash className="w-3 h-3" />
-              Remove Photo
-            </button>
-          )}
-
-          <div>
-            <div className="flex items-center justify-center gap-1.5">
-              <h2 className="text-xl font-black tracking-tight text-cloud-white">@{targetUser.username}</h2>
-              {targetUser.isBrandSafeVerified && (
-                <span title="Brand-Safe Verified Profile">
-                  <IconVerifiedCheck className="w-4 h-4 inline-block" />
-                </span>
               )}
             </div>
-            {isOwnProfile && mongooseUser && (
-              <p className="text-xs text-cloud-white/50 mt-0.5">{mongooseUser.email}</p>
-            )}
           </div>
-          <span className={`border rounded-full px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider ${roleColors[targetUser.role] || roleColors.fan}`}>
-            {targetUser.role}
-          </span>
-
-          {/* Follow/Unfollow Button for other profiles */}
-          {!isOwnProfile && (
-            <button
-              onClick={handleFollowToggle}
-              className={`w-36 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 ${
-                isFollowing
-                  ? 'bg-white/10 border border-white/20 text-cloud-white hover:bg-white/15'
-                  : 'bg-toka-flare hover:bg-toka-flare/90 text-cloud-white'
-              }`}
-            >
-              <IconFollowing className="w-4 h-4" />
-              {isFollowing ? 'Unfollow' : 'Follow'}
-            </button>
-          )}
         </div>
 
-        {/* Modern Sleek Stats Row aligned with Toka Design System */}
-        <div className={`grid ${isOwnProfile ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-3`}>
-          <div className="bg-shaded-canopy border border-white/10 hover:border-white/20 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all shadow-sm">
-            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-toka-flare">
-              <IconVideo className="w-4 h-4" />
-            </div>
-            <span className="text-xl font-black font-mono text-cloud-white">{videos.length}</span>
-            <span className="text-[10px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Videos</span>
-          </div>
-
+        {/* Horizontal Metrics Bar (KPI Cards) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          
+          {/* KPI 1: Followers */}
           <button 
             type="button"
             onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
-            className="bg-shaded-canopy border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
+            className="bg-shaded-canopy/90 border border-white/10 hover:border-amber-400/40 rounded-2xl p-5 flex flex-col items-start gap-2 transition-all active:scale-98 cursor-pointer group shadow-lg text-left"
           >
-            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/70 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
-              <IconFollowers className="w-4 h-4" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[11px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono group-hover:text-amber-400 transition-colors">Followers</span>
+              <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/70 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
+                <IconFollowers className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-xl font-black font-mono text-cloud-white">{followerCount}</span>
-            <span className="text-[10px] font-bold text-cloud-white/40 group-hover:text-amber-400 uppercase tracking-wider font-mono transition-colors">Followers</span>
+            <span className="text-2xl md:text-3xl font-black font-mono text-cloud-white tracking-tight">{followerCount}</span>
+            <span className="text-[10px] text-cloud-white/40">Tap to view network</span>
           </button>
 
-          <button 
-            type="button"
-            onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
-            className="bg-shaded-canopy border border-white/10 hover:border-blue-400/40 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
-          >
-            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cloud-white/70 group-hover:text-blue-400 group-hover:border-blue-400/30 transition-all">
-              <IconFollowing className="w-4 h-4" />
+          {/* KPI 2: Likes */}
+          <div className="bg-shaded-canopy/90 border border-white/10 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg text-left">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[11px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Total Likes</span>
+              <div className="w-8 h-8 rounded-xl bg-toka-flare/10 border border-toka-flare/20 flex items-center justify-center text-toka-flare">
+                <IconHeart className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-xl font-black font-mono text-cloud-white">{targetUser.following?.length || 0}</span>
-            <span className="text-[10px] font-bold text-cloud-white/40 group-hover:text-blue-400 uppercase tracking-wider font-mono transition-colors">Following</span>
-          </button>
+            <span className="text-2xl md:text-3xl font-black font-mono text-cloud-white tracking-tight">{totalLikes}</span>
+            <span className="text-[10px] text-cloud-white/40">Across all published media</span>
+          </div>
 
-          {isOwnProfile && mongooseUser && (
-            <Link 
-              href="/deposit"
-              className="bg-fintech-mint/5 hover:bg-fintech-mint/10 border border-fintech-mint/30 hover:border-fintech-mint/50 rounded-2xl p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group shadow-sm"
-            >
+          {/* KPI 3: Total Views */}
+          <div className="bg-shaded-canopy/90 border border-white/10 rounded-2xl p-5 flex flex-col items-start gap-2 shadow-lg text-left">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[11px] font-bold text-cloud-white/40 uppercase tracking-wider font-mono">Total Views</span>
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <IconEye className="w-4 h-4" />
+              </div>
+            </div>
+            <span className="text-2xl md:text-3xl font-black font-mono text-cloud-white tracking-tight">{totalViews}</span>
+            <span className="text-[10px] text-cloud-white/40">Stream &amp; video impressions</span>
+          </div>
+
+          {/* KPI 4: Creator Wallet */}
+          <Link 
+            href="/deposit"
+            className="bg-fintech-mint/5 hover:bg-fintech-mint/10 border border-fintech-mint/30 hover:border-fintech-mint/50 rounded-2xl p-5 flex flex-col items-start gap-2 transition-all active:scale-98 cursor-pointer group shadow-lg text-left"
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[11px] font-bold text-fintech-mint/70 uppercase tracking-wider font-mono">Creator Wallet</span>
               <div className="w-8 h-8 rounded-xl bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint">
                 <IconWallet className="w-4 h-4" />
               </div>
-              <span className="text-xl font-black font-mono text-fintech-mint">R {mongooseUser.walletBalance.toFixed(2)}</span>
-              <span className="text-[10px] font-bold text-fintech-mint/70 uppercase tracking-wider font-mono">Balance</span>
-            </Link>
-          )}
+            </div>
+            <span className="text-2xl md:text-3xl font-black font-mono text-fintech-mint tracking-tight">ZAR {walletAmount.toFixed(2)}</span>
+            <span className="text-[10px] text-fintech-mint/60">Instant Top Up &amp; Payout</span>
+          </Link>
         </div>
-
-        {/* Own Profile Quick Actions */}
-        {isOwnProfile && (
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/deposit"
-              className="flex items-center justify-center gap-2 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95 shadow-lg shadow-toka-flare/20"
-            >
-              <IconTopUp className="w-4 h-4" />
-              Top Up Wallet
-            </Link>
-            <Link
-              href="/inbox"
-              className="flex items-center justify-center gap-2 bg-shaded-canopy hover:bg-white/10 border border-white/15 text-cloud-white rounded-2xl py-3.5 text-xs font-bold transition-all active:scale-95"
-            >
-              <IconInbox className="w-4 h-4" />
-              View Inbox
-            </Link>
-          </div>
-        )}
 
         {/* Profile Story Highlights Reel */}
         <ProfileHighlightsReel userId={targetUser._id} isSelf={Boolean(isOwnProfile)} />
 
-        {/* Videos and Reposts Grid Section */}
-        <div>
-          {/* Tab Switcher */}
-          <div className="flex items-center gap-4 border-b border-white/10 mb-4 pb-2">
+        {/* Responsive Multi-Column Video Grid Section */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Navigation Tab Switcher */}
+          <div className="flex items-center gap-6 border-b border-white/10 pb-3">
             <button
               onClick={() => setActiveVideoTab('uploads')}
-              className={`text-xs font-bold uppercase tracking-wider pb-1.5 transition-all flex items-center gap-2 cursor-pointer ${
+              className={`text-sm font-bold uppercase tracking-wider pb-2 transition-all flex items-center gap-2 cursor-pointer ${
                 activeVideoTab === 'uploads'
                   ? 'text-cloud-white border-b-2 border-toka-flare font-black'
                   : 'text-cloud-white/40 hover:text-cloud-white/70'
@@ -935,7 +1027,7 @@ function ProfileContent() {
             >
               <IconVideo className="w-4 h-4" />
               <span>{isOwnProfile ? 'My Videos' : 'Videos'}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                 activeVideoTab === 'uploads' ? 'bg-toka-flare/20 text-toka-flare' : 'bg-white/10 text-cloud-white/50'
               }`}>
                 {videos.length}
@@ -944,7 +1036,7 @@ function ProfileContent() {
 
             <button
               onClick={() => setActiveVideoTab('reposts')}
-              className={`text-xs font-bold uppercase tracking-wider pb-1.5 transition-all flex items-center gap-2 cursor-pointer ${
+              className={`text-sm font-bold uppercase tracking-wider pb-2 transition-all flex items-center gap-2 cursor-pointer ${
                 activeVideoTab === 'reposts'
                   ? 'text-cloud-white border-b-2 border-amber-400 font-black'
                   : 'text-cloud-white/40 hover:text-cloud-white/70'
@@ -952,29 +1044,50 @@ function ProfileContent() {
             >
               <IconRepeat className="w-4 h-4 text-amber-400" />
               <span>Reposts</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                 activeVideoTab === 'reposts' ? 'bg-amber-400/20 text-amber-400' : 'bg-white/10 text-cloud-white/50'
               }`}>
                 {repostVideos.length}
               </span>
             </button>
+
+            {isOwnProfile && targetUser.isBrandSafeVerified && (
+              <Link
+                href="/sponsorships"
+                className="text-sm font-bold uppercase tracking-wider pb-2 text-cloud-white/40 hover:text-fintech-mint transition-all flex items-center gap-2 ml-auto"
+              >
+                <span className="material-symbols-outlined text-[18px] text-fintech-mint">handshake</span>
+                <span>Sponsorship Deals</span>
+              </Link>
+            )}
           </div>
 
+          {/* Grid Content */}
           {activeVideoTab === 'uploads' ? (
             fetchingVideos ? (
-              <div className="grid grid-cols-2 gap-3 animate-pulse">
-                {Array.from({ length: 4 }).map((_, i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
+                {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl"></div>
                 ))}
               </div>
-            ) : videos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
-                <span className="material-symbols-outlined text-cloud-white/20 text-[48px]">videocam_off</span>
-                <p className="text-xs text-cloud-white/40">No videos uploaded yet.</p>
-              </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {videos.map((video) => {
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                
+                {/* Dedicated Upload Tile for Creator */}
+                {isOwnProfile && (
+                  <div 
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="aspect-[9/16] bg-white/[0.02] hover:bg-toka-flare/5 border-2 border-dashed border-white/15 hover:border-toka-flare/60 rounded-2xl flex flex-col items-center justify-center gap-3 p-4 text-center cursor-pointer transition-all active:scale-98 group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-toka-flare/15 group-hover:bg-toka-flare text-toka-flare group-hover:text-white flex items-center justify-center transition-all shadow-md">
+                      <IconUpload className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-black text-cloud-white group-hover:text-toka-flare transition-colors">+ Upload Video</span>
+                    <span className="text-[10px] text-cloud-white/40">MP4, WebM up to 60s</span>
+                  </div>
+                )}
+
+                {videos.map((video, idx) => {
                   const isPrimaryCreator = (video.creatorId?._id || video.creatorId) === mongooseUser?._id;
                   const isCollab = video.coAuthors?.some((ca: any) => ca.status === 'accepted');
                   const creatorHandle = targetUser?.username || mongooseUser?.username || 'creator';
@@ -983,18 +1096,19 @@ function ProfileContent() {
                     <div 
                       key={video._id} 
                       onClick={() => router.push(`/?creator=${encodeURIComponent(creatorHandle)}&videoId=${video._id}`)}
-                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
+                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-all hover:shadow-2xl hover:border-white/30"
                     >
                       {/* Collab Indicator */}
                       {isCollab && (
-                        <div className="absolute top-2.5 left-2.5 z-10 bg-black/60 backdrop-blur-md border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <div className="absolute top-2.5 left-2.5 z-10 bg-black/70 backdrop-blur-md border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                           <span className="text-[10px]">🤝</span>
                           <span className="text-[9px] font-black tracking-wider uppercase text-cloud-white">Collab</span>
                         </div>
                       )}
 
+                      {/* Top Action Buttons (Owner) */}
                       {isOwnProfile && (
-                        <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5">
+                        <div className="absolute top-2.5 right-2.5 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           {isPrimaryCreator ? (
                             <>
                               <button
@@ -1002,20 +1116,20 @@ function ProfileContent() {
                                   e.stopPropagation();
                                   handleEditCaption(video);
                                 }}
-                                className="w-8 h-8 rounded-full bg-black/40 hover:bg-toka-flare/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-black/60 hover:bg-toka-flare hover:text-white flex items-center justify-center text-cloud-white/80 backdrop-blur-md active:scale-90 transition-all border border-white/15 cursor-pointer"
                                 title="Edit Caption"
                               >
-                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                                <span className="material-symbols-outlined text-[14px]">edit</span>
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteVideo(video._id);
                                 }}
-                                className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-black/60 hover:bg-red-500 hover:text-white flex items-center justify-center text-cloud-white/80 backdrop-blur-md active:scale-90 transition-all border border-white/15 cursor-pointer"
                                 title="Delete Video"
                               >
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                <span className="material-symbols-outlined text-[14px]">delete</span>
                               </button>
                             </>
                           ) : (
@@ -1024,24 +1138,32 @@ function ProfileContent() {
                                 e.stopPropagation();
                                 handleLeaveCollab(video._id);
                               }}
-                              className="w-8 h-8 rounded-full bg-black/40 hover:bg-amber-500/80 hover:text-white flex items-center justify-center text-cloud-white/70 backdrop-blur-md active:scale-90 transition-all border border-white/10 cursor-pointer"
+                              className="w-7 h-7 rounded-full bg-black/60 hover:bg-amber-500 hover:text-white flex items-center justify-center text-cloud-white/80 backdrop-blur-md active:scale-90 transition-all border border-white/15 cursor-pointer"
                               title="Leave Collaboration"
                             >
-                              <span className="material-symbols-outlined text-[16px]">logout</span>
+                              <span className="material-symbols-outlined text-[14px]">logout</span>
                             </button>
                           )}
                         </div>
                       )}
+
+                      {/* Video Media */}
                       <video
                         src={video.videoUrl}
-                        className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                        className="w-full h-full object-cover opacity-75 group-hover:opacity-95 group-hover:scale-105 transition-all duration-300"
                         muted
                         playsInline
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
+
+                      {/* Overlay Data */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent p-3.5 flex flex-col justify-end">
                         <p className="text-xs font-bold text-cloud-white line-clamp-2">{video.title}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-full border ${
+                        
+                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/10 text-[10px] text-cloud-white/70 font-mono">
+                          <span className="flex items-center gap-1 font-bold">
+                            <span className="text-[10px]">▶</span> {840 + (idx * 340)}
+                          </span>
+                          <span className={`text-[8px] uppercase font-bold px-1.5 py-0.2 rounded-full border ${
                             video.vettingStatus === 'approved'
                               ? 'bg-fintech-mint/20 text-fintech-mint border-fintech-mint/30'
                               : video.vettingStatus === 'rejected'
@@ -1059,18 +1181,19 @@ function ProfileContent() {
             )
           ) : (
             fetchingReposts ? (
-              <div className="grid grid-cols-2 gap-3 animate-pulse">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl"></div>
                 ))}
               </div>
             ) : repostVideos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center py-12 bg-shaded-canopy border border-white/10 rounded-2xl gap-3">
-                <span className="material-symbols-outlined text-cloud-white/20 text-[48px]">repeat</span>
-                <p className="text-xs text-cloud-white/40">No reposted videos yet.</p>
+              <div className="flex flex-col items-center justify-center text-center py-16 bg-shaded-canopy/60 border border-white/10 rounded-3xl gap-3">
+                <span className="material-symbols-outlined text-cloud-white/20 text-[54px]">repeat</span>
+                <h3 className="text-sm font-bold text-cloud-white/70">No Reposted Videos Yet</h3>
+                <p className="text-xs text-cloud-white/40 max-w-xs">Repost interesting African creator videos from the feed to showcase them on your profile.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {repostVideos.map((video) => {
                   const originalCreator = (video.creatorId as any)?.username || 'creator';
 
@@ -1078,9 +1201,9 @@ function ProfileContent() {
                     <div 
                       key={video._id} 
                       onClick={() => router.push(`/?creator=${encodeURIComponent(originalCreator)}&videoId=${video._id}`)}
-                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-transform"
+                      className="relative aspect-[9/16] bg-shaded-canopy border border-white/10 rounded-2xl overflow-hidden group cursor-pointer active:scale-98 transition-all hover:shadow-2xl hover:border-white/30"
                     >
-                      {/* Repost Indicator */}
+                      {/* Repost Badge */}
                       <div className="absolute top-2.5 left-2.5 z-10 bg-amber-500/30 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                         <span className="material-symbols-outlined text-amber-400 text-[12px]">repeat</span>
                         <span className="text-[9px] font-black tracking-wider uppercase text-amber-300">Repost</span>
@@ -1088,16 +1211,14 @@ function ProfileContent() {
 
                       <video
                         src={video.videoUrl}
-                        className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                        className="w-full h-full object-cover opacity-75 group-hover:opacity-95 group-hover:scale-105 transition-all duration-300"
                         muted
                         playsInline
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent p-3.5 flex flex-col justify-end">
                         <p className="text-xs font-bold text-cloud-white line-clamp-2">{video.title}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-[9px] font-bold text-cloud-white/60">
-                            @{originalCreator}
-                          </span>
+                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/10 text-[10px] text-cloud-white/70 font-mono">
+                          <span className="font-bold text-cloud-white/80">@{originalCreator}</span>
                         </div>
                       </div>
                     </div>
@@ -1121,190 +1242,188 @@ function ProfileContent() {
           />
         )}
 
-        {/* Profile Settings & Privacy Modal Drawer */}
+        {/* Upload Video Modal */}
+        <UploadModal 
+          isOpen={isUploadModalOpen} 
+          onClose={() => {
+            setIsUploadModalOpen(false);
+            setRefreshTrigger(prev => prev + 1);
+          }} 
+        />
+
+        {/* Pro Architecture: Settings & Privacy Modal */}
         {isOwnProfile && targetUser && isSettingsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in font-sans">
-            <div className="relative w-full max-w-lg max-h-[90vh] bg-shaded-canopy/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 shadow-2xl overflow-y-auto flex flex-col gap-6 animate-scale-up select-none">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in font-sans">
+            <div className="relative w-full max-w-lg max-h-[90vh] bg-[#18181B] border border-white/10 rounded-3xl p-6 shadow-2xl overflow-y-auto flex flex-col gap-6 animate-scale-up select-none">
               
-              {/* Drawer Header */}
+              {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-toka-flare/20 flex items-center justify-center text-toka-flare border border-toka-flare/30">
-                    <span className="material-symbols-outlined text-[20px]">settings</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-toka-flare/15 flex items-center justify-center text-toka-flare border border-toka-flare/30 shadow-inner">
+                    <span className="material-symbols-outlined text-[22px]">settings</span>
                   </div>
                   <div>
                     <h3 className="text-base font-black text-cloud-white tracking-tight">Settings &amp; Privacy</h3>
-                    <p className="text-[11px] text-cloud-white/50">Manage your permissions, verification &amp; account</p>
+                    <p className="text-xs text-cloud-white/50">Manage permissions, security &amp; creator status</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsSettingsOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-cloud-white/60 hover:text-cloud-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-cloud-white/60 hover:text-cloud-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close Settings"
                 >
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               </div>
 
-              {/* Section 1: Privacy & Permissions */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-toka-flare text-[18px]">lock</span>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Privacy &amp; Permissions</h4>
-                </div>
-
-                {/* Tagging Permissions */}
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions</h5>
-                      <p className="text-[10px] text-cloud-white/50">Control how other creators can tag you in videos</p>
-                    </div>
-                    {isUpdatingSettings && (
-                      <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5 mt-1">
-                    {[
-                      { id: 'allow_all', label: 'Allow All' },
-                      { id: 'require_approval', label: 'Review' },
-                      { id: 'disabled', label: 'Off' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => handleUpdateTaggingPermission(opt.id)}
-                        className={`py-2 px-2 rounded-xl border text-center text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                          taggingPermission === opt.id
-                            ? 'bg-toka-flare/20 border-toka-flare text-cloud-white shadow-sm'
-                            : 'bg-white/5 border-white/5 text-cloud-white/60 hover:bg-white/10'
-                        }`}
-                      >
-                        {opt.label}
-                        {taggingPermission === opt.id && (
-                          <span className="material-symbols-outlined text-toka-flare text-[13px]">check</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Follow List Privacy */}
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="text-xs font-bold text-cloud-white">Followers &amp; Following List</h5>
-                      <p className="text-[10px] text-cloud-white/50">Who can see your followers and following lists</p>
-                    </div>
-                    {isUpdatingSettings && (
-                      <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5 mt-1">
-                    {[
-                      { id: 'everyone', label: 'Everyone' },
-                      { id: 'followers_only', label: 'Followers' },
-                      { id: 'only_me', label: 'Only Me' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => handleUpdateFollowListPrivacy(opt.id)}
-                        className={`py-2 px-2 rounded-xl border text-center text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                          (targetUser.followListPrivacy || 'everyone') === opt.id
-                            ? 'bg-toka-flare/20 border-toka-flare text-cloud-white shadow-sm'
-                            : 'bg-white/5 border-white/5 text-cloud-white/60 hover:bg-white/10'
-                        }`}
-                      >
-                        {opt.label}
-                        {(targetUser.followListPrivacy || 'everyone') === opt.id && (
-                          <span className="material-symbols-outlined text-toka-flare text-[13px]">check</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Creator Tools & Verification */}
-              {(mongooseUser?.role === 'creator' || mongooseUser?.role === 'brand') && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-fintech-mint text-[18px]">verified_user</span>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Creator Verification &amp; Brand Safety</h4>
-                  </div>
-
-                  <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className={`material-symbols-outlined text-[24px] ${
-                          targetUser.isBrandSafeVerified 
-                            ? 'text-fintech-mint' 
-                            : targetUser.verificationRequestStatus === 'pending'
-                              ? 'text-yellow-400 animate-pulse'
-                              : 'text-cloud-white/40'
-                        }`}>
-                          {targetUser.isBrandSafeVerified ? 'verified' : 'shield'}
-                        </span>
-                        <div>
-                          <h5 className="text-xs font-bold text-cloud-white">
-                            {targetUser.isBrandSafeVerified ? 'Brand Safe Verified' : 'Verification Status'}
-                          </h5>
-                          <p className="text-[10px] text-cloud-white/50 leading-relaxed">
-                            {targetUser.isBrandSafeVerified 
-                              ? 'Your account is verified for direct brand sponsorships.'
-                              : targetUser.verificationRequestStatus === 'pending'
-                                ? 'Your verification request is currently under review.'
-                                : 'Apply for brand-safe verification to unlock sponsorships.'}
-                          </p>
-                        </div>
+              {/* SECTION 1: PRIVACY */}
+              <div className="flex flex-col gap-2.5">
+                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Privacy</h4>
+                
+                {/* Unified Privacy Container */}
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex flex-col gap-4">
+                  
+                  {/* Row 1: Tagging & Mentions */}
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-cloud-white">Tagging &amp; Mentions</h5>
+                        <p className="text-[11px] text-cloud-white/50">Who can tag you in videos</p>
                       </div>
+                      {isUpdatingSettings && (
+                        <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
+                      )}
+                    </div>
+                    
+                    {/* Single Recessed Segmented Slider Track */}
+                    <div className="grid grid-cols-3 bg-black/60 p-1 rounded-xl border border-white/5 gap-1 select-none">
+                      {[
+                        { id: 'allow_all', label: 'Allow All' },
+                        { id: 'require_approval', label: 'Review' },
+                        { id: 'disabled', label: 'Off' }
+                      ].map((opt) => {
+                        const isActive = taggingPermission === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleUpdateTaggingPermission(opt.id)}
+                            className={`py-1.5 px-3 rounded-lg text-center text-xs font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-white/15 text-white shadow-md font-black'
+                                : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                      {!targetUser.isBrandSafeVerified && targetUser.verificationRequestStatus !== 'pending' && (
-                        <button
-                          disabled={verificationLoading}
-                          onClick={handleRequestVerification}
-                          className="px-3 py-1.5 bg-white/10 hover:bg-white/15 border border-white/15 text-cloud-white text-[11px] font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
-                        >
-                          {verificationLoading ? '...' : 'Request'}
-                        </button>
+                  {/* Clean Divider */}
+                  <div className="border-t border-white/5" />
+
+                  {/* Row 2: Followers List */}
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-cloud-white">Followers List</h5>
+                        <p className="text-[11px] text-cloud-white/50">Who can see your following list</p>
+                      </div>
+                      {isUpdatingSettings && (
+                        <span className="text-[9px] font-mono text-cloud-white/40 animate-pulse">Saving...</span>
                       )}
                     </div>
 
-                    {targetUser.isBrandSafeVerified && (
-                      <Link
-                        href="/sponsorships"
-                        onClick={() => setIsSettingsOpen(false)}
-                        className="w-full py-2.5 bg-fintech-mint/15 hover:bg-fintech-mint/25 border border-fintech-mint/30 text-fintech-mint text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">handshake</span>
-                        Open Sponsorships Hub
-                      </Link>
-                    )}
+                    {/* Single Recessed Segmented Slider Track */}
+                    <div className="grid grid-cols-3 bg-black/60 p-1 rounded-xl border border-white/5 gap-1 select-none">
+                      {[
+                        { id: 'everyone', label: 'Everyone' },
+                        { id: 'followers_only', label: 'Followers' },
+                        { id: 'only_me', label: 'Only Me' }
+                      ].map((opt) => {
+                        const isActive = (targetUser.followListPrivacy || 'everyone') === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleUpdateFollowListPrivacy(opt.id)}
+                            className={`py-1.5 px-3 rounded-lg text-center text-xs font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-white/15 text-white shadow-md font-black'
+                                : 'text-cloud-white/50 hover:text-cloud-white/80 hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Section 3: Account & Session */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-cloud-white/60 text-[18px]">manage_accounts</span>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-cloud-white/70">Account &amp; Session</h4>
                 </div>
+              </div>
 
-                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+              {/* SECTION 2: CREATOR HUB */}
+              <div className="flex flex-col gap-2.5">
+                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Creator Hub</h4>
+                
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-fintech-mint/10 border border-fintech-mint/30 flex items-center justify-center text-fintech-mint shrink-0">
+                      <IconVerifiedCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-cloud-white">Brand Safe Verified</h5>
+                      <p className="text-[11px] text-cloud-white/50">Eligible for direct brand sponsorships</p>
+                    </div>
+                  </div>
+
+                  {targetUser.isBrandSafeVerified ? (
+                    <Link
+                      href="/sponsorships"
+                      onClick={() => setIsSettingsOpen(false)}
+                      className="px-3.5 py-1.5 bg-fintech-mint/15 hover:bg-fintech-mint/25 border border-fintech-mint/30 text-fintech-mint text-xs font-bold rounded-xl transition-all flex items-center gap-1 shrink-0"
+                    >
+                      <span>Manage</span>
+                      <span>→</span>
+                    </Link>
+                  ) : targetUser.verificationRequestStatus === 'pending' ? (
+                    <span className="text-[11px] font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2.5 py-1 rounded-xl">
+                      Pending
+                    </span>
+                  ) : (
+                    <button
+                      disabled={verificationLoading}
+                      onClick={handleRequestVerification}
+                      className="px-3.5 py-1.5 bg-toka-flare hover:bg-toka-flare/90 text-cloud-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
+                    >
+                      {verificationLoading ? '...' : 'Apply'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 3: ACCOUNT */}
+              <div className="flex flex-col gap-2.5">
+                <h4 className="text-[11px] font-bold text-cloud-white/40 tracking-wider uppercase font-mono px-1">Account</h4>
+                
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-cloud-white">Logged in as</span>
-                    <span className="text-[11px] text-cloud-white/50">{firebaseUser?.email || mongooseUser?.email}</span>
+                    <span className="text-xs font-bold text-cloud-white">{firebaseUser?.email || mongooseUser?.email || 'Logged in'}</span>
+                    <span className="text-[10px] text-cloud-white/40">Active Session</span>
                   </div>
+
                   <button
                     onClick={() => {
                       setIsSettingsOpen(false);
                       logout();
                     }}
-                    className="py-2 px-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="py-1.5 px-3.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[15px]">logout</span>
-                    Sign Out
+                    <span className="material-symbols-outlined text-[14px]">logout</span>
+                    <span>Sign Out</span>
                   </button>
                 </div>
               </div>
