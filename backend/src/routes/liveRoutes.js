@@ -13,6 +13,9 @@ import {
   acceptCohost,
   leaveCohost,
   removeCohost,
+  muteCohost,
+  hostReconnecting,
+  hostResumed,
   endStream,
 } from '../controllers/liveController.js';
 
@@ -32,6 +35,9 @@ router.post('/live/:roomId/invite-cohost', protect, inviteCohost);
 router.post('/live/:roomId/cohost', protect, acceptCohost);
 router.post('/live/:roomId/leave-cohost', protect, leaveCohost);
 router.post('/live/:roomId/remove-cohost', protect, removeCohost);
+router.post('/live/:roomId/mute-cohost', protect, muteCohost);
+router.post('/live/:roomId/host-reconnecting', protect, hostReconnecting);
+router.post('/live/:roomId/host-resumed', protect, hostResumed);
 router.post('/live/:roomId/end', protect, endStream);
 
 export default router;

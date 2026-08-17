@@ -15,7 +15,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
   const { videos, optimisticTip, userWalletBalance } = useFeedStore();
   const { firebaseUser, refreshProfile } = useAuth();
   const { showAlert } = useModalStore();
-  
+
   const [selectedAmount, setSelectedAmount] = useState<number | null>(10);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [success, setSuccess] = useState(false);
@@ -73,7 +73,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('toka_inbox_unread', 'true');
         }
-        
+
         // Generate coin particles for animation
         const coinParticles = Array.from({ length: 18 }).map((_, i) => ({
           id: `coin-${i}-${Date.now()}-${Math.random()}`,
@@ -84,7 +84,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
 
         // refresh real profile balance
         await refreshProfile();
-        
+
         setTimeout(() => {
           setSuccess(false);
           setCoins([]);
@@ -106,7 +106,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="w-full max-w-sm bg-[#09090B] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center px-5 py-3.5 border-b border-white/10 bg-[#18181B]/50">
           <h3 className="text-sm font-bold text-cloud-white tracking-tight">Support Creator</h3>
@@ -140,7 +140,7 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
           </div>
         ) : (
           <div className="p-5 flex flex-col gap-4">
-            
+
             {/* Wallet Info */}
             <div className="flex justify-between items-center bg-[#18181B] px-3.5 py-2.5 rounded-[0.625rem] border border-white/10">
               <span className="text-xs text-cloud-white/60">Wallet Balance</span>
@@ -159,11 +159,10 @@ export default function TipModal({ videoId, isOpen, onClose }: TipModalProps) {
                       setSelectedAmount(amt);
                       setCustomAmount('');
                     }}
-                    className={`py-2 rounded-md font-bold font-mono transition-all text-xs cursor-pointer ${
-                      selectedAmount === amt
+                    className={`py-2 rounded-md font-bold font-mono transition-all text-xs cursor-pointer ${selectedAmount === amt
                         ? 'bg-toka-flare text-white shadow-sm font-semibold'
                         : 'text-cloud-white/60 hover:text-white hover:bg-white/5'
-                    }`}
+                      }`}
                   >
                     R {amt}
                   </button>

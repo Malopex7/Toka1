@@ -97,7 +97,8 @@ export const startStream = async (req, res, next) => {
 // GET /api/live/active
 export const getActiveStreams = async (req, res, next) => {
   try {
-    const streams = await LiveStream.find({ status: 'live' })
+    // Include 'reconnecting' streams — host may return within 60s grace period
+    const streams = await LiveStream.find({ status: { $in: ['live', 'reconnecting'] } })
       .populate('hostId', 'username avatarUrl displayName')
       .sort({ startedAt: -1 })
       .limit(50)
@@ -153,6 +154,10 @@ export const joinStream = async (req, res, next) => {
     if (!isHost && !stream.participants.some(id => id.toString() === viewer._id.toString())) {
       stream.participants.push(viewer._id);
       stream.viewerCount = stream.participants.length;
+      // Track peak viewer count
+      if (stream.viewerCount > (stream.peakViewerCount || 0)) {
+        stream.peakViewerCount = stream.viewerCount;
+      }
       await stream.save();
     }
 
@@ -187,7 +192,7 @@ export const tipHost = async (req, res, next) => {
     if (!amount || amount <= 0) return next(new AppError('Invalid tip amount', 400));
 
     const stream = await LiveStream.findById(req.params.roomId);
-    if (!stream || stream.status !== 'live') return next(new AppError('Stream is not active', 404));
+    if (!stream || !['live', 'reconnecting'].includes(stream.status)) return next(new AppError('Stream is not active', 404));
 
     const tipper = req.user;
     if (tipper.walletBalance < amount) return next(new AppError('Insufficient wallet balance', 400));
@@ -201,6 +206,10 @@ export const tipHost = async (req, res, next) => {
     await tipper.save();
     await host.save();
 
+    // Accumulate total tips on the stream document for post-stream summary
+    stream.totalTipsZAR = (stream.totalTipsZAR || 0) + amount;
+    await stream.save();
+
     // Record transaction
     await Transaction.create({
       senderId: tipper._id,
@@ -212,12 +221,13 @@ export const tipHost = async (req, res, next) => {
       reference: `live-tip-${Date.now()}-${tipper._id}`,
     });
 
-    // Broadcast tip event to room
+    // Broadcast tip alert banner event to entire room
     const io = req.app.locals.io;
     if (io) {
       io.to(stream.livekitRoomName).emit('live_tip', {
         tipper: { username: tipper.username, avatarUrl: tipper.avatarUrl },
         amount,
+        totalTipsZAR: stream.totalTipsZAR,
       });
     }
 
@@ -470,8 +480,12 @@ export const endStream = async (req, res, next) => {
       return next(new AppError('Only the host can end the stream', 403));
     }
 
+    const endedAt = new Date();
+    const durationSeconds = Math.floor((endedAt - new Date(stream.startedAt)) / 1000);
+
     stream.status = 'ended';
-    stream.endedAt = new Date();
+    stream.endedAt = endedAt;
+    stream.reconnectingSince = null;
     await stream.save();
 
     // Try to delete LiveKit room (non-fatal if fails)
@@ -487,7 +501,104 @@ export const endStream = async (req, res, next) => {
       io.to(stream.livekitRoomName).emit('stream_ended', { roomId: stream._id.toString() });
     }
 
-    res.json({ status: 'success', message: 'Stream ended' });
+    // Return summary stats for the post-stream analytics modal
+    const summary = {
+      durationSeconds,
+      peakViewerCount: stream.peakViewerCount || 0,
+      totalTipsZAR: stream.totalTipsZAR || 0,
+      totalParticipants: stream.participants?.length || 0,
+      title: stream.title,
+    };
+
+    res.json({ status: 'success', message: 'Stream ended', data: { summary } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/live/:roomId/mute-cohost — Host signals a co-host mic mute via socket
+export const muteCohost = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findById(req.params.roomId);
+    if (!stream || !['live', 'reconnecting'].includes(stream.status)) return next(new AppError('Stream not found', 404));
+
+    const hostIdStr = stream.hostId?.toString();
+    if (hostIdStr !== req.user._id.toString()) {
+      return next(new AppError('Only the host can mute a co-host', 403));
+    }
+
+    const { cohostUsername } = req.body;
+    if (!cohostUsername) return next(new AppError('cohostUsername is required', 400));
+
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(stream.livekitRoomName).emit('cohost_muted', {
+        cohostUsername,
+        mutedBy: req.user.username,
+        roomId: stream._id.toString(),
+      });
+    }
+
+    res.json({ status: 'success', message: `Mute signal sent to @${cohostUsername}` });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/live/:roomId/host-reconnecting — Host app signals it is trying to reconnect
+export const hostReconnecting = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findById(req.params.roomId);
+    if (!stream || stream.status === 'ended') return next(new AppError('Stream not found or already ended', 404));
+
+    const hostIdStr = stream.hostId?.toString();
+    if (hostIdStr !== req.user._id.toString()) {
+      return next(new AppError('Only the host can trigger reconnect', 403));
+    }
+
+    stream.status = 'reconnecting';
+    stream.reconnectingSince = new Date();
+    await stream.save();
+
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(stream.livekitRoomName).emit('stream_reconnecting', {
+        roomId: stream._id.toString(),
+        reconnectingSince: stream.reconnectingSince.toISOString(),
+        graceSeconds: 60,
+      });
+    }
+
+    res.json({ status: 'success', message: 'Reconnecting state set', data: { reconnectingSince: stream.reconnectingSince } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/live/:roomId/host-resumed — Host has successfully reconnected
+export const hostResumed = async (req, res, next) => {
+  try {
+    const stream = await LiveStream.findById(req.params.roomId);
+    if (!stream || stream.status === 'ended') return next(new AppError('Stream not found or already ended', 404));
+
+    const hostIdStr = stream.hostId?.toString();
+    if (hostIdStr !== req.user._id.toString()) {
+      return next(new AppError('Only the host can resume stream', 403));
+    }
+
+    stream.status = 'live';
+    stream.reconnectingSince = null;
+    await stream.save();
+
+    // Mint fresh publisher token for host
+    const token = await mintToken(stream.livekitRoomName, req.user.username, req.user._id, true);
+
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(stream.livekitRoomName).emit('stream_resumed', { roomId: stream._id.toString() });
+    }
+
+    res.json({ status: 'success', data: { token, livekitUrl: process.env.LIVEKIT_HOST || 'ws://localhost:7880' } });
   } catch (err) {
     next(err);
   }

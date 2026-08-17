@@ -15,7 +15,7 @@ const liveStreamSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['live', 'ended'],
+    enum: ['live', 'reconnecting', 'ended'],
     default: 'live',
     index: true
   },
@@ -69,6 +69,20 @@ const liveStreamSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
+  },
+  totalTipsZAR: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  peakViewerCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  reconnectingSince: {
+    type: Date,
+    default: null,
   },
   startedAt: {
     type: Date,

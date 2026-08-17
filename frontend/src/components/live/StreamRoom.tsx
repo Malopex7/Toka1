@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -19,6 +19,9 @@ import LiveTipButton from './LiveTipButton';
 import CohostInvitePanel from './CohostInvitePanel';
 import PrivateRoomModal from './PrivateRoomModal';
 import MediaRecorderManager from './MediaRecorderManager';
+import StreamSummaryModal from './StreamSummaryModal';
+import StreamEndedCard from './StreamEndedCard';
+import FloatingReactions from './FloatingReactions';
 import { getSocket } from './LiveChat';
 import { useRouter } from 'next/navigation';
 
@@ -54,6 +57,30 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     entryFeeZAR: number; subscriberPriceZAR: number; tipInviteMinZAR: number;
   } | null>(null);
   const [showCohostPanel, setShowCohostPanel] = useState(false);
+
+  // Host reconnection grace period state (60s countdown for audience)
+  const [reconnectingInfo, setReconnectingInfo] = useState<{
+    since: string; graceSeconds: number;
+  } | null>(null);
+  const [reconnectCountdown, setReconnectCountdown] = useState(0);
+
+  // Stream ended card (for viewers)
+  const [streamEndedData, setStreamEndedData] = useState<{
+    hostUsername?: string; hostAvatarUrl?: string; streamTitle?: string;
+  } | null>(null);
+
+  // Post-stream summary modal (for host only)
+  const [streamSummary, setStreamSummary] = useState<{
+    durationSeconds: number; peakViewerCount: number;
+    totalTipsZAR: number; totalParticipants: number; title: string;
+  } | null>(null);
+
+  // Live tip alert banner
+  const [tipAlert, setTipAlert] = useState<{ username: string; amount: number } | null>(null);
+  const tipAlertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FloatingReactions trigger ref (for socket-triggered reactions)
+  const reactionsRef = useRef<(() => void) | null>(null);
 
   const [pendingCohostInvite, setPendingCohostInvite] = useState<{
     host: { username: string; avatarUrl?: string };
@@ -132,7 +159,45 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     if (!sock.connected) sock.connect();
 
     const handleEnded = ({ roomId: endedRoomId }: { roomId: string }) => {
-      if (endedRoomId === roomId) router.push('/');
+      if (endedRoomId !== roomId) return;
+      if (isHost) {
+        // Host summary is shown via handleEndStream; nothing extra needed on socket
+        return;
+      }
+      // Viewers see the StreamEndedCard
+      setStreamEndedData({
+        hostUsername: currentRoom?.hostId?.username,
+        hostAvatarUrl: currentRoom?.hostId?.avatarUrl,
+        streamTitle: currentRoom?.title,
+      });
+    };
+
+    const handleReconnecting = (data: { roomId: string; reconnectingSince: string; graceSeconds: number }) => {
+      if (data.roomId !== roomId) return;
+      setReconnectingInfo({ since: data.reconnectingSince, graceSeconds: data.graceSeconds });
+    };
+
+    const handleResumed = ({ roomId: resumedId }: { roomId: string }) => {
+      if (resumedId !== roomId) return;
+      setReconnectingInfo(null);
+    };
+
+    const handleTipAlert = (data: { tipper: { username: string }; amount: number }) => {
+      setTipAlert({ username: data.tipper.username, amount: data.amount });
+      if (tipAlertTimer.current) clearTimeout(tipAlertTimer.current);
+      tipAlertTimer.current = setTimeout(() => setTipAlert(null), 4000);
+      // Also trigger a floating reaction on tip
+      reactionsRef.current?.();
+    };
+
+    const handleCohostMuted = (data: { cohostUsername: string }) => {
+      const myUsername = mongooseUser?.username?.toLowerCase();
+      if (data.cohostUsername?.toLowerCase() === myUsername) {
+        // Force-mute our own mic via LiveKit
+        // The actual mute happens in LiveBroadcastStage via the room ref
+        // We use a custom event that LiveBroadcastStage listens to
+        window.dispatchEvent(new CustomEvent('toka:force_mute'));
+      }
     };
 
     const handleCohostInvite = (data: {
@@ -189,6 +254,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     };
 
     sock.on('stream_ended', handleEnded);
+    sock.on('stream_reconnecting', handleReconnecting);
+    sock.on('stream_resumed', handleResumed);
+    sock.on('live_tip', handleTipAlert);
+    sock.on('cohost_muted', handleCohostMuted);
     sock.on('cohost_invited', handleCohostInvite);
     sock.on('cohost_joined', handleCohostJoined);
     sock.on('cohost_left', handleCohostLeft);
@@ -204,6 +273,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
     return () => {
       sock.off('stream_ended', handleEnded);
+      sock.off('stream_reconnecting', handleReconnecting);
+      sock.off('stream_resumed', handleResumed);
+      sock.off('live_tip', handleTipAlert);
+      sock.off('cohost_muted', handleCohostMuted);
       sock.off('cohost_invited', handleCohostInvite);
       sock.off('cohost_joined', handleCohostJoined);
       sock.off('cohost_left', handleCohostLeft);
@@ -216,7 +289,29 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
         sock.off(`cohost_invited:${mongooseUser.username.toLowerCase()}`, handleCohostInvite);
       }
     };
-  }, [roomId, router, mongooseUser, currentRoom, setCurrentRoom]);
+  }, [roomId, router, mongooseUser, currentRoom, setCurrentRoom, isHost]);
+
+  // Grace period countdown ticker
+  useEffect(() => {
+    if (!reconnectingInfo) { setReconnectCountdown(0); return; }
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - new Date(reconnectingInfo.since).getTime()) / 1000);
+      const remaining = Math.max(0, reconnectingInfo.graceSeconds - elapsed);
+      setReconnectCountdown(remaining);
+      if (remaining === 0) {
+        // Grace expired — show stream ended card
+        setReconnectingInfo(null);
+        setStreamEndedData({
+          hostUsername: currentRoom?.hostId?.username,
+          hostAvatarUrl: currentRoom?.hostId?.avatarUrl,
+          streamTitle: currentRoom?.title,
+        });
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [reconnectingInfo, currentRoom]);
 
   const handleAcceptCohost = async () => {
     if (!pendingCohostInvite) return;
@@ -283,15 +378,21 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
   const handleEndStream = async () => {
     try {
       const token = await getIdToken();
-      await fetch(`${BACKEND_URL}/api/live/${roomId}/end`, {
+      const res = await fetch(`${BACKEND_URL}/api/live/${roomId}/end`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
+      const data = await res.json();
       setCurrentRoom(null);
       setLivekitConnection('', '');
-      router.push('/');
+      if (data?.data?.summary) {
+        setStreamSummary(data.data.summary);
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       console.error('[StreamRoom] end error:', err);
+      router.push('/');
     }
   };
 
@@ -340,225 +441,264 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     ? (process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud')
     : (livekitUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://toka-qbo14kfo.livekit.cloud');
 
+
   return (
-    <LiveKitRoom
-      token={livekitToken}
-      serverUrl={effectiveLivekitUrl}
-      connect={true}
-      video={canPublish}
-      audio={canPublish}
-    >
-      <RoomAudioRenderer />
-      <MediaRecorderManager isHost={isHost} />
+    <>
+      {/* ---- Main LiveKit Room ---- */}
+      <LiveKitRoom
+        token={livekitToken}
+        serverUrl={effectiveLivekitUrl}
+        connect={true}
+        video={canPublish}
+        audio={canPublish}
+      >
+        <RoomAudioRenderer />
+        <MediaRecorderManager isHost={isHost} />
 
-      {/* ---- UNIFIED RESPONSIVE STREAM ROOM LAYOUT ---- */}
-      <div className="relative h-screen w-full bg-midnight-boma overflow-hidden flex flex-col md:flex-row select-none">
+        {/* ---- UNIFIED RESPONSIVE STREAM ROOM LAYOUT ---- */}
+        <div className="relative h-screen w-full bg-midnight-boma overflow-hidden flex flex-col md:flex-row select-none">
 
-        {/* Main Video Area (Full viewport on mobile, flex-1 left pane on desktop) */}
-        <div className="relative flex-1 h-full min-w-0 bg-black flex flex-col">
+          {/* Main Video Area (Full viewport on mobile, flex-1 left pane on desktop) */}
+          <div className="relative flex-1 h-full min-w-0 bg-black flex flex-col">
 
-          {/* Top Floating HUD Bar */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-              </span>
-              {isCohost && !isHost && (
-                <span className="flex items-center gap-1 bg-toka-flare text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                  <span className="material-symbols-outlined text-[13px]">groups</span> CO-HOST
+            {/* Top Floating HUD Bar */}
+            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+              <div className="flex items-center gap-2">
+                <span className={`flex items-center gap-1.5 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg ${reconnectingInfo ? 'bg-amber-600' : 'bg-red-600'}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {reconnectingInfo ? `RECONNECTING ${reconnectCountdown}s` : 'LIVE'}
                 </span>
-              )}
-              {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
-            </div>
-            <div className="flex items-center gap-2">
-              <LiveViewerBadge
-                isHost={isHost}
-                hostUsername={currentRoom?.hostId?.username}
-                cohosts={currentRoom?.cohosts}
-                fallbackCount={currentRoom?.viewerCount || 0}
-              />
-              {isHost && (
-                <button
-                  onClick={handleEndStream}
-                  className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer"
-                >
-                  End Stream
-                </button>
-              )}
-              {!isHost && isCohost && (
-                <button
-                  onClick={handleLeaveCohost}
-                  className="bg-red-700/90 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer flex items-center gap-1"
-                  title="Leave Co-Host Stage"
-                >
-                  <span className="material-symbols-outlined text-[14px]">logout</span>
-                  <span>Leave Stage</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Dedicated Full-Screen Live Broadcast Stage with Unified Controls */}
-          <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
-            <LiveBroadcastStage
-              isHost={isHost}
-              isCohost={isCohost}
-              canPublish={canPublish}
-              hostUsername={currentRoom?.hostId?.username}
-              hostAvatarUrl={currentRoom?.hostId?.avatarUrl}
-              showCohostPanel={showCohostPanel}
-              onToggleCohostPanel={() => setShowCohostPanel((v) => !v)}
-              onLeaveCohost={handleLeaveCohost}
-              onShare={async () => {
-                if (currentRoom) {
-                  try {
-                    await navigator.share({ title: currentRoom.title, url: window.location.href });
-                  } catch {
-                    navigator.clipboard.writeText(window.location.href);
-                  }
-                }
-              }}
-            />
-          </div>
-
-          {/* Mobile Floating Action Sidebar (Right side, for audience only) */}
-          {!isHost && !isCohost && currentRoom && (
-            <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-4">
-              <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.share({ title: currentRoom.title, url: window.location.href });
-                  } catch {
-                    navigator.clipboard.writeText(window.location.href);
-                  }
-                }}
-                className="flex flex-col items-center gap-1 cursor-pointer select-none"
-              >
-                <span className="material-symbols-outlined text-cloud-white text-[24px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                  share
-                </span>
-                <span className="text-[10px] text-cloud-white/80 font-bold drop-shadow">Share</span>
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Floating Chat Overlay */}
-          <div className="md:hidden pointer-events-none">
-            {mongooseUser && currentRoom && (
-              <LiveChat
-                roomName={currentRoom.livekitRoomName}
-                currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
-                isMobile
-              />
-            )}
-          </div>
-
-          {/* Mobile Chat Input Bar */}
-          {mongooseUser && currentRoom && (
-            <div className="md:hidden absolute bottom-3 left-3 right-3 z-30">
-              <MobileChatInput
-                roomName={currentRoom.livekitRoomName}
-                username={mongooseUser.username}
-                avatarUrl={mongooseUser.avatarUrl}
-              />
-            </div>
-          )}
-
-          {/* Host Co-Host Invite Panel Popup */}
-          {isHost && showCohostPanel && (
-            <div className="absolute bottom-32 left-3 right-3 md:left-auto md:right-8 md:bottom-20 md:w-96 z-40 animate-scale-up">
-              <CohostInvitePanel roomId={roomId} />
-            </div>
-          )}
-
-          {/* Cohost Invitation Popup Alert for the invited viewer */}
-          {pendingCohostInvite && (
-            <div className="absolute top-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-50 animate-scale-up">
-              <div className="bg-shaded-canopy/95 backdrop-blur-xl border-2 border-toka-flare rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-toka-flare/30 border border-toka-flare/50 flex items-center justify-center shrink-0 overflow-hidden font-bold text-toka-flare text-sm">
-                    {pendingCohostInvite.host.avatarUrl ? (
-                      <img src={pendingCohostInvite.host.avatarUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      pendingCohostInvite.host.username[0]?.toUpperCase()
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-cloud-white font-bold text-sm">Co-Host Invitation</h4>
-                    <p className="text-cloud-white/70 text-xs truncate">
-                      <span className="text-toka-flare font-semibold">@{pendingCohostInvite.host.username}</span> invited you to co-host!
-                    </p>
-                  </div>
-                </div>
-
-                <p className="text-cloud-white/60 text-xs">
-                  Join the broadcast on live video & audio to stream together in split-screen.
-                </p>
-
-                <div className="flex gap-2 mt-1">
-                  <button
-                    onClick={handleAcceptCohost}
-                    disabled={acceptingCohost}
-                    className="flex-1 bg-toka-flare hover:bg-toka-flare/80 text-white rounded-xl py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    {acceptingCohost ? (
-                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-[16px]">videocam</span>
-                        <span>Accept & Go Live</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setPendingCohostInvite(null)}
-                    disabled={acceptingCohost}
-                    className="bg-white/10 hover:bg-white/20 text-cloud-white rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                  >
-                    Decline
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Sidebar (Chat + Host Metadata) */}
-        <div className="hidden md:flex w-80 flex-col shrink-0 bg-shaded-canopy/95 backdrop-blur-md border-l border-white/10 h-full">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center shrink-0">
-                {currentRoom?.hostId?.avatarUrl ? (
-                  <img src={currentRoom.hostId.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-toka-flare text-xs font-bold">
-                    {currentRoom?.hostId?.username?.[0]?.toUpperCase()}
+                {isCohost && !isHost && (
+                  <span className="flex items-center gap-1 bg-toka-flare text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                    <span className="material-symbols-outlined text-[13px]">groups</span> CO-HOST
                   </span>
                 )}
+                {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
               </div>
-              <div className="min-w-0">
-                <p className="text-cloud-white font-bold text-xs truncate">@{currentRoom?.hostId?.username}</p>
-                <p className="text-cloud-white/50 text-[11px] truncate max-w-[130px]">{currentRoom?.title}</p>
+              <div className="flex items-center gap-2">
+                <LiveViewerBadge
+                  isHost={isHost}
+                  hostUsername={currentRoom?.hostId?.username}
+                  cohosts={currentRoom?.cohosts}
+                  fallbackCount={currentRoom?.viewerCount || 0}
+                />
+                {isHost && (
+                  <button
+                    onClick={handleEndStream}
+                    className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer"
+                  >
+                    End Stream
+                  </button>
+                )}
+                {!isHost && isCohost && (
+                  <button
+                    onClick={handleLeaveCohost}
+                    className="bg-red-700/90 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md cursor-pointer flex items-center gap-1"
+                    title="Leave Co-Host Stage"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">logout</span>
+                    <span>Leave Stage</span>
+                  </button>
+                )}
               </div>
             </div>
-            {currentRoom && (
-              <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
+
+            {/* Dedicated Full-Screen Live Broadcast Stage with Unified Controls */}
+            <div className="w-full h-full flex-1 relative overflow-hidden bg-black">
+              <LiveBroadcastStage
+                isHost={isHost}
+                isCohost={isCohost}
+                canPublish={canPublish}
+                hostUsername={currentRoom?.hostId?.username}
+                hostAvatarUrl={currentRoom?.hostId?.avatarUrl}
+                showCohostPanel={showCohostPanel}
+                onToggleCohostPanel={() => setShowCohostPanel((v) => !v)}
+                onLeaveCohost={handleLeaveCohost}
+                reconnectingInfo={reconnectingInfo}
+                reconnectCountdown={reconnectCountdown}
+                reactionsRef={reactionsRef}
+                onShare={async () => {
+                  if (currentRoom) {
+                    try {
+                      await navigator.share({ title: currentRoom.title, url: window.location.href });
+                    } catch {
+                      navigator.clipboard.writeText(window.location.href);
+                    }
+                  }
+                }}
+              />
+            </div>
+
+            {/* Mobile Floating Action Sidebar (Right side, for audience only) */}
+            {!isHost && !isCohost && currentRoom && (
+              <div className="md:hidden absolute right-3 bottom-28 z-20 flex flex-col items-center gap-4">
+                <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.share({ title: currentRoom.title, url: window.location.href });
+                    } catch {
+                      navigator.clipboard.writeText(window.location.href);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1 cursor-pointer select-none"
+                >
+                  <span className="material-symbols-outlined text-cloud-white text-[24px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    share
+                  </span>
+                  <span className="text-[10px] text-cloud-white/80 font-bold drop-shadow">Share</span>
+                </button>
+              </div>
+            )}
+
+            {/* Mobile Floating Chat Overlay */}
+            <div className="md:hidden pointer-events-none">
+              {mongooseUser && currentRoom && (
+                <LiveChat
+                  roomName={currentRoom.livekitRoomName}
+                  currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
+                  isMobile
+                />
+              )}
+            </div>
+
+            {/* Mobile Chat Input Bar */}
+            {mongooseUser && currentRoom && (
+              <div className="md:hidden absolute bottom-3 left-3 right-3 z-30">
+                <MobileChatInput
+                  roomName={currentRoom.livekitRoomName}
+                  username={mongooseUser.username}
+                  avatarUrl={mongooseUser.avatarUrl}
+                />
+              </div>
+            )}
+
+            {/* Host Co-Host Invite Panel Popup */}
+            {isHost && showCohostPanel && (
+              <div className="absolute bottom-32 left-3 right-3 md:left-auto md:right-8 md:bottom-20 md:w-96 z-40 animate-scale-up">
+                <CohostInvitePanel roomId={roomId} />
+              </div>
+            )}
+
+            {/* Cohost Invitation Popup Alert for the invited viewer */}
+            {pendingCohostInvite && (
+              <div className="absolute top-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-50 animate-scale-up">
+                <div className="bg-shaded-canopy/95 backdrop-blur-xl border-2 border-toka-flare rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-toka-flare/30 border border-toka-flare/50 flex items-center justify-center shrink-0 overflow-hidden font-bold text-toka-flare text-sm">
+                      {pendingCohostInvite.host.avatarUrl ? (
+                        <img src={pendingCohostInvite.host.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        pendingCohostInvite.host.username[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-cloud-white font-bold text-sm">Co-Host Invitation</h4>
+                      <p className="text-cloud-white/70 text-xs truncate">
+                        <span className="text-toka-flare font-semibold">@{pendingCohostInvite.host.username}</span> invited you to co-host!
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-cloud-white/60 text-xs">
+                    Join the broadcast on live video & audio to stream together in split-screen.
+                  </p>
+
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={handleAcceptCohost}
+                      disabled={acceptingCohost}
+                      className="flex-1 bg-toka-flare hover:bg-toka-flare/80 text-white rounded-xl py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {acceptingCohost ? (
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[16px]">videocam</span>
+                          <span>Accept & Go Live</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setPendingCohostInvite(null)}
+                      disabled={acceptingCohost}
+                      className="bg-white/10 hover:bg-white/20 text-cloud-white rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="flex-1 min-h-0">
-            {mongooseUser && currentRoom && (
-              <LiveChat
-                roomName={currentRoom.livekitRoomName}
-                currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
-              />
-            )}
+          {/* Desktop Sidebar (Chat + Host Metadata) */}
+          <div className="hidden md:flex w-80 flex-col shrink-0 bg-shaded-canopy/95 backdrop-blur-md border-l border-white/10 h-full">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center shrink-0">
+                  {currentRoom?.hostId?.avatarUrl ? (
+                    <img src={currentRoom.hostId.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-toka-flare text-xs font-bold">
+                      {currentRoom?.hostId?.username?.[0]?.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-cloud-white font-bold text-xs truncate">@{currentRoom?.hostId?.username}</p>
+                  <p className="text-cloud-white/50 text-[11px] truncate max-w-[130px]">{currentRoom?.title}</p>
+                </div>
+              </div>
+              {currentRoom && (
+                <LiveTipButton roomId={roomId} hostUsername={currentRoom.hostId?.username || ''} />
+              )}
+            </div>
+
+            <div className="flex-1 min-h-0">
+              {mongooseUser && currentRoom && (
+                <LiveChat
+                  roomName={currentRoom.livekitRoomName}
+                  currentUser={{ username: mongooseUser.username, avatarUrl: mongooseUser.avatarUrl }}
+                />
+              )}
+            </div>
+          </div>
+
+        </div>
+      </LiveKitRoom>
+
+      {/* ---- Post-Stream Analytics Modal (Host) ---- */}
+      {streamSummary && (
+        <StreamSummaryModal
+          summary={streamSummary}
+          onClose={() => { setStreamSummary(null); router.push('/'); }}
+        />
+      )}
+
+      {/* ---- Stream Ended Card (Viewers) ---- */}
+      {streamEndedData && !isHost && (
+        <StreamEndedCard
+          hostUsername={streamEndedData.hostUsername}
+          hostAvatarUrl={streamEndedData.hostAvatarUrl}
+          streamTitle={streamEndedData.streamTitle}
+        />
+      )}
+
+      {/* ---- Live Tip Alert Banner ---- */}
+      {tipAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[80] animate-scale-up pointer-events-none">
+          <div className="flex items-center gap-2.5 bg-[#09090B]/95 backdrop-blur-xl border border-[#10B981]/40 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
+            <span className="material-symbols-outlined text-[#10B981] text-[20px]">payments</span>
+            <div>
+              <p className="text-cloud-white text-sm font-bold">
+                @{tipAlert.username} <span className="text-[#10B981] font-mono">tipped R{tipAlert.amount}</span> 🎉
+              </p>
+            </div>
           </div>
         </div>
-
-      </div>
-    </LiveKitRoom>
+      )}
+    </>
   );
 }
 
@@ -620,6 +760,9 @@ function LiveBroadcastStage({
   onToggleCohostPanel,
   onLeaveCohost,
   onShare,
+  reconnectingInfo,
+  reconnectCountdown,
+  reactionsRef,
 }: {
   isHost: boolean;
   isCohost: boolean;
@@ -630,6 +773,9 @@ function LiveBroadcastStage({
   onToggleCohostPanel?: () => void;
   onLeaveCohost?: () => void;
   onShare?: () => void;
+  reconnectingInfo?: { since: string; graceSeconds: number } | null;
+  reconnectCountdown?: number;
+  reactionsRef?: React.MutableRefObject<(() => void) | null>;
 }) {
   const room = useRoomContext();
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
@@ -654,6 +800,18 @@ function LiveBroadcastStage({
       }
     }
   }, [isPresenter, localParticipant]);
+
+  // Listen for host-triggered remote mic mute
+  useEffect(() => {
+    const handleForceMute = () => {
+      if (localParticipant && localParticipant.isMicrophoneEnabled) {
+        localParticipant.setMicrophoneEnabled(false).catch(console.error);
+      }
+    };
+    window.addEventListener('toka:force_mute', handleForceMute);
+    return () => window.removeEventListener('toka:force_mute', handleForceMute);
+  }, [localParticipant]);
+
 
   // Check if audio playback is permitted by the browser
   useEffect(() => {
@@ -697,7 +855,10 @@ function LiveBroadcastStage({
   const validTracks = tracks.filter(isTrackReference);
 
   return (
-    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+    <div
+      className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden"
+      onClick={() => { if (!isPresenter) reactionsRef?.current?.(); }}
+    >
       {validTracks.length > 0 ? (
         <div className={`w-full h-full ${validTracks.length > 1 ? 'grid grid-cols-1 md:grid-cols-2 gap-2 p-2' : 'relative'}`}>
           {validTracks.map((trackRef, idx) => (
@@ -725,11 +886,32 @@ function LiveBroadcastStage({
           </div>
           <div>
             <h3 className="text-cloud-white font-bold text-base">
-              {isPresenter ? 'Starting your camera stream...' : `Waiting for @${hostUsername || 'creator'}...`}
+              {reconnectingInfo
+                ? `Host reconnecting... ${reconnectCountdown}s`
+                : isPresenter
+                ? 'Starting your camera stream...'
+                : `Waiting for @${hostUsername || 'creator'}...`}
             </h3>
             <p className="text-cloud-white/50 text-xs mt-1">
-              {isPresenter ? 'Ensure camera and mic permissions are enabled' : 'The broadcast will begin shortly'}
+              {reconnectingInfo
+                ? 'The stream will resume automatically'
+                : isPresenter
+                ? 'Ensure camera and mic permissions are enabled'
+                : 'The broadcast will begin shortly'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Floating reactions overlay — audience taps video to react */}
+      {!isPresenter && <FloatingReactions triggerRef={reactionsRef} />}
+
+      {/* Reconnecting pill overlay (audience view) — when host tracks are still active but reconnecting */}
+      {reconnectingInfo && validTracks.length > 0 && !isPresenter && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+          <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md text-amber-400 text-xs font-bold px-4 py-2 rounded-full border border-amber-500/30">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            Host reconnecting — {reconnectCountdown}s
           </div>
         </div>
       )}
