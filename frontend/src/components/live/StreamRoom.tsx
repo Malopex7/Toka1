@@ -371,7 +371,12 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
               {currentRoom?.startedAt && <LiveDurationTimer startedAt={currentRoom.startedAt} />}
             </div>
             <div className="flex items-center gap-2">
-              <LiveViewerBadge isHost={isHost} fallbackCount={currentRoom?.viewerCount || 0} />
+              <LiveViewerBadge
+                isHost={isHost}
+                hostUsername={currentRoom?.hostId?.username}
+                cohosts={currentRoom?.cohosts}
+                fallbackCount={currentRoom?.viewerCount || 0}
+              />
               {isHost && (
                 <button
                   onClick={handleEndStream}
@@ -830,12 +835,31 @@ function LiveBroadcastStage({
   );
 }
 
-function LiveViewerBadge({ isHost }: { isHost: boolean; fallbackCount?: number }) {
+function LiveViewerBadge({
+  isHost,
+  hostUsername,
+  cohosts = [],
+  fallbackCount = 0
+}: {
+  isHost: boolean;
+  hostUsername?: string;
+  cohosts?: string[];
+  fallbackCount?: number;
+}) {
+  const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Exact real-time connected audience count
-  const audienceCount = remoteParticipants.length;
+  // All participants in room
+  const allParticipants = [localParticipant, ...remoteParticipants].filter(Boolean);
+
+  // Audience / Viewers = participants who are not the host
+  const audienceList = allParticipants.filter((p) => {
+    const name = p.name || p.identity;
+    return name && hostUsername && name.toLowerCase() !== hostUsername.toLowerCase();
+  });
+
+  const audienceCount = Math.max(audienceList.length, fallbackCount);
 
   return (
     <div className="relative">
@@ -850,11 +874,13 @@ function LiveViewerBadge({ isHost }: { isHost: boolean; fallbackCount?: number }
 
       {/* Viewers Popup Dropdown */}
       {isOpen && (
-        <div className="absolute top-10 right-0 w-64 bg-shaded-canopy/95 backdrop-blur-xl border border-white/15 rounded-2xl p-3 shadow-2xl z-50 animate-scale-up">
+        <div className="absolute top-10 right-0 w-72 bg-shaded-canopy/95 backdrop-blur-xl border border-white/15 rounded-2xl p-3 shadow-2xl z-50 animate-scale-up">
           <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <h4 className="text-cloud-white font-bold text-xs">Live Viewers ({audienceCount})</h4>
+              <h4 className="text-cloud-white font-bold text-xs">
+                Live Viewers ({audienceCount})
+              </h4>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -864,29 +890,58 @@ function LiveViewerBadge({ isHost }: { isHost: boolean; fallbackCount?: number }
             </button>
           </div>
 
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-            {remoteParticipants.length === 0 ? (
+          <div className="flex flex-col gap-1 max-h-56 overflow-y-auto no-scrollbar">
+            {/* Stream Host Section */}
+            {hostUsername && (
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-xl bg-toka-flare/10 border border-toka-flare/20 mb-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-toka-flare text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {hostUsername[0]?.toUpperCase()}
+                  </div>
+                  <span className="text-cloud-white text-xs font-bold truncate">
+                    @{hostUsername} {isHost && <span className="text-cloud-white/50 text-[10px] font-normal">(You)</span>}
+                  </span>
+                </div>
+                <span className="text-[10px] text-toka-flare bg-toka-flare/20 px-2 py-0.5 rounded-md font-bold">
+                  Host
+                </span>
+              </div>
+            )}
+
+            {/* Audience Members List */}
+            {audienceList.length === 0 ? (
               <p className="text-cloud-white/40 text-xs py-2 text-center italic">
-                {isHost ? 'Waiting for viewers to join...' : 'You are the only viewer'}
+                {isHost ? 'Waiting for viewers to join...' : 'No other viewers yet'}
               </p>
             ) : (
-              remoteParticipants.map((p) => {
+              audienceList.map((p) => {
                 const name = p.name || p.identity || 'Viewer';
+                const isLocal = p.identity === localParticipant?.identity;
+                const isCohostUser = cohosts.some(
+                  (c) => c?.toLowerCase() === name.toLowerCase()
+                );
+
                 return (
                   <div
                     key={p.sid || p.identity}
                     className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-toka-flare/30 border border-toka-flare/40 flex items-center justify-center text-[10px] font-bold text-toka-flare shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-bold text-cloud-white shrink-0">
                         {name[0]?.toUpperCase()}
                       </div>
                       <span className="text-cloud-white text-xs font-semibold truncate">
-                        @{name}
+                        @{name} {isLocal && !isHost && <span className="text-cloud-white/50 text-[10px]">(You)</span>}
                       </span>
                     </div>
-                    <span className="text-[10px] text-cloud-white/40 bg-white/5 px-2 py-0.5 rounded-md">
-                      Watching
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
+                        isCohostUser
+                          ? 'bg-toka-flare/20 text-toka-flare font-bold'
+                          : 'bg-white/5 text-cloud-white/50'
+                      }`}
+                    >
+                      {isCohostUser ? 'Co-Host' : 'Watching'}
                     </span>
                   </div>
                 );
