@@ -113,6 +113,16 @@ io.on('connection', (socket) => {
       });
     }
   });
+
+  // Reaction tap relay — broadcast emoji reaction to all participants in the room
+  socket.on('reaction_tap', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const { roomName, emoji } = data;
+    if (typeof roomName === 'string' && roomName.startsWith('toka-live-') && typeof emoji === 'string') {
+      // Broadcast to all OTHER members of the room (sender handles their own reaction locally)
+      socket.to(roomName).emit('reaction_tap', { emoji });
+    }
+  });
 });
 
 // Connect to MongoDB (use MONGO_URI from .env)

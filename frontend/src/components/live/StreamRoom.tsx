@@ -80,7 +80,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
   const tipAlertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // FloatingReactions trigger ref (for socket-triggered reactions)
-  const reactionsRef = useRef<(() => void) | null>(null);
+  const reactionsRef = useRef<((emoji?: string) => void) | null>(null);
 
   const [pendingCohostInvite, setPendingCohostInvite] = useState<{
     host: { username: string; avatarUrl?: string };
@@ -186,8 +186,13 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       setTipAlert({ username: data.tipper.username, amount: data.amount });
       if (tipAlertTimer.current) clearTimeout(tipAlertTimer.current);
       tipAlertTimer.current = setTimeout(() => setTipAlert(null), 4000);
-      // Also trigger a floating reaction on tip
-      reactionsRef.current?.();
+      // Trigger a random floating reaction on tip (local only — already seen as global via reaction_tap below)
+      reactionsRef.current?.('💸');
+    };
+
+    // Reaction from any OTHER participant in the room — render it on this screen
+    const handleReactionTap = (data: { emoji: string; roomName?: string }) => {
+      reactionsRef.current?.(data.emoji);
     };
 
     const handleCohostMuted = (data: { cohostUsername: string }) => {
@@ -257,6 +262,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     sock.on('stream_reconnecting', handleReconnecting);
     sock.on('stream_resumed', handleResumed);
     sock.on('live_tip', handleTipAlert);
+    sock.on('reaction_tap', handleReactionTap);
     sock.on('cohost_muted', handleCohostMuted);
     sock.on('cohost_invited', handleCohostInvite);
     sock.on('cohost_joined', handleCohostJoined);
@@ -276,6 +282,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
       sock.off('stream_reconnecting', handleReconnecting);
       sock.off('stream_resumed', handleResumed);
       sock.off('live_tip', handleTipAlert);
+      sock.off('reaction_tap', handleReactionTap);
       sock.off('cohost_muted', handleCohostMuted);
       sock.off('cohost_invited', handleCohostInvite);
       sock.off('cohost_joined', handleCohostJoined);
@@ -517,6 +524,11 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
                 reconnectingInfo={reconnectingInfo}
                 reconnectCountdown={reconnectCountdown}
                 reactionsRef={reactionsRef}
+                onReactionTap={(emoji: string) => {
+                  // Broadcast to all participants in this stream room
+                  const sock = getSocket();
+                  if (sock) sock.emit('reaction_tap', { emoji, roomName: currentRoom?.livekitRoomName });
+                }}
                 onShare={async () => {
                   if (currentRoom) {
                     try {
@@ -763,6 +775,7 @@ function LiveBroadcastStage({
   reconnectingInfo,
   reconnectCountdown,
   reactionsRef,
+  onReactionTap,
 }: {
   isHost: boolean;
   isCohost: boolean;
@@ -775,7 +788,8 @@ function LiveBroadcastStage({
   onShare?: () => void;
   reconnectingInfo?: { since: string; graceSeconds: number } | null;
   reconnectCountdown?: number;
-  reactionsRef?: React.MutableRefObject<(() => void) | null>;
+  reactionsRef?: React.MutableRefObject<((emoji?: string) => void) | null>;
+  onReactionTap?: (emoji: string) => void;
 }) {
   const room = useRoomContext();
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
@@ -857,7 +871,13 @@ function LiveBroadcastStage({
   return (
     <div
       className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden"
-      onClick={() => { if (!isPresenter) reactionsRef?.current?.(); }}
+      onClick={() => {
+        const EMOJIS = ['❤️', '🔥', '😍', '👏', '💯', '🎉', '💸'];
+        const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+        // Broadcast to room then trigger local immediately
+        onReactionTap?.(emoji);
+        reactionsRef?.current?.(emoji);
+      }}
     >
       {validTracks.length > 0 ? (
         <div className={`w-full h-full ${validTracks.length > 1 ? 'grid grid-cols-1 md:grid-cols-2 gap-2 p-2' : 'relative'}`}>

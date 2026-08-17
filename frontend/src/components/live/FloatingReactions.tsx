@@ -5,15 +5,14 @@ interface Particle {
   id: number;
   emoji: string;
   x: number;
-  startedAt: number;
 }
 
 const EMOJIS = ["❤️", "🔥", "😍", "👏", "💯", "🎉", "💸"];
 const DURATION_MS = 2800;
 
 interface Props {
-  /** Call this ref to programmatically trigger a reaction (e.g. from socket event) */
-  triggerRef?: React.MutableRefObject<(() => void) | null>;
+  /** Call this ref to programmatically trigger a reaction with an optional specific emoji */
+  triggerRef?: React.MutableRefObject<((emoji?: string) => void) | null>;
   className?: string;
 }
 
@@ -24,11 +23,11 @@ export default function FloatingReactions({ triggerRef, className = "" }: Props)
   const containerRef = useRef<HTMLDivElement>(null);
 
   const spawnReaction = useCallback((emoji?: string) => {
-    const containerWidth = containerRef.current?.offsetWidth || 60;
+    const containerWidth = containerRef.current?.offsetWidth || 80;
     const chosen = emoji || EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-    const x = 4 + Math.random() * (containerWidth - 40);
+    const x = 8 + Math.random() * Math.max(0, containerWidth - 48);
     const id = ++_id;
-    setParticles((prev) => [...prev, { id, emoji: chosen, x, startedAt: Date.now() }]);
+    setParticles((prev) => [...prev, { id, emoji: chosen, x }]);
     setTimeout(() => {
       setParticles((prev) => prev.filter((p) => p.id !== id));
     }, DURATION_MS + 200);
@@ -36,7 +35,7 @@ export default function FloatingReactions({ triggerRef, className = "" }: Props)
 
   // Expose trigger to parent via ref
   useEffect(() => {
-    if (triggerRef) triggerRef.current = () => spawnReaction();
+    if (triggerRef) triggerRef.current = (emoji?: string) => spawnReaction(emoji);
   }, [triggerRef, spawnReaction]);
 
   return (
@@ -48,7 +47,7 @@ export default function FloatingReactions({ triggerRef, className = "" }: Props)
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute bottom-16 will-change-transform"
+          className="absolute bottom-20 will-change-transform"
           style={{
             left: p.x,
             animation: `floatUp ${DURATION_MS}ms ease-out forwards`,
@@ -60,8 +59,8 @@ export default function FloatingReactions({ triggerRef, className = "" }: Props)
       <style>{`
         @keyframes floatUp {
           0%   { transform: translateY(0) scale(1);   opacity: 1; }
-          60%  { transform: translateY(-180px) scale(1.3); opacity: 0.9; }
-          100% { transform: translateY(-320px) scale(0.6); opacity: 0; }
+          60%  { transform: translateY(-200px) scale(1.3); opacity: 0.9; }
+          100% { transform: translateY(-360px) scale(0.6); opacity: 0; }
         }
       `}</style>
     </div>
