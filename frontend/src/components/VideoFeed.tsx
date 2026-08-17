@@ -719,13 +719,10 @@ export default function VideoFeed() {
                       }
                     });
                   }}
-                  className={`text-sm transition-all relative pb-1 flex items-center gap-1.5 ${feedType === 'following' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
+                  className={`text-sm transition-all relative pb-1 ${feedType === 'following' ? 'text-cloud-white font-bold' : 'text-cloud-white/60 font-semibold hover:text-cloud-white'
                     }`}
                 >
-                  <span>Following</span>
-                  {hasActiveStories && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-toka-flare shadow-[0_0_6px_rgba(255,79,0,0.9)] animate-pulse" />
-                  )}
+                  Following
                   {feedType === 'following' && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-toka-flare rounded-full" />
                   )}
