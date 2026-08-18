@@ -300,7 +300,7 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
 
   // Grace period countdown ticker
   useEffect(() => {
-    if (!reconnectingInfo) { setReconnectCountdown(0); return; }
+    if (!reconnectingInfo) return;
     const tick = () => {
       const elapsed = Math.floor((Date.now() - new Date(reconnectingInfo.since).getTime()) / 1000);
       const remaining = Math.max(0, reconnectingInfo.graceSeconds - elapsed);
@@ -317,7 +317,10 @@ export default function StreamRoom({ roomId }: StreamRoomProps) {
     };
     tick();
     const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      setReconnectCountdown(0);
+    };
   }, [reconnectingInfo, currentRoom]);
 
   const handleAcceptCohost = async () => {
