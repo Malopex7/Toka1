@@ -74,7 +74,7 @@ export const uploadVideo = async (req, res, next) => {
     mentions: mentionedUsers.map(u => u._id),
     taggedUsers: taggedUsersData,
     coAuthors: initialCoAuthors,
-    aiPipelineStatus: 'queued',
+    aiPipelineStatus: 'pending',
     vettingStatus: 'processing',
     aiConfidenceScore: 0
   });
@@ -490,7 +490,7 @@ export const uploadGridFSVideo = async (req, res, next) => {
       taggedUsers: taggedUsersData,
       coAuthors: initialCoAuthors,
       visibility: hasSponsorship ? 'private' : 'public',
-      aiPipelineStatus: 'queued',
+      aiPipelineStatus: 'pending',
       vettingStatus: 'processing',
       aiConfidenceScore: 0
     };
