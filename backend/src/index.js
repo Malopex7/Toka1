@@ -1,5 +1,10 @@
 // src/index.js
 import 'dotenv/config';
+import dns from 'dns';
+
+// Fix for Windows/ISP DNS SRV query resolution failure (querySrv ECONNREFUSED)
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import { createServer } from 'http';
 import express from 'express';
 import { Server as SocketServer } from 'socket.io';
