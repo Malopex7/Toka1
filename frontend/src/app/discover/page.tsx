@@ -124,42 +124,46 @@ export default function DiscoverPage() {
     };
   }, [query]);
 
-  const fetchVideos = useCallback(async (params: { q?: string; category?: string }) => {
-    setSearching(true);
-    try {
-      const searchParams = new URLSearchParams({ limit: '18' });
-      if (params.q?.trim()) searchParams.set('q', params.q.trim());
-      if (params.category && params.category !== 'all') {
-        searchParams.set('category', params.category);
-      }
-
-      const res = await fetch(`${API_URL}/api/discover/videos?${searchParams.toString()}`);
-      const data = await res.json();
-      if (data.status === 'success') {
-        setResults(data.data?.videos || []);
-      } else {
-        setResults([]);
-      }
-    } catch (e) {
-      console.error('Discover search error:', e);
-      setResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
-
   // Run search when query or active tab changes
   useEffect(() => {
     if (!debouncedQuery.trim() && activeTab === 'all') {
-      setResults([]);
       return;
     }
 
-    fetchVideos({
-      q: debouncedQuery.trim() || undefined,
-      category: activeTab !== 'all' ? activeTab : undefined,
-    });
-  }, [debouncedQuery, activeTab, fetchVideos]);
+    let isMounted = true;
+
+    const executeSearch = async () => {
+      try {
+        const searchParams = new URLSearchParams({ limit: '18' });
+        if (debouncedQuery.trim()) searchParams.set('q', debouncedQuery.trim());
+        if (activeTab && activeTab !== 'all') {
+          searchParams.set('category', activeTab);
+        }
+
+        setSearching(true);
+        const res = await fetch(`${API_URL}/api/discover/videos?${searchParams.toString()}`);
+        const data = await res.json();
+        if (!isMounted) return;
+
+        if (data.status === 'success') {
+          setResults(data.data?.videos || []);
+        } else {
+          setResults([]);
+        }
+      } catch (e) {
+        console.error('Discover search error:', e);
+        if (isMounted) setResults([]);
+      } finally {
+        if (isMounted) setSearching(false);
+      }
+    };
+
+    executeSearch();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, activeTab]);
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);
