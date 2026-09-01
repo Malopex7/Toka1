@@ -143,6 +143,22 @@ mongoose.connect(process.env.MONGO_URI)
   })
   .catch(err => console.error(err));
 
+// Root & Health check route
+app.get('/', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Toka Backend API is running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/test',
+      auth: '/api/users/sync',
+      videos: '/api/videos',
+      discover: '/api/discover/hub',
+      live: '/api/live'
+    }
+  });
+});
+
 // Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working' });
