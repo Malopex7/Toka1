@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "migrate:supabase": "node src/scripts/migrateGridFsToSupabase.js"
+    "migrate:supabase": "node src/scripts/migrateGridFsToSupabase.js",
+    "db:clone": "node src/scripts/cloneDb.js"
   },
   "keywords": [],
   "author": "",

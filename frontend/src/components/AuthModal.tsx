@@ -164,14 +164,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       <div className="bg-[#09090B] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-4 relative max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
-        {!profileSetupRequired && (
-          <button 
-            onClick={onClose} 
-            className="absolute top-5 right-5 text-cloud-white/40 hover:text-cloud-white transition-colors cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        )}
+        <button 
+          onClick={onClose} 
+          className="absolute top-5 right-5 text-cloud-white/40 hover:text-cloud-white transition-colors cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[20px]">close</span>
+        </button>
 
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center gap-1.5 pt-1">
@@ -465,6 +463,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               'Create Profile'
             )}
           </button>
+
+          {profileSetupRequired && (
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+              }}
+              className="w-full py-2 bg-transparent hover:bg-white/5 border border-white/10 text-cloud-white/60 hover:text-white rounded-[0.625rem] text-xs font-semibold transition-all cursor-pointer"
+            >
+              Sign Out / Switch Account
+            </button>
+          )}
         </form>
 
         {/* Separator & Google Sign-In (Omitted during profile setup) */}
